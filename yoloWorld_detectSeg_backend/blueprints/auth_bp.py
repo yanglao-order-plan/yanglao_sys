@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from extensions import db, mail
 from flask_mail import Message
 from utils.backend_utils.colorprinter import *
-from database_models import CaptchaModel, UserModel
+from database_models import CaptchaModel, UserModel, RoleModel
 from werkzeug.security import generate_password_hash, check_password_hash
 from blueprints.froms.login_form import LoginForm
 from blueprints.froms.register_form import RegisterForm
@@ -138,9 +138,13 @@ def register():
         username = form.username.data
         email = form.email.data
         password = form.password.data
+        role = form.role.data
+        # 验证当前邮箱是否被注册 在注册时后端表单将会再次验证
+        role = RoleModel.query.filter_by(id=role).first()
         user = UserModel(username=username,
                          password=generate_password_hash(password),
-                         email=email)
+                         email=email,
+                         roles=role)
         session['user_id'] = user.id
         # 注册后生成Token并返回 前端实现注册后自动登录
         refresh_token = create_refresh_token(identity=user.id)

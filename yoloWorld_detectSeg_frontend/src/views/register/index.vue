@@ -7,6 +7,7 @@ import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
 import { type FormInstance, FormRules } from "element-plus"
 import { getRegisterCodeApi } from "@/api/register"
 import { type IRegisterRequestData } from "@/api/register/types/register"
+// import { type IRole } from "@/api/roles/types"
 
 const router = useRouter()
 const registerFormRef = ref<FormInstance | null>(null)
@@ -22,7 +23,8 @@ const registerForm: IRegisterRequestData = reactive({
   email: "",
   password: "",
   confirm_password: "",
-  captcha: ""
+  captcha: "",
+  role: ""
 })
 /** 验证两次密码是否一致 */
 const validateConfirmPassword = (rule: any, value: any, callback: any) => {
@@ -49,7 +51,8 @@ const registerFormRules: FormRules = {
     { min: 4, max: 20, message: "长度在 4 到 20 个字符", trigger: "blur" }
   ],
   confirm_password: [{ required: true, validator: validateConfirmPassword, trigger: "blur" }],
-  captcha: [{ required: true, message: "请输入验证码", trigger: "blur" }]
+  captcha: [{ required: true, message: "请输入验证码", trigger: "blur" }],
+  role: [{ required: true, message: "请选择角色", trigger: "change" }],
 }
 /** 登录逻辑 */
 const handleLogin = () => {
@@ -87,7 +90,7 @@ createCode()
 
 const handleRegister = () => {
   registerFormRef.value?.validate((valid: boolean) => {
-    if (valid) {
+    if (valid) {``
       loading.value = true
       useUserStore()
         .register({
@@ -95,7 +98,8 @@ const handleRegister = () => {
           email: registerForm.email,
           password: registerForm.password,
           confirm_password: registerForm.confirm_password,
-          captcha: registerForm.captcha
+          captcha: registerForm.captcha,
+          role: registerForm.role
         })
         .then(() => {
           router.push({ path: "/login" })
@@ -189,6 +193,12 @@ const handleRegister = () => {
                 </el-button>
               </template>
             </el-input>
+          </el-form-item>
+          <el-form-item prop="role">
+            <el-select v-model="registerForm.role" placeholder="选择角色" size="large">
+              <el-option label="管理员" value=1></el-option>
+              <el-option label="用户" value=2></el-option>
+            </el-select>
           </el-form-item>
           <div style="width: 48%; display: inline-block">
             <el-button :loading="loading" type="success" size="default" @click.prevent="handleLogin"> 登 录 </el-button>

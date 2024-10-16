@@ -66,15 +66,53 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: "/",
     component: Layout,
-    redirect: "/detect",
+    // redirect: "/",
+    meta: {
+      title: "任务集合",
+      svgIcon: "helpFilled",
+      affix: true
+    },
     children: [
+      // 垃圾检测模块
       {
         path: "detect",
         component: () => import("@/views/detect/index.vue"),
         name: "Detect",
         meta: {
-          title: "垃圾检测",
-          svgIcon: "helpFilled",
+          title: "目标检测",
+          svgIcon: "detect",
+          affix: true
+        }
+      },
+      // 图像分割模块
+      {
+        path: "segment",
+        component: () => import("@/views/segment/index.vue"),
+        name: "Segment",
+        meta: {
+          title: "图像分割",
+          svgIcon: "segment",
+          affix: true
+        }
+      },
+      {
+        path: "depth", 
+        component: () => import("@/views/depth/index.vue"),
+        name: "Depth",
+        meta: {
+          title: "深度估计",
+          svgIcon: "depthIcon",  // 假设你有一个图标叫 "depthIcon"
+          affix: true
+        }
+      },
+      // 人脸识别模块
+      {
+        path: "face",
+        component: () => import("@/views/face/index.vue"),
+        name: "Face",
+        meta: {
+          title: "人脸识别",
+          svgIcon: "faceRecognition",  // 假设你有一个图标叫 "faceRecognition"
           affix: true
         }
       }
@@ -83,22 +121,22 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: "/link",
     component: Layout,
+    // redirect: "/",
+    meta: {
+      title: "源码集合",
+      svgIcon: "helpFilled",
+      affix: true
+    },
     children: [
       {
         path: "https://github.com/Graysonggg/DetectSegPlatform",
         component: () => {},
         name: "Link",
         meta: {
-          title: "项目源码",
+          title: "本项目源码",
           svgIcon: "Avatar"
         }
-      }
-    ]
-  },
-  {
-    path: "/yolov5",
-    component: Layout,
-    children: [
+      },
       {
         path: "https://github.com/ultralytics/yolov5",
         component: () => {},

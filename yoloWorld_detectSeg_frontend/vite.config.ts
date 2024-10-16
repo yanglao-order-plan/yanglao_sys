@@ -38,7 +38,7 @@ export default (configEnv: ConfigEnv): UserConfigExport => {
       /** 接口代理 */
       proxy: {
         "/api/v1": {
-          target: "http://localhost:5003",
+          target: "http://127.0.0.1:5000",
           // target: "https://mock.mengxuegu.com/mock/63218b5fb4c53348ed2bc212/api/v1",
           ws: true,
           /** 是否允许跨域 */

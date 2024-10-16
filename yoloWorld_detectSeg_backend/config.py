@@ -12,8 +12,8 @@ JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 HOSTNAME = '127.0.0.1'
 PORT = 3306
 USERNAME = 'root'
-PASSWORD = 'root'
-DATABASE = 'yolov5_garbage_detect'
+PASSWORD = '020627'
+DATABASE = 'yanglao_order_sys'
 DB_URI = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE)
 # DB_URI = f'mysql+pymysql://{USERNAME}:{PASSWORD}@{HOSTNAME}:{PORT}/{DATABASE}?charset=utf8mb4'
 SQLALCHEMY_DATABASE_URI = DB_URI
@@ -23,6 +23,6 @@ SQLALCHEMY_DATABASE_URI = DB_URI
 MAIL_SERVER = 'smtp.qq.com'
 MAIL_USE_SSL = True
 MAIL_PORT = 465
-MAIL_USERNAME = 'xxx@qq.com'
-MAIL_PASSWORD = 'xxx'
-MAIL_DEFAULT_SENDER = ("基于YOLO-World的目标检测及其分割管理平台", "xxx@qq.com")
+MAIL_USERNAME = '3023538364@qq.com'
+MAIL_PASSWORD = 'wmtbuaxfstwqdced'
+MAIL_DEFAULT_SENDER = ("基于YOLO-World的目标检测及其分割管理平台", "3023538364@qq.com")

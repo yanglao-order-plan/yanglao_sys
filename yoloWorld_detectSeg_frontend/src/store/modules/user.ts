@@ -52,7 +52,8 @@ export const useUserStore = defineStore("user", () => {
         username: registerData.username,
         password: registerData.password,
         confirm_password: registerData.confirm_password,
-        captcha: registerData.captcha
+        captcha: registerData.captcha,
+        role: registerData.role
       })
         .then((res) => {
           // 注册成功后设置Token自动登录

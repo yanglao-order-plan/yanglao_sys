@@ -102,13 +102,14 @@ class WeightsModel(db.Model):
     dataset = db.relationship('DatasetModel', backref=db.backref('weights'))
 
 
-class DetectResultModel(db.Model):
-    __tablename__ = 'detect_result'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='检测结果id')
-    detect_result = db.Column(db.Text, nullable=False, comment='检测结果')
-    detect_result_image_name = db.Column(db.String(100), nullable=False, comment='检测结果图片名称')
-    detect_time = db.Column(db.DateTime, default=datetime.now, comment='检测时间')
+class InferResultModel(db.Model):
+    __tablename__ = 'infer_result'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='推理结果id')
+    task_type = db.Column(db.Integer, db.ForeignKey('task.id'))
+    infer_result = db.Column(db.Text, nullable=False, comment='推理结果')
+    infer_result_image_name = db.Column(db.String(100), nullable=False, comment='推理结果图片名称')
+    infer_time = db.Column(db.DateTime, default=datetime.now, comment='推理时间')
     # ForeignKey
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     # Relationship
-    user = db.relationship('UserModel', backref=db.backref('detect_result'))
+    user = db.relationship('UserModel', backref=db.backref('infer_result'))

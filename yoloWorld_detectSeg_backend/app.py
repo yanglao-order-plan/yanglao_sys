@@ -31,6 +31,11 @@ code: 205 前端通知弹窗Error
 code: 206 前端通知弹窗Warning
 code: 207 前端通知弹窗Info
 '''
+repo_dir = os.getcwd()
+weights_path = 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt'
+model_load_path = os.path.join(repo_dir, weights_path)
+weights_name = 'yolov5-3.1'
+default_model = load_model(repo_dir, model_load_path)
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -61,7 +66,8 @@ def load_default_model():
     g.model_load_path = model_load_path
     # 加载默认调用权重并保存在g.model中
     g.model = default_model
-    g.weights_name = WeightsModel.query.filter_by(weights_relative_path=weights_path).first().weights_name
+    # WeightsModel.query.filter_by(weights_relative_path=weights_path).first().
+    g.weights_name = weights_name
     # 同时把当前权重相关调用信息存储进session
     # 后续如果调用的非默认权重则重新根据session中的信息加载模型
     session['repo_dir'] = g.repo_dir
@@ -94,23 +100,18 @@ def test_database_connection():
 
 
 if __name__ == "__main__":
-    repo_dir = os.getcwd()
     # weights_path = 'weights/yolov5-7.0/COCO_yolov5s6.pt'
     # weights_path = 'weights/yolov5-6.2/Sample_yolov5s6_300_epochs.pt'
-    weights_path = 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt'
-    # weights_path = 'weights/yolov5-3.1/Garbage_yolov5s_300_epochs.pt'
-    model_load_path = os.path.join(repo_dir, weights_path)
 
     parser = argparse.ArgumentParser(description="Flask app exposing yolov5 models")
     parser.add_argument("--port", default=5003, type=int, help="port number")
     args = parser.parse_args()
 
     # webapp启动后加载默认调用权重
-    default_model = load_model(repo_dir, model_load_path)
     test_database_connection()
     print_cyan('项目已启动')
     print_cyan(f'当前工作目录: {repo_dir}')
     print_cyan(f'当前调用权重: {weights_path}')
     print_cyan(f'模型推断请访问: http://localhost:{args.port}/detect-demo/upload')
 
-    app.run(host="0.0.0.0", port=args.port, debug=True)
+    app.run(host="127.0.0.1", port=args.port, debug=True)

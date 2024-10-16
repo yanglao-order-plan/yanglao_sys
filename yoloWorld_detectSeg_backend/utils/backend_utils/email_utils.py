@@ -15,7 +15,8 @@ class EmailOP:
         """
         self.user = user
         self.password = password
-        self.smtp = smtplib.SMTP()  # 创建SMTP对象
+        self.smtp = smtplib.SMTP_SSL()  # 创建SMTP对象
+        print(host)
         self.smtp.connect(host=host, port=port)  # 连接到SMTP服务器
         self.smtp.login(user=self.user, password=self.password)  # 登录邮箱
 
@@ -38,7 +39,7 @@ class EmailOP:
 # port=25/587
 # port=465时连接超时
 email_op = EmailOP(host=config.MAIL_SERVER,
-                   port=587,
+                   port=config.PORT,
                    user=config.MAIL_USERNAME,
                    password=config.MAIL_PASSWORD)
 

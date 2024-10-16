@@ -36,6 +36,10 @@ const logout = () => {
   userStore.logout()
   router.push("/login")
 }
+
+const navigateToTask = () => {
+  router.push("/detect") // 假设检测任务页面的路由是 /detect
+}
 </script>
 
 <template>
@@ -53,12 +57,17 @@ const logout = () => {
         </div>
         <template #dropdown>
           <el-dropdown-menu>
-            <a target="_blank" href="https://github.com/Graysonggg/DetectSegPlatform">
-              <el-dropdown-item>项目源码</el-dropdown-item>
-            </a>
-            <a target="_blank" href="https://github.com/ultralytics/yolov5">
-              <el-dropdown-item>YOLOv5🚀</el-dropdown-item>
-            </a>
+            <el-dropdown-item-group title="项目源码">
+              <a target="_blank" href="https://github.com/Graysonggg/DetectSegPlatform">
+                <el-dropdown-item>原始项目源码</el-dropdown-item>
+              </a>
+              <a target="_blank" href="https://github.com/ultralytics/yolov5">
+                <el-dropdown-item>YOLOv5🚀</el-dropdown-item>
+              </a>
+            </el-dropdown-item-group>
+            <el-dropdown-item-group title="任务类型">
+              <el-dropdown-item @click="navigateToTask">检测任务</el-dropdown-item>
+            </el-dropdown-item-group>
             <el-dropdown-item divided @click="logout">
               <span style="display: block">退出登录</span>
             </el-dropdown-item>

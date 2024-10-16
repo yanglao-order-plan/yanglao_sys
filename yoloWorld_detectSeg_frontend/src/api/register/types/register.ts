@@ -6,6 +6,7 @@ export interface IRegisterRequestData {
   confirm_password: string
   /** 验证码 */
   captcha: string
+  role: string
 }
 
 export type RegisterCodeResponseData = IApiResponseData<string>
