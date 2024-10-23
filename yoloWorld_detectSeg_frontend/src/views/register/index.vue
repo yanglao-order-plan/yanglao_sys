@@ -7,6 +7,7 @@ import ThemeSwitch from "@/components/ThemeSwitch/index.vue"
 import { type FormInstance, FormRules } from "element-plus"
 import { getRegisterCodeApi } from "@/api/register"
 import { type IRegisterRequestData } from "@/api/register/types/register"
+import { getToken } from "@/utils/cache/cookies"
 // import { type IRole } from "@/api/roles/types"
 
 const router = useRouter()

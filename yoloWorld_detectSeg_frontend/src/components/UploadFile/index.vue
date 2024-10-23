@@ -3,24 +3,18 @@ import { UploadFilled } from "@element-plus/icons-vue"
 import { ElMessage } from "element-plus"
 
 const emits = defineEmits(["handleUpload"])
-const handleUpload = (response: any) => {
-  const code = response.code
-  const message = response.message
-  if (code === 0) {
-    ElMessage.success(message)
-  } else {
-    ElMessage.error(message)
-  }
-  emits("handleUpload", response) // 触发自定义事件，并将 response 作为参数传递
+const handleUpload = (file: File) => {
+  emits("handleUpload", file) // 触发自定义事件，并将 response 作为参数传递
+  return false
 }
 </script>
 <template>
   <el-upload
     class="upload-demo"
     drag
-    action="http://localhost:3333/api/v1/detect/upload"
-    :on-success="handleUpload"
+    :on-change="handleUpload"
     multiple
+    :auto-upload="false"
   >
     <el-icon class="el-icon--upload"><upload-filled /></el-icon>
     <div class="el-upload__text">将需要检测的图片拖放到此处或<em>点击上传</em></div>

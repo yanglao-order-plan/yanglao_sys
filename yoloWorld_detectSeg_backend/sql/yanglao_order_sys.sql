@@ -46,11 +46,6 @@ CREATE TABLE `captcha` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Records of captcha
--- ----------------------------
-BEGIN;
-COMMIT;
 
 -- ----------------------------
 -- Table structure for dataset
@@ -58,7 +53,7 @@ COMMIT;
 DROP TABLE IF EXISTS `dataset`;
 CREATE TABLE `dataset` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '数据集id',
-  `dataset_name` varchar(100) NOT NULL COMMENT '数据集名称',
+  `name` varchar(100) NOT NULL COMMENT '数据集名称',
   `class_num` int NOT NULL COMMENT '类别数量',
   `total_num` int NOT NULL COMMENT '总数量',
   `train_num` int NOT NULL COMMENT '训练集数量',
@@ -79,104 +74,268 @@ INSERT INTO `dataset` VALUES (4, 'Garbage', 43, 14964, 12120, 1347, 1, 1497);
 COMMIT;
 
 -- ----------------------------
--- Table structure for detect_result
+-- Table structure for result
 -- ----------------------------
-DROP TABLE IF EXISTS `infer_result`;
-CREATE TABLE `infer_result` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '推理结果id',
-  `infer_result` text NOT NULL COMMENT '推理结果',
-  `infer_result_image_name` varchar(100) NOT NULL COMMENT '推理结果图片名称',
-  `infer_time` datetime DEFAULT NULL COMMENT '推理时间',
+DROP TABLE IF EXISTS `result`;
+CREATE TABLE `result` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '结果id',
+  `img_path` text NOT NULL COMMENT '原始图片路径',
+  `data` text NOT NULL COMMENT '结果数据',
+  `plot_path` varchar(100) NOT NULL COMMENT '结果图片路径',
+  `start_time` datetime DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime DEFAULT NULL COMMENT '结束时间',
+  `hyper` JSON DEFAULT NULL COMMENT '动态超参数',
   `user_id` int DEFAULT NULL,
-  `subtask_id` int DEFAULT NULL,
+  `release_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `subtask_id` (`subtask_id`),
-  CONSTRAINT `infer_result_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
-  CONSTRAINT `infer_result_ibfk_2` FOREIGN KEY (`subtask_id`) REFERENCES `subtask` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
-CREATE TABLE `task` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '任务id',
-  `task_name` text NOT NULL COMMENT '任务名称',
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE `subask` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '下游任务id',
-  `subtask_name` text NOT NULL COMMENT '下游任务名称',
-  `task_id` int DEFAULT NULL,
-  KEY `task_id` (`task_id`),
-  CONSTRAINT `subtask_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  FOREIGN KEY (`release_id`) REFERENCES `release` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ----------------------------
--- Records of detect_result
+-- Table structure for task_type
 -- ----------------------------
+DROP TABLE IF EXISTS `task_type`;
+CREATE TABLE `task_type` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '任务类型ID',
+  `name` VARCHAR(50) NOT NULL COMMENT '任务类型名称',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 插入任务类型数据
 BEGIN;
+INSERT INTO `task_type` VALUES
+(1, 'close_set'),
+(2, 'open_set'),
+(3, 'combi');
 COMMIT;
+
+-- ----------------------------
+-- Table structure for task
+-- ----------------------------
+DROP TABLE IF EXISTS `task`;
+CREATE TABLE `task` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `name` VARCHAR(50) NOT NULL COMMENT '任务名称',
+  `type_id` int DEFAULT NULL COMMENT '任务类型ID',
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`type_id`) REFERENCES `task_type` (`id`)
+  UNIQUE KEY `unique_name_type` (`name`, `type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 插入任务数据
+BEGIN;
+INSERT INTO `task` VALUES
+(1, 'classification', 1),
+(2, 'object_detection', 1),
+(3, 'rotate_object_detection', 1),
+(4, 'semantic_segmentation', 1),
+(5, 'pose_estimation', 1),
+(6, 'face_detection', 1),
+(7, 'track_object_detection', 1),
+(8, 'track_segmentation', 1),
+(9, 'track_rotate_object_detection', 1),
+(10, 'track_pose_estimation', 1),
+(11, 'car_plate_detection', 1),
+(12, 'attribute_recognition', 1),
+(13, 'background_removal', 1),
+(14, 'optical_character_recognition', 1),
+(15, 'classification', 2),
+(16, 'object_detection', 2),
+(17, 'semantic_segmentation', 2),
+(18, 'depth_estimation', 2),
+(19, 'detection_segmentation', 3),
+(20, 'classification_detection', 3);
+COMMIT;
+
+-- ----------------------------
+-- Table structure for flow
+-- ----------------------------
+DROP TABLE IF EXISTS `flow`;
+CREATE TABLE `flow` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '流程ID',
+  `name` VARCHAR(100) NOT NULL COMMENT '流程名称',
+  `task_id` INT NOT NULL COMMENT '任务ID',
+  PRIMARY KEY (`id`),
+  -- 外键约束
+  FOREIGN KEY (`task_id`) REFERENCES `task` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 插入工作流数据
+BEGIN;
+INSERT INTO `flow` VALUES
+(1, 'yolo11_cls', 1),
+(2, 'internimage_cls', 1),
+(3, 'yolov5_cls', 1),
+(4, 'yolov8_cls', 1),
+(5, 'yolo11', 2),
+(6, 'yolo_nas', 2),
+(7, 'yolov10', 2),
+(8, 'yolov5', 2),
+(9, 'yolov6', 2),
+(10, 'yolov7', 2),
+(11, 'yolov8', 2),
+(12, 'yolov9', 2),
+(13, 'gold_yolo', 2),
+(14, 'damo_yolo', 2),
+(15, 'rtdetr', 2),
+(16, 'rtdetrv2', 2),
+(17, 'yolox', 2),
+(18, 'yolov8_sahi', 2),
+(19, 'yolov5_resnet', 2),
+(20, 'yolo11_obb', 3),
+(21, 'yolov5_obb', 3),
+(22, 'yolov8_obb', 3),
+(23, 'yolo11_seg', 4),
+(24, 'yolov5_seg', 4),
+(25, 'yolov8_seg', 4),
+(26, 'yolo11_pose', 5),
+(27, 'yolov8_pose', 5),
+(28, 'rtmdet_pose', 5),
+(29, 'yolox_dwpose', 5),
+(30, 'yolov6_face', 6),
+(31, 'yolo11_det_track', 7),
+(32, 'yolov5_det_track', 7),
+(33, 'yolov8_det_track', 7),
+(34, 'yolo11_seg_track', 8),
+(35, 'yolov8_seg_track', 8),
+(36, 'yolo11_obb_track', 9),
+(37, 'yolov8_obb_track', 9),
+(38, 'yolo11_pose_track', 10),
+(39, 'yolov8_pose_track', 10),
+(40, 'yolov5_car_plate', 11),
+(41, 'pulc_attribute', 12),
+(42, 'rmbg', 13),
+(43, 'ppocr_v4', 14),
+(44, 'ram', 15),
+(45, 'yolow', 16),
+(46, 'grounding_dino', 16),
+(47, 'segment_anything', 17),
+(48, 'segment_anything_2', 17),
+(49, 'segment_anything_2_video', 17),
+(50, 'sam_hq', 17),
+(51, 'sam_med2d', 17),
+(52, 'edge_sam', 17),
+(53, 'efficientvit_sam', 17),
+(54, 'depth_anything', 18),
+(55, 'depth_anything_v2', 18),
+(56, 'grounding_sam', 19),
+(57, 'grounding_sam2', 19),
+(58, 'yolov8_efficientvit_sam', 19),
+(59, 'yolov5_sam', 19),
+(60, 'yolov5_ram', 20),
+(61, 'yolow_ram', 20);
+COMMIT;
+
+-- ----------------------------
+-- Table structure for version
+-- ----------------------------
+DROP TABLE IF EXISTS `release`;
+CREATE TABLE `release` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '版本ID',
+  `name` VARCHAR(100) NOT NULL COMMENT '版本名称',
+  `show_name` VARCHAR(100) NOT NULL COMMENT '显示名称',
+  `flow_id` INT NOT NULL COMMENT '流程ID',
+  `keys` JSON NOT NULL COMMENT '关键字组',
+  `params` JSON NOT NULL COMMENT '固定参数组',
+  PRIMARY KEY (`id`),
+  -- 外键约束
+  FOREIGN KEY (`flow_id`) REFERENCES `flow` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 插入版本数据
+
+-- ----------------------------
+-- Relation structure for weights
+-- ----------------------------
+DROP TABLE IF EXISTS `release_weight`;
+CREATE TABLE `release_weight` (
+  `release_id` INT NOT NULL COMMENT '版本ID',
+  `weight_id` INT NOT NULL COMMENT '权重ID',
+  `key` VARCHAR(100) NOT NULL COMMENT '关键字',
+  -- 外键约束
+  PRIMARY KEY (`release_id`, `weight_id`),
+  FOREIGN KEY (`release_id`) REFERENCES `release` (`id`),
+  FOREIGN KEY (`weight_id`) REFERENCES `weight` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ----------------------------
+-- Table structure for weights
+-- ----------------------------
+DROP TABLE IF EXISTS `weight`;
+CREATE TABLE `weight` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '权重id',
+  `name` varchar(100) NOT NULL COMMENT '权重名称',
+  `local_path` text NULL COMMENT '本地路径',
+  `online_url` text NULL COMMENT '在线链接',
+  `enable` tinyint(1) NOT NULL COMMENT '是否启用',
+  `dataset_id` INT NULL COMMENT '数据集ID',
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ----------------------------
+-- Table structure for learn
+-- ----------------------------
+-- DROP TABLE IF EXISTS `weight`;
+-- CREATE TABLE `weight` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '权重id',
+--   `name` varchar(100) NOT NULL COMMENT '权重名称',
+--   `relative_path` text NOT NULL COMMENT '权重相对路径',
+--   `absolute_path` text COMMENT '权重绝对路径',
+--   `online_url` text COMMENT '权重在线链接',
+--   `enable` tinyint(1) NOT NULL COMMENT '是否启用',
+--   PRIMARY KEY (`id`),
+--   KEY `dataset_id` (`dataset_id`),
+--   KEY `mode_id` (`mode_id`),
+--   CONSTRAINT `weight_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
+-- ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ----------------------------
 -- Table structure for image
 -- ----------------------------
-DROP TABLE IF EXISTS `image`;
-CREATE TABLE `image` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '图片id',
-  `image_name` varchar(100) NOT NULL COMMENT '图片名称',
-  `image_absolute_path` text COMMENT '图片绝对路径',
-  `image_relative_path` text COMMENT '图片相对路径',
-  `image_type` varchar(100) NOT NULL COMMENT '图片类型',
-  `dataset_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dataset_id` (`dataset_id`),
-  CONSTRAINT `image_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- DROP TABLE IF EXISTS `image`;
+-- CREATE TABLE `image` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '图片id',
+--   `name` varchar(100) NOT NULL COMMENT '图片名称',
+--   `absolute_path` text COMMENT '图片绝对路径',
+--   `relative_path` text COMMENT '图片相对路径',
+--   `type` varchar(100) NOT NULL COMMENT '图片类型',
+--   `dataset_id` int DEFAULT NULL,
+--   PRIMARY KEY (`id`),
+--   KEY `dataset_id` (`dataset_id`),
+--   CONSTRAINT `image_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Records of image
--- ----------------------------
-BEGIN;
-COMMIT;
 
 -- ----------------------------
 -- Table structure for image_label_info
 -- ----------------------------
-DROP TABLE IF EXISTS `image_label_info`;
-CREATE TABLE `image_label_info` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '图片标注信息id',
-  `image_id` int DEFAULT NULL COMMENT '图片id',
-  `label_id` int DEFAULT NULL COMMENT '标注id',
-  PRIMARY KEY (`id`),
-  KEY `image_id` (`image_id`),
-  KEY `label_id` (`label_id`),
-  CONSTRAINT `image_label_info_ibfk_1` FOREIGN KEY (`image_id`) REFERENCES `image` (`id`),
-  CONSTRAINT `image_label_info_ibfk_2` FOREIGN KEY (`label_id`) REFERENCES `label` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- DROP TABLE IF EXISTS `sample`;
+-- CREATE TABLE `sample` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '样本id',
+--   `image_id` int DEFAULT NULL COMMENT '图片id',
+--   `label_id` int DEFAULT NULL COMMENT '标签id',
+--   PRIMARY KEY (`id`),
+--   KEY `image_id` (`image_id`),
+--   KEY `label_id` (`label_id`),
+--   CONSTRAINT `image_label_info_ibfk_1` FOREIGN KEY (`image_id`) REFERENCES `image` (`id`),
+--   CONSTRAINT `image_label_info_ibfk_2` FOREIGN KEY (`label_id`) REFERENCES `label` (`id`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Records of image_label_info
--- ----------------------------
-BEGIN;
-COMMIT;
 
 -- ----------------------------
 -- Table structure for label
 -- ----------------------------
-DROP TABLE IF EXISTS `label`;
-CREATE TABLE `label` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '标注id',
-  `label_name` varchar(100) NOT NULL COMMENT '标注名称',
-  `dataset_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dataset_id` (`dataset_id`),
-  CONSTRAINT `label_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- ----------------------------
--- Records of label
--- ----------------------------
-BEGIN;
-COMMIT;
+-- DROP TABLE IF EXISTS `label`;
+-- CREATE TABLE `label` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '标注id',
+--   `name` varchar(100) NOT NULL COMMENT '标注信息',
+--   `subtask_id` int DEFAULT NULL,
+--   PRIMARY KEY (`id`),
+--   KEY `dataset_id` (`dataset_id`),
+--   CONSTRAINT `label_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ----------------------------
 -- Table structure for role
@@ -184,8 +343,8 @@ COMMIT;
 DROP TABLE IF EXISTS `role`;
 CREATE TABLE `role` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '角色id',
-  `role_name` varchar(100) NOT NULL COMMENT '角色名称',
-  `role_desc` varchar(100) NOT NULL COMMENT '角色描述',
+  `name` varchar(100) NOT NULL COMMENT '角色名称',
+  `desc` varchar(100) NOT NULL COMMENT '角色描述',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -211,63 +370,43 @@ CREATE TABLE `user` (
   `role_id` int DEFAULT NULL COMMENT '用户角色',
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
-  KEY `role_id` (`role_id`),
-  CONSTRAINT `user_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
+  FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2007 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Records of user
--- ----------------------------
+
 
 -- ----------------------------
--- Table structure for weights
+-- Table structure for service
 -- ----------------------------
-DROP TABLE IF EXISTS `weights`;
-CREATE TABLE `weights` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT '权重id',
-  `weights_name` varchar(100) NOT NULL COMMENT '权重名称',
-  `weights_relative_path` text NOT NULL COMMENT '权重相对路径',
-  `weights_absolute_path` text COMMENT '权重绝对路径',
-  `weights_version` varchar(100) NOT NULL COMMENT '权重版本',
-  `enable` tinyint(1) NOT NULL COMMENT '是否启用',
-  `dataset_id` int DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dataset_id` (`dataset_id`),
-  CONSTRAINT `weights_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- DROP TABLE IF EXISTS `service`;
+-- CREATE TABLE `service` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '服务id',
+--   `name` varchar(100) NOT NULL COMMENT '服务名称',
+--   `model_version` varchar(100) NOT NULL COMMENT '模型版本',
+--   `task_id` int DEFAULT NULL,
+--   PRIMARY KEY (`id`),
+--   KEY `model_id` (`model_id`),
+--   CONSTRAINT `model_ibfk_1` FOREIGN KEY (`model_id`) REFERENCES `task` (`id`)
+-- ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- ----------------------------
+-- Table structure for order
+-- ----------------------------
+-- DROP TABLE IF EXISTS `order`;
+-- CREATE TABLE `order` (
+--   `id` int NOT NULL AUTO_INCREMENT COMMENT '工单id',
+--   `model_name` varchar(100) NOT NULL COMMENT '工单编号',
+--   `model_version` varchar(100) NOT NULL COMMENT '模型版本',
+--   `task_id` int DEFAULT NULL,
+--   PRIMARY KEY (`id`),
+--   KEY `model_id` (`model_id`),
+--   CONSTRAINT `model_ibfk_1` FOREIGN KEY (`model_id`) REFERENCES `task` (`id`)
+-- ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 -- ----------------------------
 -- Records of weights
 -- ----------------------------
-BEGIN;
-INSERT INTO `weights` VALUES (1, 'COCO_yolov5n', 'weights/yolov5-7.0/COCO_yolov5n.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (2, 'COCO_yolov5s', 'weights/yolov5-7.0/COCO_yolov5s.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (3, 'COCO_yolov5m', 'weights/yolov5-7.0/COCO_yolov5m.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (4, 'COCO_yolov5l', 'weights/yolov5-7.0/COCO_yolov5l.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (5, 'COCO_yolov5x', 'weights/yolov5-7.0/COCO_yolov5x.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (6, 'COCO_yolov5n6', 'weights/yolov5-7.0/COCO_yolov5n6.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (7, 'COCO_yolov5s6', 'weights/yolov5-7.0/COCO_yolov5s6.pt', NULL, 'yolov5-7.0', 1, 1);
-INSERT INTO `weights` VALUES (8, 'COCO_yolov5m6', 'weights/yolov5-7.0/COCO_yolov5m6.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (9, 'COCO_yolov5l6', 'weights/yolov5-7.0/COCO_yolov5l6.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (10, 'COCO_yolov5x6', 'weights/yolov5-7.0/COCO_yolov5x6.pt', NULL, 'yolov5-7.0', 0, 1);
-INSERT INTO `weights` VALUES (11, 'Sample_yolov5n_300_epochs', 'weights/yolov5-6.2/Sample_yolov5n_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (12, 'Sample_yolov5s_300_epochs', 'weights/yolov5-6.2/Sample_yolov5s_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (13, 'Sample_yolov5m_300_epochs', 'weights/yolov5-6.2/Sample_yolov5m_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (14, 'Sample_yolov5l_300_epochs', 'weights/yolov5-6.2/Sample_yolov5l_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (15, 'Sample_yolov5x_300_epochs', 'weights/yolov5-6.2/Sample_yolov5x_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (16, 'Sample_yolov5n6_300_epochs', 'weights/yolov5-6.2/Sample_yolov5n6_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (17, 'Sample_yolov5s6_300_epochs', 'weights/yolov5-6.2/Sample_yolov5s6_300_epochs.pt', NULL, 'yolov5-6.2', 1, 2);
-INSERT INTO `weights` VALUES (18, 'Sample_yolov5m6_300_epochs', 'weights/yolov5-6.2/Sample_yolov5m6_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (19, 'Sample_yolov5l6_300_epochs', 'weights/yolov5-6.2/Sample_yolov5l6_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (20, 'Sample_yolov5x6_300_epochs', 'weights/yolov5-6.2/Sample_yolov5x6_300_epochs.pt', NULL, 'yolov5-6.2', 0, 2);
-INSERT INTO `weights` VALUES (21, 'TACO_yolov5s_300_epochs', 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt', NULL, 'yolov5-3.1', 1, 3);
-INSERT INTO `weights` VALUES (22, 'TACO_yolov5m_300_epochs', 'weights/yolov5-3.1/TACO_yolov5m_300_epochs.pt', NULL, 'yolov5-3.1', 0, 3);
-INSERT INTO `weights` VALUES (23, 'TACO_yolov5l_300_epochs', 'weights/yolov5-3.1/TACO_yolov5l_300_epochs.pt', NULL, 'yolov5-3.1', 0, 3);
-INSERT INTO `weights` VALUES (24, 'TACO_yolov5x_300_epochs', 'weights/yolov5-3.1/TACO_yolov5x_300_epochs.pt', NULL, 'yolov5-3.1', 0, 3);
-INSERT INTO `weights` VALUES (25, 'Garbage_yolov5s_300_epochs', 'weights/yolov5-3.1/Garbage_yolov5s_300_epochs.pt', NULL, 'yolov5-3.1', 1, 4);
-INSERT INTO `weights` VALUES (26, 'Garbage_yolov5m_300_epochs', 'weights/yolov5-3.1/Garbage_yolov5s_300_epochs.pt', NULL, 'yolov5-3.1', 0, 4);
-INSERT INTO `weights` VALUES (27, 'Garbage_yolov5l_300_epochs', 'weights/yolov5-3.1/Garbage_yolov5s_300_epochs.pt', NULL, 'yolov5-3.1', 0, 4);
-INSERT INTO `weights` VALUES (28, 'Garbage_yolov5x_300_epochs', 'weights/yolov5-3.1/Garbage_yolov5s_300_epochs.pt', NULL, 'yolov5-3.1', 0, 4);
-COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;

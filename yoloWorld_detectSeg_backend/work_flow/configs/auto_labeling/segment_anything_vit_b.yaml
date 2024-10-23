@@ -1,0 +1,12 @@
+type: segment_anything
+name: segment_anything_vit_b-r20230810
+display_name: Segment Anything (ViT-Base)
+encoder_model_path:
+  local: E:\models\Xlabel\sam\sam_vit_b_01ec64.encoder.onnx
+  online:
+decoder_model_path:
+  local: E:\models\Xlabel\sam\sam_vit_b_01ec64.decoder.onnx
+  online:
+input_size: 1024
+max_width: 1024
+max_height: 682

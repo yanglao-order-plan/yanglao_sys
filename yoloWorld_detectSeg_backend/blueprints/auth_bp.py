@@ -145,12 +145,12 @@ def register():
                          password=generate_password_hash(password),
                          email=email,
                          roles=role)
+        db.session.add(user)  # 臭傻逼东西
+        db.session.commit()
         session['user_id'] = user.id
         # 注册后生成Token并返回 前端实现注册后自动登录
         refresh_token = create_refresh_token(identity=user.id)
         data = {'token': refresh_token}
-        db.session.add(user)
-        db.session.commit()
         print_cyan('注册成功')
         return response(code=200, data=data, message="注册成功")
     else:
@@ -164,11 +164,12 @@ def register():
 def get_user_info():
     user_id = get_jwt_identity()
     user = UserModel.query.filter_by(id=user_id, status=True).first()
+
     if user:
         data = {
             'username': user.username,
             'email': user.email,
-            'roles': [user.roles.role_name],
+            'roles': [user.roles.name],
             'join_time': user.join_time.strftime('%Y-%m-%d %H:%M:%S')
         }
         return response(code=0, data=data, message='获取用户信息成功')
@@ -185,7 +186,7 @@ def switch_role():
         refresh_token = create_refresh_token(identity=admin.id)
         data = {
             'username': admin.username,
-            'roles': [admin.roles.role_name],
+            'roles': [admin.roles.name],
             'token': refresh_token
         }
         return response(code=0, data=data, message='成功切换Admin权限')
@@ -194,7 +195,7 @@ def switch_role():
         refresh_token = create_refresh_token(identity=user.id)
         data = {
             'username': user.username,
-            'roles': [user.roles.role_name],
+            'roles': [user.roles.name],
             'token': refresh_token
         }
         return response(code=0, data=data, message='成功切换User权限')

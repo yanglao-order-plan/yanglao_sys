@@ -75,47 +75,15 @@ export const constantRoutes: RouteRecordRaw[] = [
     children: [
       // 垃圾检测模块
       {
-        path: "detect",
-        component: () => import("@/views/detect/index.vue"),
-        name: "Detect",
+        path: "infer",
+        component: () => import("@/views/infer/index.vue"),
+        name: "Infer",
         meta: {
-          title: "目标检测",
-          svgIcon: "detect",
+          title: "模型推理",
+          svgIcon: "infer",
           affix: true
         }
       },
-      // 图像分割模块
-      {
-        path: "segment",
-        component: () => import("@/views/segment/index.vue"),
-        name: "Segment",
-        meta: {
-          title: "图像分割",
-          svgIcon: "segment",
-          affix: true
-        }
-      },
-      {
-        path: "depth", 
-        component: () => import("@/views/depth/index.vue"),
-        name: "Depth",
-        meta: {
-          title: "深度估计",
-          svgIcon: "depthIcon",  // 假设你有一个图标叫 "depthIcon"
-          affix: true
-        }
-      },
-      // 人脸识别模块
-      {
-        path: "face",
-        component: () => import("@/views/face/index.vue"),
-        name: "Face",
-        meta: {
-          title: "人脸识别",
-          svgIcon: "faceRecognition",  // 假设你有一个图标叫 "faceRecognition"
-          affix: true
-        }
-      }
     ]
   },
   {

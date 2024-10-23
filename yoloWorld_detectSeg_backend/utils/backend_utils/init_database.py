@@ -7,8 +7,8 @@ from weights_init import *
 
 def init_role():
     with app.app_context():
-        admin = RoleModel(role_name='admin', role_desc='管理员')
-        user = RoleModel(role_name='user', role_desc='普通用户')
+        admin = RoleModel(name='admin', desc='管理员')
+        user = RoleModel(name='user', desc='普通用户')
         db.session.add_all([admin, user])
         db.session.commit()
 
@@ -28,46 +28,46 @@ def init_user():
                          password=generate_password_hash('user'),
                          role_id=2)
         test01 = UserModel(email='test01@gmail.com',
-                         username='test01',
-                         password=generate_password_hash('test'),
-                         role_id=2,
-                         status=True)
+                           username='test01',
+                           password=generate_password_hash('test'),
+                           role_id=2,
+                           status=True)
         test02 = UserModel(email='test02@gmail.com',
-                         username='test02',
-                         password=generate_password_hash('test'),
-                         role_id=2,
-                         status=False)
+                           username='test02',
+                           password=generate_password_hash('test'),
+                           role_id=2,
+                           status=False)
         test03 = UserModel(email='test03@gmail.com',
-                         username='test03',
-                         password=generate_password_hash('test'),
-                         role_id=2,
-                         status=False)
+                           username='test03',
+                           password=generate_password_hash('test'),
+                           role_id=2,
+                           status=False)
         db.session.add_all([root, admin, user, test01, test02, test03])
         db.session.commit()
 
 
 def init_dataset():
     with app.app_context():
-        COCO_dataset = DatasetModel(dataset_name='COCO',
+        COCO_dataset = DatasetModel(name='COCO',
                                     class_num=80,
                                     total_num=123287,
                                     train_num=118287,
                                     val_num=5000,
                                     test_exist=False,
                                     test_num=20288)
-        Sample_dataset = DatasetModel(dataset_name='Sample',
+        Sample_dataset = DatasetModel(name='Sample',
                                       class_num=6,
                                       total_num=1200,
                                       train_num=972,
                                       val_num=108,
                                       test_num=120)
-        TACO_dataset = DatasetModel(dataset_name='TACO',
+        TACO_dataset = DatasetModel(name='TACO',
                                     class_num=8,
                                     total_num=1086,
                                     train_num=869,
                                     val_num=108,
                                     test_num=109)
-        Garbage_dataset = DatasetModel(dataset_name='Garbage',
+        Garbage_dataset = DatasetModel(name='Garbage',
                                        class_num=43,
                                        total_num=14964,
                                        train_num=12120,

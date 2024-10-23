@@ -41,9 +41,9 @@ export const useUserStore = defineStore("user", () => {
         })
         .catch((error) => {
           reject(error)
-        })
+        }) 
     })
-  }
+  }  
   /** 注册 */
   const register = (registerData: IRegisterRequestData) => {
     return new Promise((resolve, reject) => {

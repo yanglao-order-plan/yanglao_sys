@@ -1,4 +1,6 @@
 import sqlalchemy
+from flask_session import Session
+
 import config
 import argparse
 import os
@@ -15,9 +17,7 @@ from database_models import *
 from blueprints.auth_bp import bp as auth_bp
 from blueprints.server_bp import bp as server_bp
 from blueprints.user_manage_bp import bp as user_manage_bp
-from blueprints.detect_demo_bp import bp as detect_demo_bp
-from blueprints.detect_bp import bp as detect_bp
-
+from blueprints.infer_bp import bp as infer_bp
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -39,6 +39,15 @@ default_model = load_model(repo_dir, model_load_path)
 
 app = Flask(__name__)
 app.config.from_object(config)
+# 配置 Redis 作为会话存储
+# 使用文件系统作为会话存储
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = './flask_sessions'
+app.config['SESSION_PERMANENT'] = False  # 浏览器关闭时会话失效
+app.config['PERMANENT_SESSION_LIFETIME'] = 0  # 设置为0可以保证关闭浏览器立即失效
+
+# 初始化 Flask-Session
+Session(app)
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -53,40 +62,20 @@ migrate = Migrate(app, db)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(server_bp, url_prefix='/server')
 app.register_blueprint(user_manage_bp, url_prefix='/user-manage')
-app.register_blueprint(detect_demo_bp, url_prefix='/detect-demo')
-app.register_blueprint(detect_bp, url_prefix='/detect')
+app.register_blueprint(infer_bp, url_prefix='/infer')
 
 
-# 注册一个函数，该函数在第一次请求之前运行
-@app.before_first_request
-def load_default_model():
-    g.repo_dir = repo_dir
-    # print_cyan(f'repo_dir: {repo_dir}')
-    g.weights_path = weights_path
-    g.model_load_path = model_load_path
-    # 加载默认调用权重并保存在g.model中
-    g.model = default_model
-    # WeightsModel.query.filter_by(weights_relative_path=weights_path).first().
-    g.weights_name = weights_name
-    # 同时把当前权重相关调用信息存储进session
-    # 后续如果调用的非默认权重则重新根据session中的信息加载模型
-    session['repo_dir'] = g.repo_dir
-    session['weights_path'] = g.weights_path
-    session['model_load_path'] = g.model_load_path
-    session['weights_name'] = g.weights_name
-    session['default_weights_name'] = g.weights_name
-
-
-# 注册一个函数，该函数在每次请求之前运行
 @app.before_request
-def before_request():
-    # 如果session中存储当前调用权重信息
-    # 如果session中的weights_name与default_weights_name则重新加载模型
-    g.repo_dir = session['repo_dir']
-    g.weights_path = session['weights_path']
-    g.model_load_path = session['model_load_path']
-    g.weights_name = session['weights_name']
-    g.model = default_model
+def cleanup_expired_sessions():
+    session_folder = app.config['SESSION_FILE_DIR']
+    for filename in os.listdir(session_folder):
+        file_path = os.path.join(session_folder, filename)
+        if os.path.isfile(file_path):
+            try:
+                # 删除过期的会话文件
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Error deleting session file {file_path}: {e}")
 
 
 def test_database_connection():

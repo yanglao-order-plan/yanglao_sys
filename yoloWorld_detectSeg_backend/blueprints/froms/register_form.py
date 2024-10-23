@@ -13,7 +13,6 @@ class RegisterForm(wtforms.Form):
                                                Length(min=4, max=20, message='密码字符数限制：4-20')])
     confirm_password = wtforms.StringField(validators=[EqualTo('password', message='两次输入密码不一致')])
     role = wtforms.IntegerField(validators=[DataRequired(message='请选择角色')])
-    print(role)
     # 验证邮箱是否已经被注册
     def validate_email(self, filed):
         email = filed.data

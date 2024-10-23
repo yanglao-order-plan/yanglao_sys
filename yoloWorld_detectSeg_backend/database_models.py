@@ -29,8 +29,8 @@ class UserModel(db.Model):
 class RoleModel(db.Model):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='角色id')
-    role_name = db.Column(db.String(100), nullable=False, comment='角色名称')
-    role_desc = db.Column(db.String(100), nullable=False, comment='角色描述')
+    name = db.Column(db.String(100), nullable=False, comment='角色名称')
+    desc = db.Column(db.String(100), nullable=False, comment='角色描述')
 
 
 class CaptchaModel(db.Model):
@@ -45,7 +45,7 @@ class CaptchaModel(db.Model):
 class DatasetModel(db.Model):
     __tablename__ = 'dataset'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='数据集id')
-    dataset_name = db.Column(db.String(100), nullable=False, comment='数据集名称')
+    name = db.Column(db.String(100), nullable=False, comment='数据集名称')
     class_num = db.Column(db.Integer, nullable=False, comment='类别数量')
     total_num = db.Column(db.Integer, nullable=False, comment='总数量')
     train_num = db.Column(db.Integer, nullable=False, comment='训练集数量')
@@ -54,62 +54,151 @@ class DatasetModel(db.Model):
     test_num = db.Column(db.Integer, nullable=True, comment='测试集数量')
 
 
-class ImageModel(db.Model):
-    __tablename__ = 'image'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='图片id')
-    image_name = db.Column(db.String(100), nullable=False, comment='图片名称')
-    image_absolute_path = db.Column(db.Text, nullable=True, comment='图片绝对路径')
-    image_relative_path = db.Column(db.Text, nullable=True, comment='图片相对路径')
-    image_type = db.Column(db.String(100), nullable=False, comment='图片类型')
-    # ForeignKey
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+# TaskType Model
+class TaskTypeModel(db.Model):
+    __tablename__ = 'task_type'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务类型ID')
+    name = db.Column(db.String(100), nullable=False, comment='任务类型名称')
+    # Add more fields as needed
+    # Relationship: 反向关联到 TaskModel，通过外键 type_id 建立的关联
+    tasks = db.relationship('TaskModel', backref='task_type', lazy=True)
+
+# Task Model
+class TaskModel(db.Model):
+    __tablename__ = 'task'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务ID')
+    name = db.Column(db.String(50), nullable=False, comment='任务名称')
+    type_id = db.Column(db.Integer, db.ForeignKey('task_type.id'), nullable=True, comment='任务类型ID')
     # Relationship
-    dataset = db.relationship('DatasetModel', backref=db.backref('image'))
+    flows = db.relationship('FlowModel', backref='task', lazy=True)
 
+    def to_dict(self):
+        return {
+            'name': self.name,
+        }
 
-class LabelModel(db.Model):
-    __tablename__ = 'label'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='标注id')
-    label_name = db.Column(db.String(100), nullable=False, comment='标注名称')
-    # ForeignKey
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+# Flow Model
+class FlowModel(db.Model):
+    __tablename__ = 'flow'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='流程ID')
+    name = db.Column(db.String(100), nullable=False, comment='流程名称')
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
     # Relationship
-    dataset = db.relationship('DatasetModel', backref=db.backref('label'))
+    releases = db.relationship('ReleaseModel', backref='flow', lazy=True)
 
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'releases': [release.to_dict() for release in self.releases],
+        }
+    def to_config(self):
+        return {
+            'type': self.name,
+            'releases': [release.to_dict() for release in self.releases],
+        }
 
-class ImageLabelInfoModel(db.Model):
-    __tablename__ = 'image_label_info'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='图片标注信息id')
-    # ForeignKey
-    image_id = db.Column(db.Integer, db.ForeignKey('image.id'), comment='图片id')
-    label_id = db.Column(db.Integer, db.ForeignKey('label.id'), comment='标注id')
+# Release Model
+class ReleaseModel(db.Model):
+    __tablename__ = 'release'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本ID')
+    name = db.Column(db.String(100), nullable=False, comment='版本名称')
+    show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
+    flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')
+    keys = db.Column(db.JSON, nullable=False, comment='关键字组')
+    params = db.Column(db.JSON, nullable=False, comment='固定参数组')
     # Relationship
-    image = db.relationship('ImageModel', backref=db.backref('image_label_info'))
-    label = db.relationship('LabelModel', backref=db.backref('image_label_info'))
+    release_weights = db.relationship('ReleaseWeightModel', backref='release', lazy=True)
 
+    def check_weight(self, weight):
+        for release_weight in self.release_weights:
+            if release_weight.weight_id == weight.id:
+                return True
+        return False
 
-class WeightsModel(db.Model):
-    __tablename__ = 'weights'
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'show_name': self.show_name,
+        }
+
+    def to_weights(self):
+        weights = []
+        for release_weight in self.release_weights:
+            weight = release_weight.weight
+            cfg = weight.to_dict()
+            cfg['weightKey'] = release_weight.key
+            weights.append(cfg)
+        return weights
+
+    def to_params(self):
+        params = []
+        for key, value in self.params.items():
+            params.append({
+                'paramName': key,
+                'paramValue': value,
+            })
+        return params
+
+    def to_config(self):
+        if not hasattr(self, '_flow'):
+            self._flow = FlowModel.query.get(self.flow_id)
+        config = {
+            'type': self._flow.name,
+            'name': self.name,
+            'display_name': self.show_name,
+        }
+        config.update(self.params)
+        config.update({key: {} for key in self.keys})
+        return config
+
+# ReleaseWeight Model (Junction table for release and weight)
+class ReleaseWeightModel(db.Model):
+    __tablename__ = 'release_weight'
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False, comment='版本ID')
+    weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), primary_key=True, nullable=False, comment='权重ID')
+    key = db.Column(db.String(100), nullable=False, comment='关键字')
+    # Relationships
+    # _release = db.relationship('ReleaseModel', backref=db.backref('release_weight', lazy=True))
+    # _weight = db.relationship('WeightModel', backref=db.backref('release_weight', lazy=True))
+
+class WeightModel(db.Model):
+    __tablename__ = 'weight'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='权重id')
-    weights_name = db.Column(db.String(100), nullable=False, comment='权重名称')
-    weights_relative_path = db.Column(db.Text, nullable=False, comment='权重相对路径')
-    weights_absolute_path = db.Column(db.Text, nullable=True, comment='权重绝对路径')
-    weights_version = db.Column(db.String(100), nullable=False, comment='权重版本')
+    name = db.Column(db.String(100), nullable=False, comment='权重名称')
+    local_path = db.Column(db.Text, nullable=True, comment='本地保存路径')
+    online_url = db.Column(db.Text, nullable=True, comment='在线访问地址')
     enable = db.Column(db.Boolean, default=False, nullable=False, comment='是否启用')
     # ForeignKey
-    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'))
+    dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=True)
     # Relationship
-    dataset = db.relationship('DatasetModel', backref=db.backref('weights'))
+    dataset = db.relationship('DatasetModel', backref=db.backref('weight'))
+    release_weights = db.relationship('ReleaseWeightModel', backref='weight', lazy=True)
 
+    def to_dict(self):
+        return {
+            'weightName': self.name,
+            'weightEnable': self.enable,
+        }
 
-class InferResultModel(db.Model):
-    __tablename__ = 'infer_result'
+    def to_config(self):
+        return {
+            'local': self.local_path,
+            'online': self.online_url,
+        }
+
+class ResultModel(db.Model):
+    __tablename__ = 'result'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='推理结果id')
-    task_type = db.Column(db.Integer, db.ForeignKey('task.id'))
-    infer_result = db.Column(db.Text, nullable=False, comment='推理结果')
-    infer_result_image_name = db.Column(db.String(100), nullable=False, comment='推理结果图片名称')
-    infer_time = db.Column(db.DateTime, default=datetime.now, comment='推理时间')
+    img_path = db.Column(db.String(100), nullable=False, comment='原始图片名称')
+    data = db.Column(db.Text, nullable=False, comment='结果数据')
+    plot_path = db.Column(db.String(100), nullable=False, comment='结果图片名称')
+    start_time = db.Column(db.DateTime, default=datetime.now, comment='开始时间')
+    end_time = db.Column(db.DateTime, default=datetime.now, comment='结束时间')
+    hyper = db.Column(db.JSON, nullable=True, comment='动态超参数')
     # ForeignKey
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'))
     # Relationship
-    user = db.relationship('UserModel', backref=db.backref('infer_result'))
+    user = db.relationship('UserModel', backref=db.backref('result'))
+    release = db.relationship('ReleaseModel', backref=db.backref('result'))
