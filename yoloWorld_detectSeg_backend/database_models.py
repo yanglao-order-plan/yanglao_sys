@@ -59,18 +59,14 @@ class TaskTypeModel(db.Model):
     __tablename__ = 'task_type'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务类型ID')
     name = db.Column(db.String(100), nullable=False, comment='任务类型名称')
-    # Add more fields as needed
-    # Relationship: 反向关联到 TaskModel，通过外键 type_id 建立的关联
     tasks = db.relationship('TaskModel', backref='task_type', lazy=True)
 
 # Task Model
 class TaskModel(db.Model):
     __tablename__ = 'task'
-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务ID')
     name = db.Column(db.String(50), nullable=False, comment='任务名称')
     type_id = db.Column(db.Integer, db.ForeignKey('task_type.id'), nullable=True, comment='任务类型ID')
-    # Relationship
     flows = db.relationship('FlowModel', backref='task', lazy=True)
 
     def to_dict(self):
@@ -84,7 +80,6 @@ class FlowModel(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='流程ID')
     name = db.Column(db.String(100), nullable=False, comment='流程名称')
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
-    # Relationship
     releases = db.relationship('ReleaseModel', backref='flow', lazy=True)
 
     def to_dict(self):
@@ -105,9 +100,6 @@ class ReleaseModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='版本名称')
     show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
     flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')
-    keys = db.Column(db.JSON, nullable=False, comment='关键字组')
-    params = db.Column(db.JSON, nullable=False, comment='固定参数组')
-    # Relationship
     release_weights = db.relationship('ReleaseWeightModel', backref='release', lazy=True)
 
     def check_weight(self, weight):
@@ -155,12 +147,33 @@ class ReleaseModel(db.Model):
 # ReleaseWeight Model (Junction table for release and weight)
 class ReleaseWeightModel(db.Model):
     __tablename__ = 'release_weight'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
     release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False, comment='版本ID')
     weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), primary_key=True, nullable=False, comment='权重ID')
     key = db.Column(db.String(100), nullable=False, comment='关键字')
     # Relationships
     # _release = db.relationship('ReleaseModel', backref=db.backref('release_weight', lazy=True))
     # _weight = db.relationship('WeightModel', backref=db.backref('release_weight', lazy=True))
+
+class ReleaseParamModel(db.Model):
+    __tablename__ = 'release_param'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联参数ID')
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False, comment='版本ID')
+    type_id = db.Column(db.Integer, db.ForeignKey('param_type.id'), primary_key=True, nullable=False, comment='类型ID')
+    name = db.Column(db.String(100), nullable=False, comment='参数名称')
+
+class FlowParamModel(db.Model):
+    __tablename__ = 'flow_param'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='工作流关联参数ID')
+    flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), primary_key=True, nullable=False, comment='工作流ID')
+    type_id = db.Column(db.Integer, db.ForeignKey('param_type.id'), primary_key=True, nullable=False, comment='类型ID')
+    name = db.Column(db.String(100), nullable=False, comment='参数名称')
+
+class ParamTypeModel(db.Model):
+    __tablename__ = 'param_type'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='参数类型ID')
+    name = db.Column(db.String(100), nullable=False, comment='参数类型名称')
+    form = db.Column(db.JSON, nullable=False, comment='参数表单')
 
 class WeightModel(db.Model):
     __tablename__ = 'weight'
@@ -169,9 +182,7 @@ class WeightModel(db.Model):
     local_path = db.Column(db.Text, nullable=True, comment='本地保存路径')
     online_url = db.Column(db.Text, nullable=True, comment='在线访问地址')
     enable = db.Column(db.Boolean, default=False, nullable=False, comment='是否启用')
-    # ForeignKey
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=True)
-    # Relationship
     dataset = db.relationship('DatasetModel', backref=db.backref('weight'))
     release_weights = db.relationship('ReleaseWeightModel', backref='weight', lazy=True)
 
@@ -196,9 +207,7 @@ class ResultModel(db.Model):
     start_time = db.Column(db.DateTime, default=datetime.now, comment='开始时间')
     end_time = db.Column(db.DateTime, default=datetime.now, comment='结束时间')
     hyper = db.Column(db.JSON, nullable=True, comment='动态超参数')
-    # ForeignKey
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     release_id = db.Column(db.Integer, db.ForeignKey('release.id'))
-    # Relationship
     user = db.relationship('UserModel', backref=db.backref('result'))
     release = db.relationship('ReleaseModel', backref=db.backref('result'))

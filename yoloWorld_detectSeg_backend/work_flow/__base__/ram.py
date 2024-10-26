@@ -1,8 +1,6 @@
 import os
 import cv2
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import QCoreApplication
 
 from work_flow.app_info import __preferred_device__
 from work_flow.engines.model import Model
@@ -22,7 +20,7 @@ class RecognizeAnything(Model):
         ]
         widgets = ["button_run"]
         output_modes = {
-            "rectangle": QCoreApplication.translate("Model", "Rectangle"),
+            "rectangle": "Rectangle",
         }
         default_output_mode = "rectangle"
 
@@ -33,10 +31,7 @@ class RecognizeAnything(Model):
         model_abs_path = self.get_model_abs_path(self.config, "model_path")
         if not model_abs_path or not os.path.isfile(model_abs_path):
             raise FileNotFoundError(
-                QCoreApplication.translate(
-                    "Model",
-                    f"Could not download or initialize {model_name} model.",
-                )
+                f"Could not download or initialize {model_name} model."
             )
         self.net = OnnxBaseModel(model_abs_path, __preferred_device__)
         self.input_shape = self.net.get_input_shape()[-2:]
