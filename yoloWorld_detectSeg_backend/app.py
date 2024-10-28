@@ -18,6 +18,7 @@ from blueprints.auth_bp import bp as auth_bp
 from blueprints.server_bp import bp as server_bp
 from blueprints.user_manage_bp import bp as user_manage_bp
 from blueprints.infer_bp import bp as infer_bp
+from blueprints.infer_local_bp import bp as infer_local_bp
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -63,7 +64,7 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(server_bp, url_prefix='/server')
 app.register_blueprint(user_manage_bp, url_prefix='/user-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
-
+app.register_blueprint(infer_local_bp, url_prefix='/infer_local')
 
 @app.before_request
 def cleanup_expired_sessions():

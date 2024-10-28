@@ -74,7 +74,6 @@ class Canvas:
 
         # 绘制形状
         for shape in self.shapes:
-            print(shape.label, shape.description)
             if self.is_visible(shape):
                 shape.fill = self._fill_drawing
                 shape.paint(image)

@@ -7,7 +7,7 @@ PARAMS = {  # 运行时参数
     "toggle_preserve_existing_annotations": {'hyperType': 'check', 'hyperDefault': False},
     "button_reset_tracker": {'hyperType': 'check', 'hyperDefault': False},
 }
-
+SHOW_KEYS = {'type': 'taskTypeName', }
 CUSTOM_MODELS = [
         "segment_anything",
         "segment_anything_2",

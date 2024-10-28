@@ -1,0 +1,106 @@
+close_set:
+  classification:
+    - yolo11_cls
+    - internimage_cls
+    - yolov5_cls
+    - yolov8_cls
+
+  object_detection:
+    - yolo11
+    - yolo_nas
+    - yolov10
+    - yolov5
+    - yolov6
+    - yolov7
+    - yolov8
+    - yolov9
+    - gold_yolo
+    - damo_yolo
+    - rtdetr
+    - rtdetrv2
+    - yolox
+    - yolov8_sahi
+    - yolov5_resnet
+
+  rotate_object_detection:
+    - yolo11_obb
+    - yolov5_obb
+    - yolov8_obb
+
+  semantic_segmentation:
+    - yolo11_seg
+    - yolov5_seg
+    - yolov8_seg
+
+  pose_estimation:
+    - yolo11_pose
+    - yolov8_pose
+    - rtmdet_pose
+    - yolox_dwpose
+
+  face_detection:
+    - yolov6_face
+
+  track_object_detection:
+    - yolo11_det_track
+    - yolov5_det_track
+    - yolov8_det_track
+
+  track_segmentation:
+    - yolo11_seg_track
+    - yolov8_seg_track
+
+  track_rotate_object_detection:
+    - yolo11_obb_track
+    - yolov8_obb_track
+
+  track_pose_estimation:
+    - yolo11_pose_track
+    - yolov8_pose_track
+
+  car_plate_detection:
+    - yolov5_car_plate
+
+  car_line_detection:
+    - clrnet
+
+  attribute_recognition:
+    - pulc_attribute
+
+  background_removal:
+    - rmbg
+
+  optical_character_recognition:
+    - ppocr_v4
+
+open_set:
+  classification:
+    - ram
+
+  object_detection:
+    - yolow
+    - grounding_dino
+
+  semantic_segmentation:
+    - segment_anything
+    - segment_anything_2
+    - segment_anything_2_video
+    - sam_hq
+    - sam_med2d
+    - edge_sam
+    - efficientvit_sam
+
+  depth_estimation:
+    - depth_anything
+    - depth_anything_v2
+
+combi:
+  detection_segmentation:
+    - grounding_sam
+    - grounding_sam2
+    - yolov8_efficientvit_sam
+    - yolov5_sam
+
+  classification_detection:
+    - yolov5_ram
+    - yolow_ram

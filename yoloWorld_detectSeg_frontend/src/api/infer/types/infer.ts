@@ -39,15 +39,21 @@ export interface OHyperData {
 }
 export interface IResultData {
   resultBase64: string
-  predictResult: IPredictData[]
-  predictDescription: string,
-  period: number
+  inferResult: IInferData[]
+  inferDescription: string,
+  inferPeriod: number
 }
-export interface IPredictData {
-  resultBase64: string
-  predictResult: string
-  predictDescription: string,
-  period: number
+export interface IInferData {
+  label: string;
+  score: number;
+  points: number[];  // 假设 points 是一个数组
+  groupId: number;   // group_id 映射到 groupId
+  predictDescription: string;  // description 映射到 predictDescription
+  difficult: boolean;
+  shapeType: string;
+  flags: object;  // 假设 flags 是一个对象
+  attributes: object;  // 假设 attributes 是一个对象
+  kieLinking: any[];  // 假设 kie_linking 是一个数组
 }
 // 数据请求对象
 export interface ISwitchTaskRequestData {

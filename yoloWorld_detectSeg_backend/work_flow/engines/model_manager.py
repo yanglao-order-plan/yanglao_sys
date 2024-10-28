@@ -3,6 +3,9 @@ import os
 import copy
 
 import time
+from importlib.resources import files
+
+import pkg_resources
 import yaml
 
 from threading import Lock
@@ -15,6 +18,7 @@ from work_flow.configs import auto_labeling as auto_labeling_configs
 from .constant import CUSTOM_MODELS, marks_model_list, reset_tracker_model_list, conf_model_list, iou_model_list, \
     preserve_existing_annotations_state_model_list, PARAMS
 
+CONFIG_ROOT = 'work_flow/configs'
 
 # 处理模型预测的全过程，负责回显
 class ModelManager:
@@ -33,8 +37,9 @@ class ModelManager:
     output_modes_changed = AutoSignal(dict, str)
     def __init__(self):
         super().__init__()
-        self.model_configs = {}
-
+        self.model_index = {}
+        self.model_configs = []
+        self.task_configs = {}  # 存放任务配置及其下model_id
         self.loaded_model_config = None
         self.loaded_model_config_lock = Lock()
         self.model_download_thread = None
@@ -107,6 +112,80 @@ class ModelManager:
         else:
             self.model_loaded.emit({})
 
+    def load_model_configs_yaml(self):
+        """Load model configs"""
+        # Load list of default models
+        with open(os.path.join(CONFIG_ROOT, 'categorize.yaml'), 'r', encoding='utf-8') as f:
+            model_type = yaml.safe_load(f)
+        with open(os.path.join(CONFIG_ROOT, 'models.yaml'), 'r', encoding='utf-8') as f:
+            model_list = yaml.safe_load(f)
+
+        # Load model configs
+        model_configs = []
+        for idx, model in enumerate(model_list):
+            config_file = model["config_file"]
+            if config_file.startswith(":/"):  # Config file is in resources
+                config_file_name = config_file[2:]
+                with open(os.path.join(CONFIG_ROOT, 'auto_labeling', config_file_name), 'r', encoding='utf-8') as f:
+                    model_config = yaml.safe_load(f)
+                    model_config["config_file"] = config_file
+            else:  # Config file is in local file system
+                with open(config_file, "r", encoding="utf-8") as f:
+                    model_config = yaml.safe_load(f)
+                    model_config["config_file"] = os.path.normpath(
+                        os.path.abspath(config_file)
+                    )
+            model_config["is_custom_model"] = model.get(
+                "is_custom_model", False
+            )
+            tt, t = self.find_model_type(model_config["type"], model_type)
+            if tt not in self.task_configs:
+                self.task_configs[tt] = {}
+            if t not in self.task_configs[tt]:
+                self.task_configs[tt][t] = {}
+            flow_name = model_config['type']
+            release_name = model_config['name']
+            release_show_name = model_config['display_name']
+            if flow_name not in self.task_configs[tt][t]:
+                self.task_configs[tt][t][flow_name] = {}
+            self.task_configs[tt][t][flow_name][release_name] = (idx, release_show_name)
+            model_config["task_type"] = tt
+            model_config["task"] = t
+
+            self.model_configs.append(model_config)
+
+        # Sort by last used
+        for i, model_config in enumerate(model_configs):
+            # Keep order for integrated models
+            if not model_config.get("is_custom_model", False):
+                model_config["last_used"] = -i
+            else:
+                model_config["last_used"] = model_config.get(
+                    "last_used", time.time()
+                )
+        model_configs.sort(key=lambda x: x.get("last_used", 0), reverse=True)
+
+    def find_model_type(self, model_type, configs):
+        for task_type, value in configs.items():
+            for task, v in value.items():
+                if model_type in v:
+                    return task_type, task
+        return 'unkown', 'unkown'
+
+    def get_model_index(self):
+        model_index = []
+        for idx, item in enumerate(self.model_configs):
+            model_index.append(idx, item)
+
+    def get_task_index(self):
+        model_index = []
+        for idx, item in enumerate(self.model_configs):
+            model_index.append(idx, item)
+
+    def get_flow_index(self):
+        model_index = []
+        for idx, item in enumerate(self.model_configs):
+            model_index.append(idx, item)
 
     def load_custom_model(self, config_file):
         """Run custom model loading in a thread"""
@@ -204,11 +283,12 @@ class ModelManager:
         # Load model
         self.load_model(model_config["config_file"])
 
-    def load_model(self, model_id, config):
+    def load_model(self, model_id, config=None):
         """Run model loading in a thread"""
         print_cyan("Loading model: {model_name}. Please wait...".format(
-                model_name=self.model_configs[model_id]["display_name"]))
-        self.model_configs[model_id].update(config)
+                model_name=self.model_configs[model_id]['display_name']))
+        if config is not None:
+            self.model_configs[model_id].update(config)
         self._load_model(model_id)
         # self.model_download_thread = threading.Thread(target=self._load_model, args=(model_id,))
         # self.model_download_thread.start()  # 按理来说，执行完毕，thread状态自动变为dead
@@ -221,7 +301,7 @@ class ModelManager:
             self.loaded_model_config["model"].unload()
             self.loaded_model_config = None
             self.auto_segmentation_model_unselected.emit(None)
-
+        print(1)
         model_config = copy.deepcopy(self.model_configs[model_id])
         if model_config["type"] == "yolov10":
             from work_flow.flows.yolov10 import YOLOv10
@@ -749,7 +829,7 @@ class ModelManager:
                 return
         else:
             raise Exception(f"Unknown model type: {model_config['type']}")
-
+        print(2)
         self.loaded_model_config = model_config
         self.on_model_download_finished()
 

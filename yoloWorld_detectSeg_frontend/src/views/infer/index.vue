@@ -116,9 +116,9 @@ const inferImageData: any = reactive({
       return ""
     }
   }),
-  predictResult: [],
-  predictDescription: "",
-  period: ""
+  inferResult: [],
+  inferDescription: "",
+  inferPeriod: ""
 })
 
 // 处理上传文件
@@ -543,9 +543,9 @@ const handleLoadModel = () => {
 const handleModelPredict = () => {
   predictModelApi({'originalBase64': inferImageData.originalBase64}).then((res) => {
     inferImageData.resultBase64 = res.data.resultBase64
-    inferImageData.predictResult = res.data.predictResult
-    inferImageData.period = res.data.period
-    inferImageData.predictDescription = res.data.predictDescription
+    inferImageData.inferResult = res.data.inferResult
+    inferImageData.inferPeriod = res.data.inferPeriod
+    inferImageData.inferDescription = res.data.inferDescription
   })
   .catch(() => {
     ElMessage({
@@ -719,7 +719,7 @@ getAllTasks()
         <el-col :span="4">
           <div class="grid-content ep-bg-purple">
             <el-table
-              :data="inferImageData.predictDescription"
+              :data="inferImageData.predictDescriptiont"
               v-if="inferImageData.predictDescriptiont && inferImageData.predictDescription.length > 0"
             >
               <el-table-column prop="className" label="检测类别" />
@@ -741,6 +741,16 @@ getAllTasks()
           />
           <div v-else class="image-placeholder">暂无描述</div>
         </div>
+          <!-- 推理时长组件 -->
+        <el-col :span="24" class="infer-duration-container">
+          <el-card v-if="inferImageData.period" class="infer-duration-card">
+            <div slot="header">
+              <span>推理时长</span>
+            </div>
+            <p>{{ inferImageData.inferDuration }} 秒</p>
+          </el-card>
+          <div v-else class="image-placeholder">推理时长信息不可用</div>
+        </el-col>
       </el-row>
     </el-card>
   </div>

@@ -84,6 +84,16 @@ export const constantRoutes: RouteRecordRaw[] = [
           affix: true
         }
       },
+      {
+        path: "infer_local",
+        component: () => import("@/views/infer_local/index.vue"),
+        name: "InferLocal",
+        meta: {
+          title: "模型推理（本地）",
+          svgIcon: "infer",
+          affix: true
+        }
+      },
     ]
   },
   {

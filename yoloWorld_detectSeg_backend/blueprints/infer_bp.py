@@ -40,10 +40,9 @@ code: 207 前端通知弹窗Info
 model_manager = ModelManager()
 predict_drawer = Canvas()
 LABEL_COLORMAP = imgviz.label_colormap()
-bp = Blueprint(name='infer', import_name=__name__)
+bp = Blueprint(name='online/infer', import_name=__name__)
 
 DATETIME_FORMAT = "%Y-%m-%d_%H-%M-%S-%f"
-
 
 # 要刷新不选择，要选择不刷新
 # 暂时使用weights代替flows
