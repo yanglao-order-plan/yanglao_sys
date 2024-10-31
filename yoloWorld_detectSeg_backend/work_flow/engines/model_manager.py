@@ -10,6 +10,7 @@ import yaml
 
 from threading import Lock
 
+from database_models import ArgTypeModel
 from utils.backend_utils.colorprinter import print_cyan
 from work_flow.engines.types import AutoLabelingResult
 from work_flow.utils.singal import AutoSignal
@@ -59,12 +60,31 @@ class ModelManager:
         """Return model infos"""
         return self.model_configs
 
-    def get_model_hypers(self):
+    def get_model_hypers_local(self):
         params = []
         widgets = self.loaded_model_config["model"].get_required_widgets()
         output_modes = self.loaded_model_config["model"].Meta.output_modes
         default_output_mode = self.loaded_model_config["model"].Meta.default_output_mode
         for param in PARAMS:
+            if param in widgets:
+                params.append({'hyperName': param, **PARAMS[param]})
+        params.append({
+            'hyperName': 'output_modes',
+            'hyperType': 'select',
+            'hyperDefault': default_output_mode,
+            'hyperConfig': {'options': output_modes, 'multiple': False},
+        })
+        return params
+
+    def get_model_hypers(self, release):
+        params = []
+        for release_hyper in release.release_hypers:
+            typeName = ArgTypeModel.query.filter_by(id=release_hyper.type_id).first()
+            config = release_hyper.config
+        widgets = self.loaded_model_config["model"].get_required_widgets()
+        output_modes = self.loaded_model_config["model"].Meta.output_modes
+        default_output_mode = self.loaded_model_config["model"].Meta.default_output_mode
+        for param in PARAMS:  # 配置式类型
             if param in widgets:
                 params.append({'hyperName': param, **PARAMS[param]})
         params.append({

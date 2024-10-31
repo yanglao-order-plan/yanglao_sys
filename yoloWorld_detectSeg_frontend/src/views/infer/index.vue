@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue"
-import { type ITaskData, IFlowData, IWeightData, IParamData, IHyperData } from "@/api/infer/types/infer"
+import { type ITaskData, IFlowData, IWeightData, IArgData, OArgData } from "@/api/infer/types/infer"
 import { Refresh } from "@element-plus/icons-vue"
 import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightApi, getCurrentParamApi, getCurrentHyperApi,
   switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi} from "@/api/infer"
@@ -20,8 +20,8 @@ const predicted = ref<boolean>(false)
 const tasksData = ref<ITaskData[]>([])
 const flowsData = ref<IFlowData[]>([])
 const weightsData = ref<IWeightData[]>([])
-const paramsData = ref<IParamData[]>([])
-const hypersData = ref<IHyperData[]>([])
+const paramsData = ref<IArgData[]>([])
+const hypersData = ref<IArgData[]>([])
 // 结构容器
 const selectedTaskOptions = ref([])
 const selectedFlowOptions = ref([])
@@ -58,11 +58,6 @@ const handledParamData = reactive<{ [key: string]: any }>({});
 const currentHyperData = reactive<{ [key: string]: any }>({});
 const handledHyperData = reactive<{ [key: string]: any }>({});
 // 清空方法
-const clearSelectedTask = () => {
-  selectedTaskData.taskType = "";
-  selectedTaskData.task = "";
-  tasksData.value.length = 0
-};
 const clearSelectedFlow = () => {
   selectedFlowData.flow = "";
   selectedFlowData.release = "";
@@ -172,7 +167,7 @@ const getCurrentFlow = () => {
   })
   .finally(() => {
     paramsData.value.forEach(element => {  // 提前装载初始值
-      handledParamData[element['paramName']] = element['paramValue']
+      handledParamData[element['argName']] = element['argDefault']
     });
   })
 }
@@ -191,7 +186,7 @@ const getCurrentParam = () => {
   getCurrentParamApi().then((res) => {
     const apiDataArray = res.data;
     apiDataArray.forEach((item) => {
-      currentParamData[item.paramName] = item.paramValue;
+      currentParamData[item.argName] = item.argValue;
     });
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
@@ -201,7 +196,7 @@ const getCurrentHyper = () => {
   getCurrentHyperApi().then((res) => {
     const apiDataArray = res.data;
     apiDataArray.forEach((item) => {
-      currentHyperData[item.hyperName] = item.hyperValue;
+      currentHyperData[item.argName] = item.argValue;
     });
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
@@ -268,22 +263,12 @@ const generateWeightOptions = (list: IWeightData[]) => {
   });
   return optionsMap; // 返回每个 key 对应的 options 数组
 };
-const generateParamModules = (list: IParamData[]) => {
+const generateArgModules = (list: IArgData[]) => {
   const modulesMap: { [key: string]: { value: string; label: string; disabled: boolean }[] } = {};
   list.forEach((item) => {
     // 如果该 weightKey 还没有在 optionsMap 中，创建一个新的数组
-    if (!modulesMap[item.paramName]) {
-      modulesMap[item.paramName] = item.paramValue;
-    }
-  });
-  return modulesMap; // 返回每个 key 对应的 options 数组
-};
-const generateHyperModules = (list: IHyperData[]) => {
-  const modulesMap: { [key: string]: { value: string; label: string; disabled: boolean }[] } = {};
-  list.forEach((item) => {
-    // 如果该 weightKey 还没有在 optionsMap 中，创建一个新的数组
-    if (!modulesMap[item.hyperName]) {
-      modulesMap[item.hyperName] = item.hyperDefault;
+    if (!modulesMap[item.argName]) {
+      modulesMap[item.argName] = item.argDefault;
     }
   });
   return modulesMap; // 返回每个 key 对应的 options 数组
@@ -406,7 +391,7 @@ const handleFlowSwitch = () => {
     weightOptions.value = generateWeightOptions(res.data["weight"])
     if (res.data["param"] && res.data["param"].length > 0) {
         paramsData.value = res.data["param"]
-        paramModules.value = generateParamModules(res.data["param"])
+        paramModules.value = generateArgModules(res.data["param"])
       } else {
         console.warn("No params found in the response.");
       }
@@ -523,7 +508,7 @@ const handleLoadModel = () => {
         // 如果 res.data 存在且长度大于 0
         console.log(1)
         hypersData.value = res.data;
-        hyperModules.value = generateHyperModules(res.data);
+        hyperModules.value = generateArgModules(res.data);
       } else {
         // 如果 res.data 为空或长度为 0，执行相应的处理
         console.warn("No hypers found in the response.");

@@ -1,3 +1,5 @@
+from platform import release
+
 from extensions import db
 from datetime import datetime
 
@@ -61,6 +63,7 @@ class TaskTypeModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='任务类型名称')
     tasks = db.relationship('TaskModel', backref='task_type', lazy=True)
 
+
 # Task Model
 class TaskModel(db.Model):
     __tablename__ = 'task'
@@ -74,6 +77,7 @@ class TaskModel(db.Model):
             'name': self.name,
         }
 
+
 # Flow Model
 class FlowModel(db.Model):
     __tablename__ = 'flow'
@@ -81,17 +85,8 @@ class FlowModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='流程名称')
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
     releases = db.relationship('ReleaseModel', backref='flow', lazy=True)
+    flow_params = db.relationship('ReleaseParamModel', backref='release', lazy=True)
 
-    def to_dict(self):
-        return {
-            'name': self.name,
-            'releases': [release.to_dict() for release in self.releases],
-        }
-    def to_config(self):
-        return {
-            'type': self.name,
-            'releases': [release.to_dict() for release in self.releases],
-        }
 
 # Release Model
 class ReleaseModel(db.Model):
@@ -101,6 +96,16 @@ class ReleaseModel(db.Model):
     show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
     flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')
     release_weights = db.relationship('ReleaseWeightModel', backref='release', lazy=True)
+    release_args = db.relationship('ReleaseArgModel', backref='release', lazy=True)
+
+    def __init__(self):
+        self._weights = None
+        self._flow = None
+        self._to_weights = None
+        self._to_params = None
+        self._to_hypers = None
+        self._hypers = None
+        self._params = None
 
     def check_weight(self, weight):
         for release_weight in self.release_weights:
@@ -108,30 +113,7 @@ class ReleaseModel(db.Model):
                 return True
         return False
 
-    def to_dict(self):
-        return {
-            'name': self.name,
-            'show_name': self.show_name,
-        }
-
-    def to_weights(self):
-        weights = []
-        for release_weight in self.release_weights:
-            weight = release_weight.weight
-            cfg = weight.to_dict()
-            cfg['weightKey'] = release_weight.key
-            weights.append(cfg)
-        return weights
-
-    def to_params(self):
-        params = []
-        for key, value in self.params.items():
-            params.append({
-                'paramName': key,
-                'paramValue': value,
-            })
-        return params
-
+    @property
     def to_config(self):
         if not hasattr(self, '_flow'):
             self._flow = FlowModel.query.get(self.flow_id)
@@ -141,39 +123,72 @@ class ReleaseModel(db.Model):
             'display_name': self.show_name,
         }
         config.update(self.params)
-        config.update({key: {} for key in self.keys})
         return config
 
-# ReleaseWeight Model (Junction table for release and weight)
-class ReleaseWeightModel(db.Model):
-    __tablename__ = 'release_weight'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
-    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False, comment='版本ID')
-    weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), primary_key=True, nullable=False, comment='权重ID')
-    key = db.Column(db.String(100), nullable=False, comment='关键字')
-    # Relationships
-    # _release = db.relationship('ReleaseModel', backref=db.backref('release_weight', lazy=True))
-    # _weight = db.relationship('WeightModel', backref=db.backref('release_weight', lazy=True))
+    @property
+    def to_weights(self):
+        if not hasattr(self, '_to_weights'):
+            self._to_weights = []
+            for release_weight in self.release_weights:
+                self._to_weights.append(release_weight.weight)
+        return self._to_weights
 
-class ReleaseParamModel(db.Model):
-    __tablename__ = 'release_param'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联参数ID')
-    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False, comment='版本ID')
-    type_id = db.Column(db.Integer, db.ForeignKey('param_type.id'), primary_key=True, nullable=False, comment='类型ID')
-    name = db.Column(db.String(100), nullable=False, comment='参数名称')
+    @property
+    def to_hypers(self):
+        if not hasattr(self, '_to_hypers'):
+            self._to_hypers = []
+            for release_arg in self.release_args:
+                if release_arg.dynamic:
+                    self._to_hypers.append(release_arg.arg)
+        return self._to_hypers
 
-class FlowParamModel(db.Model):
-    __tablename__ = 'flow_param'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='工作流关联参数ID')
-    flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), primary_key=True, nullable=False, comment='工作流ID')
-    type_id = db.Column(db.Integer, db.ForeignKey('param_type.id'), primary_key=True, nullable=False, comment='类型ID')
-    name = db.Column(db.String(100), nullable=False, comment='参数名称')
+    @property
+    def to_params(self):
+        if not hasattr(self, '_to_params'):
+            self._to_params = []
+            for release_arg in self.release_args:
+                if not release_arg.dynamic:
+                    self._to_params.append(release_arg.arg)
+        return self._to_params
 
-class ParamTypeModel(db.Model):
-    __tablename__ = 'param_type'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='参数类型ID')
-    name = db.Column(db.String(100), nullable=False, comment='参数类型名称')
-    form = db.Column(db.JSON, nullable=False, comment='参数表单')
+    @property
+    def params(self):
+        if not hasattr(self, '_params'):
+            self._params = {}
+            for release_param in self.release_params:
+                if release_param.dynamic:
+                    self._params[release_param.name] = release_param.arg['default'] \
+                        if 'default' in release_param.arg else None
+
+        return self._params
+
+    @property
+    def weights(self):
+        if not hasattr(self, '_weights'):
+            self._weights = {}
+            for release_weight in self.release_weights:
+                if release_weight.name not in self._weights:
+                    self._weights[release_weight.name] = []
+                self.weights[release_weight.name].append(release_weight.weight_key)
+        return self._weights
+
+    @property
+    def hypers(self):
+        if not hasattr(self, '_hypers'):
+            self._hypers = {}
+            for release_param in self.release_params:
+                if release_param.dynamic:
+                    self._hypers[release_param.name] = release_param.arg['default'] \
+                        if 'default' in release_param.arg else None
+        return self._hypers
+
+
+# class ArgTypeModel(db.Model):
+#     __tablename__ = 'arg_type'
+#     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='参数类型ID')
+#     name = db.Column(db.String(100), nullable=False, comment='参数类型名称')
+#     form = db.Column(db.JSON, nullable=False, comment='配置表单')
+
 
 class WeightModel(db.Model):
     __tablename__ = 'weight'
@@ -184,7 +199,6 @@ class WeightModel(db.Model):
     enable = db.Column(db.Boolean, default=False, nullable=False, comment='是否启用')
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=True)
     dataset = db.relationship('DatasetModel', backref=db.backref('weight'))
-    release_weights = db.relationship('ReleaseWeightModel', backref='weight', lazy=True)
 
     def to_dict(self):
         return {
@@ -197,6 +211,64 @@ class WeightModel(db.Model):
             'local': self.local_path,
             'online': self.online_url,
         }
+
+
+# ReleaseWeight Model (Junction table for release and weight)
+class ReleaseWeightModel(db.Model):
+    __tablename__ = 'release_weight'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
+                           comment='版本ID')
+    weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), primary_key=True, nullable=False,
+                          comment='权重ID')
+    name = db.Column(db.String(100), nullable=False, comment='关键字')
+
+    # Relationships
+    def __init__(self):
+        self._weight = None
+
+    @property
+    def weight(self):
+        if hasattr(self, 'element'):
+            self._weight = WeightModel.query.get(self.weight_id).to_config()
+            self._weight['weightKey'] = self.name
+        return self._weight
+
+    @weight.setter
+    def weight(self, value):
+        self._weight = value
+
+
+class ReleaseArgModel(db.Model):
+    __tablename__ = 'release_arg'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联参数ID')
+    name = db.Column(db.String(100), nullable=False, comment='参数名称')
+    type = db.Column(db.String(100), nullable=True, comment='参数类型')
+    default = db.Column(db.JSON, nullable=True, comment='默认值')
+    config = db.Column(db.JSON, nullable=True, comment='参数配置')
+    dynamic = db.Column(db.Boolean, default=False, nullable=False, comment='是否为动态参数')
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
+                           comment='版本ID')
+
+    def __init__(self):
+        self._arg = None
+
+    @property
+    def arg(self):
+        if not hasattr(self, '_arg'):
+            prefix = 'param' if self.dynamic else 'hyper'
+            self._arg = {
+                f'{prefix}Name': self.name,
+                f'{prefix}Type': self.type,
+                f'{prefix}Value': self.default,
+                f'{prefix}Config': self.config
+            }
+        return self._arg
+
+    @arg.setter
+    def arg(self, value):
+        self._arg = value
+
 
 class ResultModel(db.Model):
     __tablename__ = 'result'

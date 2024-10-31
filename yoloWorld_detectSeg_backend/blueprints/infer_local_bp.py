@@ -125,7 +125,7 @@ def load_model():
     release = session['release']
     model_id = model_manager.task_configs[task_type][task][flow][release][0]
     model_manager.load_model(model_id)
-    data = model_manager.get_model_hypers()
+    data = model_manager.get_model_hypers_local()
     session['hyper'] = {item['hyperName']: item['hyperDefault'] if 'hyperDefault' in item else None
                         for item in data}  # 存初始值
     print_cyan(f'模型装载成功')
@@ -136,7 +136,7 @@ def load_model():
 def get_current_hyper():
     hyper = session['hyper']
     data = []
-    full_hyper = model_manager.get_model_hypers()
+    full_hyper = model_manager.get_model_hypers_local()
     for key, value in hyper.items():
         cfg = {'name': key}
         cfg.update(full_hyper[key])

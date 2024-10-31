@@ -1,3 +1,4 @@
+import copy
 import math
 import os
 from pprint import pprint
@@ -63,9 +64,7 @@ def get_current_task():
 @bp.route('/task/all')
 @jwt_required(refresh=True)
 def get_all_tasks():
-    # 查询所有任务类型及其关联的任务
     task_types = TaskTypeModel.query.all()
-    # 构建返回给前端的字典结构
     data = []
     for task_type in task_types:
         for task in task_type.tasks:  # 装载全部配置
@@ -113,7 +112,6 @@ def switch_task():
 @bp.route('/flow/current')
 @jwt_required(refresh=True)
 def get_current_flow():
-    # 查询所有任务类型及其关联的任务
     flow = FlowModel.query.filter_by(id=session['flow']).first()
     release = ReleaseModel.query.filter_by(id=session['release']).first()
     data = {
@@ -150,7 +148,7 @@ def switch_flow():
     model_manager.load_model_config(release)
     data = {
         'weight': release.to_weights(),
-        'param': release.to_params()
+        'param': flow.to_params()
     }
     session['param'] = release.params
     return response(code=0, message='切换模型成功', data=data)
@@ -177,7 +175,8 @@ def switch_weight():
     if weightKey is None or weightName is None:
         return response(code=1, message='切换权重失败，未选择权重')
     release = ReleaseModel.query.filter_by(id=session['release']).first()
-    if weightKey not in release.keys:
+
+    if weightKey not in release.weights:
         return response(code=1, message='切换权重失败，权重不属于工作流主键')
     weight = WeightModel.query.filter_by(name=weightName).first()
     if weight is None:
@@ -196,7 +195,7 @@ def switch_weight():
 @bp.route('/param/current')
 @jwt_required(refresh=True)
 def get_current_param():
-    return response(code=0, message='获取当前调用选中模型成功', data=session['param'])
+    return response(code=0, message='获取当前静态参数获取成功', data=session['param'])
 
 
 # 暂时将固定参数
@@ -230,8 +229,8 @@ def load_model():
         return response(code=1, message='模型装载失败，未选择权重')
     weight_keys = session['weight']
     release = ReleaseModel.query.filter_by(id=release_id).first()
-    config = release.to_config()
-    for key in release.keys:
+    config = release.to_config()  # 用于装载模型
+    for key in release.weights:
         if key not in weight_keys:
             return response(code=1, message=f'模型装载失败，权重选择不完整，缺少{key}')
         weight = WeightModel.query.filter_by(id=weight_keys[key]).first()
@@ -242,9 +241,8 @@ def load_model():
         param = session['param']
         config.update(param)
     model_manager.load_model(release_id, config)
-    data = model_manager.get_model_hypers()
-    session['hyper'] = {item['hyperName']: item['hyperDefault'] if 'hyperDefault' in item else None
-                        for item in data}  # 存初始值
+    data = release.to_hypers
+    session['hyper'] = data  # 存初始值
     print_cyan(f'模型装载成功')
     return response(code=200, message=f'{release.name}模型装载成功', data=data)
 
@@ -253,16 +251,14 @@ def load_model():
 @jwt_required(refresh=True)
 def get_current_hyper():
     hyper = session['hyper']
-    data = []
-    full_hyper = model_manager.get_model_hypers()
-    for key, value in hyper.items():
-        cfg = {'name': key}
-        cfg.update(full_hyper[key])
-        if 'default' in cfg:
-            cfg['default'] = value
+    release = ReleaseModel.query.filter_by(id=session['release']).first()
+    new_hyper = {}
+    for key, value in release.to_hypers.items():
+        if 'Value' in key:
+            new_hyper[key] = hyper[key]
         else:
-            cfg['default'] = None
-        data.append(cfg)
+            new_hyper[key] = value.copy()
+    data = {'hyper': hyper}
     return response(code=200, message=f'获取当前超参数成功', data=data)
 
 
@@ -325,4 +321,5 @@ def base64_encode_image(image):
     buffered = BytesIO()
     im_base64 = Image.fromarray(image)
     im_base64.save(buffered, format="JPEG")
-    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return f"data:image/jpeg;base64,{img_str}"
