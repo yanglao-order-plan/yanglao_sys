@@ -10,9 +10,9 @@ import yaml
 
 from threading import Lock
 
-from database_models import ArgTypeModel
 from utils.backend_utils.colorprinter import print_cyan
 from work_flow.engines.types import AutoLabelingResult
+from work_flow.utils import xyxyxyxy_to_xyxy
 from work_flow.utils.singal import AutoSignal
 from work_flow.configs.config import get_config, save_config
 from work_flow.configs import auto_labeling as auto_labeling_configs
@@ -39,7 +39,7 @@ class ModelManager:
     def __init__(self):
         super().__init__()
         self.model_index = {}
-        self.model_configs = []
+        self.model_configs = {}
         self.task_configs = {}  # 存放任务配置及其下model_id
         self.loaded_model_config = None
         self.loaded_model_config_lock = Lock()
@@ -54,7 +54,7 @@ class ModelManager:
             self.load_model_config(release)
 
     def load_model_config(self, release):
-        self.model_configs[release.id] = release.to_config()
+        self.model_configs[release.id] = release.to_config
 
     def get_model_configs(self):
         """Return model infos"""
@@ -76,41 +76,43 @@ class ModelManager:
         })
         return params
 
-    def get_model_hypers(self, release):
-        params = []
-        for release_hyper in release.release_hypers:
-            typeName = ArgTypeModel.query.filter_by(id=release_hyper.type_id).first()
-            config = release_hyper.config
-        widgets = self.loaded_model_config["model"].get_required_widgets()
-        output_modes = self.loaded_model_config["model"].Meta.output_modes
-        default_output_mode = self.loaded_model_config["model"].Meta.default_output_mode
-        for param in PARAMS:  # 配置式类型
-            if param in widgets:
-                params.append({'hyperName': param, **PARAMS[param]})
-        params.append({
-            'hyperName': 'output_modes',
-            'hyperType': 'select',
-            'hyperDefault': default_output_mode,
-            'hyperConfig': {'options': output_modes, 'multiple': False},
-        })
-        return params
+    # def get_model_hypers(self, release):
+    #     params = []
+    #     for release_hyper in release.release_hypers:
+    #         typeName = ArgTypeModel.query.filter_by(id=release_hyper.type_id).first()
+    #         config = release_hyper.config
+    #     widgets = self.loaded_model_config["model"].get_required_widgets()
+    #     output_modes = self.loaded_model_config["model"].Meta.output_modes
+    #     default_output_mode = self.loaded_model_config["model"].Meta.default_output_mode
+    #     for param in PARAMS:  # 配置式类型
+    #         if param in widgets:
+    #             params.append({'hyperName': param, **PARAMS[param]})
+    #     params.append({
+    #         'hyperName': 'output_modes',
+    #         'hyperType': 'select',
+    #         'hyperDefault': default_output_mode,
+    #         'hyperConfig': {'options': output_modes, 'multiple': False},
+    #     })
+    #     return params
 
     def set_model_hyper(self, hyper):
         for key, value in hyper.items():
-            if  key in ["button_add_point", "button_add_rect"]:
+            if key == 'shapes_prompt':
                 self.set_auto_labeling_marks(value)
-            elif key == "edit_conf":
+            elif key == "conf_threshold":
                 self.set_auto_labeling_conf(value)
-            elif key == 'edit_iou':
+            elif key == 'iou_threshold':
+                self.set_auto_labeling_iou(value)
+            elif key == 'box_threshold':
                 self.set_auto_labeling_iou(value)
             elif key == 'toggle_preserve_existing_annotations':
                 self.set_auto_labeling_preserve_existing_annotations_state(value)
-            elif key == 'button_reset_tracker':
+            elif key == 'reset_tracker':
                 if value:
                     self.set_auto_labeling_reset_tracker()
-            elif key == 'edit_text':
+            elif key == 'text_prompt':
                 self.text_prompt = value
-            elif key == 'output_modes':
+            elif key == 'output_mode':
                 self.set_output_mode(value)
             else:
                 raise ValueError(f"Unknown param: {key}")
@@ -172,7 +174,7 @@ class ModelManager:
             model_config["task_type"] = tt
             model_config["task"] = t
 
-            self.model_configs.append(model_config)
+            self.model_configs[idx] = model_config
 
         # Sort by last used
         for i, model_config in enumerate(model_configs):
@@ -191,21 +193,6 @@ class ModelManager:
                 if model_type in v:
                     return task_type, task
         return 'unkown', 'unkown'
-
-    def get_model_index(self):
-        model_index = []
-        for idx, item in enumerate(self.model_configs):
-            model_index.append(idx, item)
-
-    def get_task_index(self):
-        model_index = []
-        for idx, item in enumerate(self.model_configs):
-            model_index.append(idx, item)
-
-    def get_flow_index(self):
-        model_index = []
-        for idx, item in enumerate(self.model_configs):
-            model_index.append(idx, item)
 
     def load_custom_model(self, config_file):
         """Run custom model loading in a thread"""
@@ -321,8 +308,8 @@ class ModelManager:
             self.loaded_model_config["model"].unload()
             self.loaded_model_config = None
             self.auto_segmentation_model_unselected.emit(None)
-        print(1)
         model_config = copy.deepcopy(self.model_configs[model_id])
+        print(model_config)
         if model_config["type"] == "yolov10":
             from work_flow.flows.yolov10 import YOLOv10
 
@@ -849,7 +836,7 @@ class ModelManager:
                 return
         else:
             raise Exception(f"Unknown model type: {model_config['type']}")
-        print(2)
+
         self.loaded_model_config = model_config
         self.on_model_download_finished()
 
@@ -864,7 +851,7 @@ class ModelManager:
         ):
             self.loaded_model_config["model"].set_cache_auto_label(text, gid)
 
-    def set_auto_labeling_marks(self, marks):
+    def set_auto_labeling_marks(self, value):
         """Set auto labeling marks
         (For example, for segment_anything model, it is the marks for)
         """
@@ -873,6 +860,15 @@ class ModelManager:
             or self.loaded_model_config["type"] not in marks_model_list
         ):
             return
+        marks = []
+        for v in value:
+            mark = {'type': v['type']}
+            if v['type'] == 'point':
+                mark['data'] = [v['x'], v['y']]
+            elif v['type'] == 'rectangle':
+                points = [(p['x'], p['y']) for p in v['points']]
+                mark['data'] = xyxyxyxy_to_xyxy(points)
+            marks.append(mark)
         self.loaded_model_config["model"].set_auto_labeling_marks(marks)
 
     def set_auto_labeling_reset_tracker(self):
@@ -891,6 +887,7 @@ class ModelManager:
         if (
             self.loaded_model_config is None
             or self.loaded_model_config["type"] not in conf_model_list
+            or value is None
         ):
             return
         self.loaded_model_config["model"].set_auto_labeling_conf(value)
@@ -900,6 +897,7 @@ class ModelManager:
         if (
             self.loaded_model_config is None
             or self.loaded_model_config["type"] not in iou_model_list
+            or value is None
         ):
             return
         self.loaded_model_config["model"].set_auto_labeling_iou(value)
@@ -974,26 +972,23 @@ class ModelManager:
             self.new_model_status.emit("Model is not loaded. Choose a mode to continue.")
             return
         self.new_model_status.emit("Inferencing AI model. Please wait...")
-        self.prediction_started.emit(None)
-        self.new_auto_labeling_result.connect(self.set_auto_labeling_result)
-        with self.model_execution_thread_lock:
-            if (
-                self.model_execution_thread is not None
-                and self.model_execution_thread.isRunning()
-            ):
-                self.new_model_status.emit(
-                    "Another model is being executed."
-                    " Please wait for it to finish."
-                )
-                self.prediction_finished.emit(None)
-                return
+        if (
+            self.model_execution_thread is not None
+            and self.model_execution_thread.isRunning()
+        ):
+            self.new_model_status.emit(
+                "Another model is being executed."
+                " Please wait for it to finish."
+            )
+            self.prediction_finished.emit(None)
+            return
 
-            if self.text_prompt is not None:
-                return self.predict_shapes(image, filename, text_prompt=self.text_prompt)
-            elif run_tracker is True:
-                return self.predict_shapes(image, filename, run_tracker=run_tracker)
-            else:
-                return self.predict_shapes(image, filename)
+        if self.text_prompt is not None:
+            return self.predict_shapes(image, filename, text_prompt=self.text_prompt)
+        elif run_tracker is True:
+            return self.predict_shapes(image, filename, run_tracker=run_tracker)
+        else:
+            return self.predict_shapes(image, filename)
 
 
     def on_next_files_changed(self, next_files):

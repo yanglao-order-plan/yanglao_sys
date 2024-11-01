@@ -16,6 +16,9 @@ import "element-plus/theme-chalk/dark/css-vars.css"
 import "vxe-table/lib/style.css"
 import "vxe-table-plugin-element/dist/style.css"
 import "@/styles/index.scss"
+import "jsoneditor";
+
+// import "element-plus/lib/locale/lang/zh-cn";
 
 const app = createApp(App)
 

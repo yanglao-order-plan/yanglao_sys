@@ -14,22 +14,25 @@ export function getCurrentFlowApi() {
     method: "get"
   })
 }
-export function getCurrentWeightApi() {
+export function getCurrentWeightApi(data: Infer.ICurrentWeightRequestData) {
   return request<Infer.GetCurrentWeightResponseData>({
     url: "infer/weight/current",
-    method: "get"
+    method: "post",
+    data
   })
 }
-export function getCurrentParamApi() {
+export function getCurrentParamApi(data: Infer.ICurrentParamRequestData) {
   return request<Infer.GetCurrentParamResponseData>({
     url: "infer/param/current",
-    method: "get"
+    method: "post",
+    data
   })
 }
-export function getCurrentHyperApi() {
+export function getCurrentHyperApi(data: Infer.ICurrentHyperRequestData) {
   return request<Infer.GetCurrentHyperResponseData>({
     url: "infer/hyper/current",
-    method: "get"
+    method: "post",
+    data
   })
 }
 /** 获取所有可调用 */

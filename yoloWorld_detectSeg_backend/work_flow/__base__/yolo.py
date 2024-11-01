@@ -197,12 +197,12 @@ class YOLO(Model):
 
     def set_auto_labeling_conf(self, value):
         """set auto labeling confidence threshold"""
-        if value > 0:
+        if value is not None and value > 0:
             self.conf_thres = value
 
     def set_auto_labeling_iou(self, value):
         """set auto labeling iou threshold"""
-        if value > 0:
+        if value is not None and value > 0:
             self.iou_thres = value
 
     def set_auto_labeling_preserve_existing_annotations_state(self, state):
@@ -447,7 +447,7 @@ class YOLO(Model):
             if self.task == "obb":
                 shape = self.create_obb_shape(box, score, class_id, track_id)
                 shapes.append(shape)
-
+        print(10000)
         result = AutoLabelingResult(shapes, replace=self.replace)
 
         return result

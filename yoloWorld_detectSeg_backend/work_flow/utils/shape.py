@@ -146,8 +146,8 @@ class Shape:
     ]
 
     # The following class variables influence the drawing of all shape objects.
-    line_color = DEFAULT_LINE_COLOR
-    fill_color = DEFAULT_FILL_COLOR
+    _line_color = DEFAULT_LINE_COLOR
+    _fill_color = DEFAULT_FILL_COLOR
     point_size = 4
     scale = 1.0
     line_width = 2
@@ -190,7 +190,7 @@ class Shape:
 
         if line_color is not None:
             # Override the class line_color attribute
-            self.line_color = line_color
+            self._line_color = line_color
 
     @property
     def shape_type(self):
@@ -205,6 +205,25 @@ class Shape:
         if value not in self.get_supported_shape():
             raise ValueError(f"Unexpected shape_type: {value}")
         self._shape_type = value
+
+    @property
+    def line_color(self):
+        return self._line_color
+
+    @line_color.setter
+    def line_color(self, value):
+        # 使用 wrap_color 方法来处理颜色
+        self._line_color = self.wrap_color(value)
+
+    @property
+    def fill_color(self):
+        return self._fill_color
+
+    @fill_color.setter
+    def fill_color(self, value):
+        # 使用 wrap_color 方法来处理颜色
+        self._fill_color = self.wrap_color(value)
+
 
     @staticmethod
     def get_supported_shape():
@@ -268,12 +287,16 @@ class Shape:
         """Set the shape to be open"""
         self._closed = False
 
+    @property
+    def normalize_points(self):
+        return [(float(p[0]), float(p[1])) for p in self.points]
+
     def to_dict(self):
         """Serialize the shape to a dictionary"""
         dict_data = {
             "label": self.label,
             "score": self.score,
-            "points": self.points,
+            "points": self.normalize_points,
             "group_id": self.group_id,
             "description": self.description,
             "difficult": self.difficult,
@@ -432,11 +455,9 @@ class Shape:
         """Paint shape onto the image using OpenCV"""
         if not self.visible or not self.points:
             return
-
         # Determine the color
         line_color = self.line_color
         fill_color = self.fill_color
-
         line_thickness = max(1, int(round(self.line_width)))
 
         # Convert points to integer tuples
@@ -476,3 +497,18 @@ class Shape:
             if self.fill:
                 cv2.fillPoly(image, [np.array(pts, dtype=np.int32)], fill_color)
             cv2.polylines(image, [np.array(pts, dtype=np.int32)], isClosed=self.is_closed(), color=line_color, thickness=line_thickness)
+
+    @staticmethod
+    def wrap_color(color):
+        """确保颜色是一个 RGBA 四元组"""
+        if isinstance(color, str) and color.startswith('#'):
+            # 将十六进制颜色字符串转换为 (R, G, B, A)
+            color = color.lstrip('#')
+            r, g, b = int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)
+            return (r, g, b, 255)  # 设为不透明
+        elif isinstance(color, (tuple, list)) and len(color) == 4:
+            return tuple(color)
+        elif isinstance(color, (tuple, list)) and len(color) == 3:
+            return tuple(color) + (255,)  # 默认为不透明
+        else:
+            raise ValueError("Unsupported color format. Please use a hex string or a tuple/list of RGB/RGBA values.")

@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # weights_path = 'weights/yolov5-6.2/Sample_yolov5s6_300_epochs.pt'
 
     parser = argparse.ArgumentParser(description="Flask app exposing yolov5 models")
-    parser.add_argument("--port", default=5003, type=int, help="port number")
+    parser.add_argument("--port", default=5001, type=int, help="port number")
     args = parser.parse_args()
 
     # webapp启动后加载默认调用权重

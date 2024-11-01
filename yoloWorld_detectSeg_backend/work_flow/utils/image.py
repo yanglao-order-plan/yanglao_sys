@@ -4,10 +4,12 @@ import base64
 import io
 import shutil
 
+import cv2
 import numpy as np
 import PIL.ExifTags
 import PIL.Image
 import PIL.ImageOps
+from PIL import Image
 
 from PyQt5 import QtGui
 
@@ -38,6 +40,45 @@ def img_pil_to_data(img_pil):
     img_pil.save(f, format="PNG")
     img_data = f.getvalue()
     return img_data
+
+
+def numpy_to_pil(np_image: np.ndarray) -> Image.Image:
+    """
+    将 NumPy 数组转换为 PIL 图像对象，处理不同的颜色模式和通道顺序。
+
+    Args:
+        np_image (np.ndarray): 输入的 NumPy 图像数组。
+
+    Returns:
+        Image.Image: 转换后的 PIL 图像对象。
+
+    Raises:
+        ValueError: 如果图像格式不受支持。
+    """
+    if np_image is None:
+        raise ValueError("输入的 NumPy 图像为 None。")
+
+    # 检查图像的维度
+    if len(np_image.shape) == 2:
+        # 灰度图像
+        return Image.fromarray(np_image, mode='L')
+    elif len(np_image.shape) == 3:
+        height, width, channels = np_image.shape
+        if channels == 1:
+            # 单通道灰度图像
+            return Image.fromarray(np_image[:, :, 0], mode='L')
+        elif channels == 3:
+            # BGR 转 RGB
+            rgb_image = cv2.cvtColor(np_image, cv2.COLOR_BGR2RGB)
+            return Image.fromarray(rgb_image, 'RGB')
+        elif channels == 4:
+            # BGRA 转 RGBA
+            rgba_image = cv2.cvtColor(np_image, cv2.COLOR_BGRA2RGBA)
+            return Image.fromarray(rgba_image, 'RGBA')
+        else:
+            raise ValueError(f"不支持的通道数: {channels}")
+    else:
+        raise ValueError(f"不支持的图像形状: {np_image.shape}")
 
 
 def pil_to_qimage(img):

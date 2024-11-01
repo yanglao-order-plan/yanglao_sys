@@ -85,7 +85,6 @@ class FlowModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='流程名称')
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
     releases = db.relationship('ReleaseModel', backref='flow', lazy=True)
-    flow_params = db.relationship('ReleaseParamModel', backref='release', lazy=True)
 
 
 # Release Model
@@ -134,13 +133,14 @@ class ReleaseModel(db.Model):
         return self._to_weights
 
     @property
-    def to_hypers(self):
-        if not hasattr(self, '_to_hypers'):
-            self._to_hypers = []
-            for release_arg in self.release_args:
-                if release_arg.dynamic:
-                    self._to_hypers.append(release_arg.arg)
-        return self._to_hypers
+    def weights(self):
+        if not hasattr(self, '_weights'):
+            self._weights = {}
+            for release_weight in self.release_weights:
+                if release_weight.name not in self._weights:
+                    self._weights[release_weight.name] = []
+                self.weights[release_weight.name].append(release_weight.weight_id)
+        return self._weights
 
     @property
     def to_params(self):
@@ -155,31 +155,29 @@ class ReleaseModel(db.Model):
     def params(self):
         if not hasattr(self, '_params'):
             self._params = {}
-            for release_param in self.release_params:
-                if release_param.dynamic:
-                    self._params[release_param.name] = release_param.arg['default'] \
-                        if 'default' in release_param.arg else None
-
+            for release_arg in self.release_args:
+                if not release_arg.dynamic:
+                    self._params[release_arg.name] = release_arg.arg['argDefault'] \
+                        if 'argDefault' in release_arg.arg else None
         return self._params
 
     @property
-    def weights(self):
-        if not hasattr(self, '_weights'):
-            self._weights = {}
-            for release_weight in self.release_weights:
-                if release_weight.name not in self._weights:
-                    self._weights[release_weight.name] = []
-                self.weights[release_weight.name].append(release_weight.weight_key)
-        return self._weights
+    def to_hypers(self):
+        if not hasattr(self, '_to_hypers'):
+            self._to_hypers = []
+            for release_arg in self.release_args:
+                if release_arg.dynamic:
+                    self._to_hypers.append(release_arg.arg)
+        return self._to_hypers
 
     @property
     def hypers(self):
         if not hasattr(self, '_hypers'):
             self._hypers = {}
-            for release_param in self.release_params:
+            for release_param in self.release_args:
                 if release_param.dynamic:
-                    self._hypers[release_param.name] = release_param.arg['default'] \
-                        if 'default' in release_param.arg else None
+                    self._hypers[release_param.name] = release_param.arg['argDefault'] \
+                        if 'argDefault' in release_param.arg else None
         return self._hypers
 
 
@@ -200,12 +198,14 @@ class WeightModel(db.Model):
     dataset_id = db.Column(db.Integer, db.ForeignKey('dataset.id'), nullable=True)
     dataset = db.relationship('DatasetModel', backref=db.backref('weight'))
 
+    @property
     def to_dict(self):
         return {
             'weightName': self.name,
             'weightEnable': self.enable,
         }
 
+    @property
     def to_config(self):
         return {
             'local': self.local_path,
@@ -229,8 +229,8 @@ class ReleaseWeightModel(db.Model):
 
     @property
     def weight(self):
-        if hasattr(self, 'element'):
-            self._weight = WeightModel.query.get(self.weight_id).to_config()
+        if not hasattr(self, '_weight'):
+            self._weight = WeightModel.query.get(self.weight_id).to_dict
             self._weight['weightKey'] = self.name
         return self._weight
 
@@ -256,11 +256,11 @@ class ReleaseArgModel(db.Model):
     @property
     def arg(self):
         if not hasattr(self, '_arg'):
-            prefix = 'param' if self.dynamic else 'hyper'
+            prefix = 'arg'
             self._arg = {
                 f'{prefix}Name': self.name,
                 f'{prefix}Type': self.type,
-                f'{prefix}Value': self.default,
+                f'{prefix}Default': self.default,
                 f'{prefix}Config': self.config
             }
         return self._arg

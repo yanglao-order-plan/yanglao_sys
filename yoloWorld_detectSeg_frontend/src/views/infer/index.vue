@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue"
 import { type ITaskData, IFlowData, IWeightData, IArgData, OArgData } from "@/api/infer/types/infer"
+import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
 import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightApi, getCurrentParamApi, getCurrentHyperApi,
   switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi} from "@/api/infer"
@@ -29,8 +30,6 @@ const selectedWeightOptions = ref({})
 const taskOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const flowOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const weightOptions = ref<{ [key: string]: { value: string; label: string; disabled: boolean }[]}>({})
-const paramModules = ref<{ [key: string]: any }>({})
-const hyperModules = ref<{ [key: string]: any }>({})
 // 当前选择模型数据
 const currentTaskData = reactive({
   taskType: "",
@@ -166,38 +165,32 @@ const getCurrentFlow = () => {
     currentFlowData.release = res.data.releaseName
   })
   .finally(() => {
-    paramsData.value.forEach(element => {  // 提前装载初始值
+    paramsData.value.forEach((element: any) => {  // 提前装载初始值
       handledParamData[element['argName']] = element['argDefault']
     });
   })
 }
 // 从 API 获取当前的 weight 数据并赋值
-const getCurrentWeight = () => {
-  getCurrentWeightApi().then((res) => {
-    const apiDataArray = res.data;
-    apiDataArray.forEach((item) => {
-      currentWeightData[item.weightKey] = item.weightName;
-    });
+const getCurrentWeight = (weigthKey: string|number) => {
+  getCurrentWeightApi({
+    currentWeightKey: weigthKey
+  }).then((res) => {
+    currentWeightData[res.data.weightKey] = res.data.weightName;
+    console.log(currentWeightData)
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
   });
 };
-const getCurrentParam = () => {
-  getCurrentParamApi().then((res) => {
-    const apiDataArray = res.data;
-    apiDataArray.forEach((item) => {
-      currentParamData[item.argName] = item.argValue;
-    });
+const getCurrentParam = (paramName: string) => {
+  getCurrentParamApi({currentParamName: paramName}).then((res) => {
+    currentParamData[res.data.argName] = res.data.argValue;
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
   });
 };
-const getCurrentHyper = () => {
-  getCurrentHyperApi().then((res) => {
-    const apiDataArray = res.data;
-    apiDataArray.forEach((item) => {
-      currentHyperData[item.argName] = item.argValue;
-    });
+const getCurrentHyper = (hyperName: string) => {
+  getCurrentHyperApi({currentHyperName: hyperName}).then((res) => {
+    currentHyperData[res.data.argName] = res.data.argValue;
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
   });
@@ -263,16 +256,6 @@ const generateWeightOptions = (list: IWeightData[]) => {
   });
   return optionsMap; // 返回每个 key 对应的 options 数组
 };
-const generateArgModules = (list: IArgData[]) => {
-  const modulesMap: { [key: string]: { value: string; label: string; disabled: boolean }[] } = {};
-  list.forEach((item) => {
-    // 如果该 weightKey 还没有在 optionsMap 中，创建一个新的数组
-    if (!modulesMap[item.argName]) {
-      modulesMap[item.argName] = item.argDefault;
-    }
-  });
-  return modulesMap; // 返回每个 key 对应的 options 数组
-};
 // 下拉菜单的选择事件
 const handleTaskChange = (selectedOptions: string[]) => {
   if (selectedOptions.length !== 2) return // 如果选中的项数不为2，则返回
@@ -303,8 +286,8 @@ const handleWeightChange = (weightKey: string|number) => {
       type: "success"
     })
 }
-const handleParamChange = (paramName: string|number) => {
-  const paramValue = handledParamData[paramName]
+const handleParamChange = (paramName: string, paramValue: any) => {
+  handledParamData[paramName] = paramValue
   handleParamSwitch(paramName)
   const message = `已经完成配置${paramName}: ${paramValue}`
   ElMessage({
@@ -312,9 +295,9 @@ const handleParamChange = (paramName: string|number) => {
     type: "success"
   })
 }
-const handleHyperChange = (hyperName: string|number) => {
-  console.log(hyperName)
-  const hyperValue = handledParamData[hyperName]
+const handleHyperChange = (hyperName: string, hyperValue: any) => {
+  console.log(hyperName, hyperValue)
+  handledHyperData[hyperName] = hyperValue
   handleHyperSwitch(hyperName)
   const message = `已经完成参数${hyperName}: ${hyperValue}`
   ElMessage({
@@ -365,6 +348,17 @@ const handleTaskSwitch = () => {
     loading.value = false
   })
 }
+const loadDefault = (mode: string ) => {
+  if (mode === 'param'){
+    paramsData.value.forEach(element => {
+      handledParamData[element.argName] = element?.argDefault
+    });
+  } else if (mode === 'hyper'){
+    hypersData.value.forEach(element => {
+      handledHyperData[element.argName] = element?.argDefault
+    });
+  }
+}
 const handleFlowSwitch = () => {
   if (
     selectedFlowData.flow === currentFlowData.flow &&
@@ -391,7 +385,7 @@ const handleFlowSwitch = () => {
     weightOptions.value = generateWeightOptions(res.data["weight"])
     if (res.data["param"] && res.data["param"].length > 0) {
         paramsData.value = res.data["param"]
-        paramModules.value = generateArgModules(res.data["param"])
+        loadDefault('param')
       } else {
         console.warn("No params found in the response.");
       }
@@ -406,17 +400,18 @@ const handleFlowSwitch = () => {
     choosen.value = true
   })
 }
-const handleWeightSwitch = (weightName: string|number) => {
-  const selectedWeightValue = selectedWeightData[weightName]
+const handleWeightSwitch = (weightKey: string|number) => {
+  const selectedWeightName = selectedWeightData[weightKey]
+  console.log(weightKey)
   if (  // 字典值比较
-    selectedWeightValue === currentWeightData[weightName]
+  selectedWeightName === currentWeightData[weightKey]
   ) {
     ElMessage({
       message: "当前选中的已经是该权重",
       type: "warning"
     })
     return
-  } else if (selectedWeightValue === "") {
+  } else if (selectedWeightName === "") {
     ElMessage({
       message: "请先选择权重",
       type: "warning"
@@ -424,10 +419,10 @@ const handleWeightSwitch = (weightName: string|number) => {
     return
   }
   switchWeightApi({
-    switchWeightKey: weightName,
-    switchWeightName: selectedWeightValue,
+    switchWeightKey: weightKey,
+    switchWeightName: selectedWeightName,
   }).then(() => {
-    getCurrentWeight()
+    getCurrentWeight(weightKey)
   })
   .catch(() => {
       weightsData.value = []
@@ -438,7 +433,7 @@ const handleWeightSwitch = (weightName: string|number) => {
     choosen.value = true
   })
 }
-const handleParamSwitch = (paramName: string|number) => {
+const handleParamSwitch = (paramName: string) => {
   const handledParamValue = handledParamData[paramName]
   if (  // 字典值比较
     handledParamValue === currentParamData[paramName]
@@ -459,10 +454,10 @@ const handleParamSwitch = (paramName: string|number) => {
     switchParamName: paramName,
     switchParamValue: handledParamValue,
   }).then(() => {
-    getCurrentWeight()
+    getCurrentParam(paramName)
   })
   .catch(() => {
-      weightsData.value = []
+      paramsData.value = []
   })
   .finally(() => {
     loaded.value = false
@@ -470,10 +465,10 @@ const handleParamSwitch = (paramName: string|number) => {
     choosen.value = true
   })
 }
-const handleHyperSwitch = (hyperName: string|number) => {
-  const handledHyperValue = handledParamData[hyperName]
+const handleHyperSwitch = (hyperName: string) => {
+  const handledHyperValue = handledHyperData[hyperName]
   if (  // 字典值比较
-    handledHyperValue === currentParamData[hyperName]
+    handledHyperValue === currentHyperData[hyperName]
   ) {
     ElMessage({
       message: "当前设置参数已是该值",
@@ -487,17 +482,17 @@ const handleHyperSwitch = (hyperName: string|number) => {
     })
     return
   }
-  switchParamApi({
-    switchParamName: hyperName,
-    switchParamValue: handledHyperValue,
+  switchHyperApi({
+    switchHyperName: hyperName,
+    switchHyperValue: handledHyperValue,
   }).then(() => {
-    getCurrentWeight()
+    getCurrentHyper(hyperName)
   })
   .catch(() => {
-      weightsData.value = []
+      hypersData.value = []
   })
   .finally(() => {
-    loaded.value = false
+    loaded.value = true
     loading.value = false
     choosen.value = true
   })
@@ -506,9 +501,9 @@ const handleLoadModel = () => {
   loadModelApi().then((res) => {
     if (res.data && res.data.length > 0) {
         // 如果 res.data 存在且长度大于 0
-        console.log(1)
         hypersData.value = res.data;
-        hyperModules.value = generateArgModules(res.data);
+        console.log(res.data)
+        loadDefault('hyper')
       } else {
         // 如果 res.data 为空或长度为 0，执行相应的处理
         console.warn("No hypers found in the response.");
@@ -531,6 +526,7 @@ const handleModelPredict = () => {
     inferImageData.inferResult = res.data.inferResult
     inferImageData.inferPeriod = res.data.inferPeriod
     inferImageData.inferDescription = res.data.inferDescription
+    console.log(10000)
   })
   .catch(() => {
     ElMessage({
@@ -556,7 +552,7 @@ getAllTasks()
               <div class="SwitchModelCSS">
                 当前类型：
                 <el-text v-model="currentTaskData.taskType" type="success" size="large">
-                  {{ currentTaskData.task }}
+                  {{ currentTaskData.taskType }}
                 </el-text>
               </div>
               <div class="SwitchModelCSS">
@@ -601,7 +597,7 @@ getAllTasks()
               <div class="SwitchModelCSS">
                 当前版本：
                 <el-text v-model="currentFlowData.flow" type="success" size="large">
-                  {{ currentFlowData.flow }}
+                  {{ currentFlowData.release }}
                 </el-text>
               </div>
             </div>
@@ -645,14 +641,16 @@ getAllTasks()
           </el-select>
         </el-col>
       </el-row>
-      <el-row v-if="Object.keys(handledParamData).length > 0" :gutter="20">
-        <el-col :span="12" v-for="(paramValue, paramKey) in paramModules" :key="paramKey">
-          <label>{{ paramKey }}:</label>
-          <el-input
-           v-model="handledParamData[paramKey]" 
-           placeholder="请输入配置" 
-           :value=paramValue
-           @change="handleParamChange(paramKey)" />
+      <el-row v-if="Object.keys(paramsData).length > 0" :gutter="20">
+        <el-col :span="12" v-for="(paramItem, idx) in paramsData" :key="idx">
+          <Argument
+            :imageUrl=null
+            :argName="paramItem.argName"
+            :argType="paramItem.argType"
+            :argValue="handledParamData[paramItem.argName]"
+            :argConfig="paramItem.argConfig"
+            @argChange="handleParamChange"
+          />
         </el-col>
       </el-row>
     </el-card>
@@ -662,13 +660,15 @@ getAllTasks()
     <!-- 区域2：loaded为true时展示 -->
     <el-card v-if="loaded" v-loading="loading" shadow="never" class="search-wrapper">
       <el-row :gutter="20">
-        <el-col :span="12" v-for="(hyperValue, hyperKey) in hyperModules" :key="hyperKey">
-          <label>{{ hyperKey }}:</label>
-          <el-input 
-          v-model="handledHyperData[hyperKey]" 
-          placeholder="请输入" 
-          :value=hyperValue
-          @change="handleHyperChange(hyperKey)" />
+        <el-col :span="12" v-for="(hyperItem, idx) in hypersData" :key="idx">
+          <Argument
+            :imageUrl="inferImageData.originalImageUrl"
+            :argName="hyperItem.argName"
+            :argType="hyperItem.argType"
+            :argValue="handledHyperData[hyperItem.argName]"
+            :argConfig="hyperItem.argConfig"
+            @argChange="handleHyperChange"
+          />
         </el-col>
       </el-row>
     </el-card>
@@ -684,7 +684,7 @@ getAllTasks()
             <el-image
               v-if="inferImageData.originalBase64"
               :src="inferImageData.originalImageUrl"
-              :fit="'scaleDown'"
+              :fit="'scale-down'"
               :preview-src-list="[inferImageData.originalImageUrl]"
             />
             <div v-else class="image-placeholder">原始图片</div>
@@ -695,7 +695,7 @@ getAllTasks()
             <el-image
               v-if="inferImageData.resultBase64"
               :src="inferImageData.resultImageUrl"
-              :fit="'scaleDown'"
+              :fit="'scale-down'"
               :preview-src-list="[inferImageData.resultImageUrl]"
             />
             <div v-else class="image-placeholder">检测结果图片</div>
@@ -704,8 +704,8 @@ getAllTasks()
         <el-col :span="4">
           <div class="grid-content ep-bg-purple">
             <el-table
-              :data="inferImageData.predictDescriptiont"
-              v-if="inferImageData.predictDescriptiont && inferImageData.predictDescription.length > 0"
+              :data="inferImageData.inferDescription"
+              v-if="inferImageData.inferDescription && inferImageData.inferDescription.length > 0"
             >
               <el-table-column prop="className" label="检测类别" />
               <el-table-column prop="confidence" label="置信度" />
@@ -728,11 +728,11 @@ getAllTasks()
         </div>
           <!-- 推理时长组件 -->
         <el-col :span="24" class="infer-duration-container">
-          <el-card v-if="inferImageData.period" class="infer-duration-card">
+          <el-card v-if="inferImageData.inferPeriod" class="infer-duration-card">
             <div slot="header">
               <span>推理时长</span>
             </div>
-            <p>{{ inferImageData.inferDuration }} 秒</p>
+            <p>{{ inferImageData.inferPeriod }} 秒</p>
           </el-card>
           <div v-else class="image-placeholder">推理时长信息不可用</div>
         </el-col>

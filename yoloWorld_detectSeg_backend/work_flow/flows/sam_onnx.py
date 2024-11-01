@@ -32,6 +32,7 @@ class SegmentAnythingONNX:
         points = []
         labels = []
         for mark in prompt:
+
             if mark["type"] == "point":
                 points.append(mark["data"])
                 labels.append(mark["label"])

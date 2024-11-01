@@ -180,6 +180,28 @@ def cxywh2xyxy(x):
     return y
 
 
+def xyxyxyxy_to_xyxy(box):
+    """
+    Convert a single corner box from [xy1, xy2, xy3, xy4] format to [xmin, ymin, xmax, ymax].
+
+    Args:
+        box (list): Input corner points in the form of [[x1, y1], [x2, y2], [x3, y3], [x4, y4]].
+
+    Returns:
+        list: Converted bounding box in the form of [xmin, ymin, xmax, ymax].
+    """
+    # 提取 x 和 y 坐标
+    x_coords = [point[0] for point in box]
+    y_coords = [point[1] for point in box]
+
+    # 计算 xmin, ymin, xmax, ymax
+    xmin = min(x_coords)
+    ymin = min(y_coords)
+    xmax = max(x_coords)
+    ymax = max(y_coords)
+
+    return [xmin, ymin, xmax, ymax]
+
 def xywhr2xyxyxyxy(center):
     """
     Convert batched Oriented Bounding Boxes (OBB) from [xywh, rotation] to [xy1, xy2, xy3, xy4]. Rotation values should

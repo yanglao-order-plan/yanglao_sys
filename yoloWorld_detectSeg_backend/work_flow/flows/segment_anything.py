@@ -7,6 +7,8 @@ import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtCore import QCoreApplication
+import logging
+
 from . import __preferred_device__, Model,SegmentAnythingONNX, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult
 
 class SegmentAnything(Model):
@@ -229,7 +231,6 @@ class SegmentAnything(Model):
         if image is None or not self.marks:
             return AutoLabelingResult([], replace=False)
 
-        shapes = []
         cv_image = image
         try:
             # Use cached image embedding if possible
@@ -240,6 +241,7 @@ class SegmentAnything(Model):
                 if self.stop_inference:
                     return AutoLabelingResult([], replace=False)
                 image_embedding = self.model.encode(cv_image)
+
                 self.image_embedding_cache.put(
                     filename,
                     image_embedding,
@@ -253,8 +255,8 @@ class SegmentAnything(Model):
                 masks = masks[0]
             shapes = self.post_process(masks, cv_image)
         except Exception as e:  # noqa
-            print_red("Could not inference model")
-            print_red(e)
+            logging.warning("Could not inference model")
+            logging.error(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 

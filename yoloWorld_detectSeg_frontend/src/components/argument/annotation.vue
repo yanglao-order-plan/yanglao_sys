@@ -1,43 +1,61 @@
 <template>
-  <div class="container">
-    <Row :gutter="20">
-      <Col :span="20">
-        <div style="width: 100%">
-          <canvas id="myCanvas"></canvas>
-        </div>
-      </Col>
-      <Col :span="4">
-        <div style="text-align: center">
-          <RadioGroup @change="tpChange" v-model:value="currentTagTp" style="text-align: left">
-            <Radio :style="radioStyle" value="rectangle">矩形标注</Radio>
-            <Radio :style="radioStyle" value="polygn">多边形标注</Radio>
-            <Radio :style="radioStyle" value="point">单点标注</Radio>
-          </RadioGroup>
-        </div>
-      </Col>
-    </Row>
-  </div>
-</template>
+	<div class="annotation-container">
+	  <div class="controls">
+		<el-select
+		  v-model="myType"
+		  @change="tpChange"
+		  class="type-select"
+		>
+		  <el-option
+			v-for="(type, index) in props.typeList"
+			:key="index"
+			:value="type"
+			:label="getRadioLabel(type)"
+		  >
+			{{ getRadioLabel(type) }}
+		  </el-option>
+		</el-select>
+		<!-- 添加按钮 -->
+		<el-button
+		  type="primary"
+		  @click="onUpdate"
+		  class="action-button"
+		>
+		  更新标注
+		</el-button>
+	  </div>
+	  <canvas id="myCanvas"></canvas>
+	</div>
+  </template>
+  
 
 <script lang="ts" setup>
 import { fabric } from 'fabric'
-import { reactive, onMounted, ref } from 'vue'
+import { reactive, onMounted, ref, watch } from 'vue'
 import {Col, Radio, RadioGroup, Row} from "ant-design-vue";
 
-const radioStyle = reactive({
-  display: 'block',
-  height: '40px',
-  lineHeight: '40px'
-})
+// 根据 type 动态生成展示标签
+const getRadioLabel = (type: string) => {
+  switch (type) {
+    case 'rectangle':
+      return '矩形标注';
+    case 'polygon':
+      return '多边形标注';
+    case 'point':
+      return '单点标注';
+    default:
+      return type;
+  }
+};
 
 const props = defineProps<{
-	imgSrc: string // 待标注背景图片
+	imgSrc: string|null  // 待标注背景图片URL
+	typeList: string[]
 	data?: Array<any> // 需要预渲染的标注数据
 }>()
 
-const currentTagTp = ref('rectangle')
 let myCanvas = ref()
-
+let myType = ref()
 const init = () => {
 	// 整体初始化
 	initFabricControl()
@@ -47,27 +65,38 @@ onMounted(() => {
 	if (!props.imgSrc) return
 	init()
 })
+watch(
+  () => props.imgSrc,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      init();
+    }
+  }
+);
 // 向外部暴露的事件接口
 const emit = defineEmits([
 	'changeLabel', // 标注标签更改事件
 	'taggingChange', // 单体标注更改事件
 	'hasChange', // 整体标注数据是否有改变 用来判断是否向用户弹出保存当前修改的弹窗
+	'onUpdate'
 ])
 
 // 当前图片的标注数据是否有改变
 // 用来判断是否向用户弹出保存修改的弹窗
 
-// 是否要记录标注数据let toRecord = false
-改变
-
+// 是否要记录标注数据
+let toRecord = false
 // 提醒父组件数据改变
 const hasChange = () => {
 	emit('hasChange', getAllObjects())
 }
-
-const tpChange = e => {
-  if (e && e.target.value) {
-    changeDrawType(e.target.value)
+const onUpdate = () => {
+	emit('onUpdate', getAllObjects())
+}
+const tpChange = (drawType:string) => {
+  if (drawType) {
+	console.log(drawType)
+    changeDrawType(drawType)
   }
 }
 // 初始化容器宽高,初始化当前背景图片相对于原始图片的缩放比例
@@ -978,7 +1007,7 @@ const getAllObjects = () => {
                 });
                 // 将 points 数组直接赋值给 obj.points
                 obj.points = points;
-                console.log(x.left, x.top)
+
             } else if (x.tp === 'rectangle') {
                 // 获取矩形的四个顶点坐标
                 let points = [
@@ -1019,11 +1048,27 @@ defineExpose({
 </script>
 
 <style scoped>
-:deep(.canvas-container) {
-	width: 100% !important;
+.annotation-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 水平居中内容 */
+  width: 100%;
 }
-.container {
-  margin: 0 auto;
-  width: 80%;
+
+.controls {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* 水平居中 Select */
+  margin-bottom: 10px; /* 与图像之间的间距 */
+}
+
+.type-select {
+  width: 150px;
+}
+
+#myCanvas {
+  width: 100%;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
 }
 </style>

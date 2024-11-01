@@ -117,17 +117,7 @@ class Model:
             model_abs_path = os.path.abspath(local)
             if os.path.exists(model_abs_path):
                 return model_abs_path
-
-            # Relative path to config file?
-            config_file_path = model_config["config_file"]
-            config_folder = os.path.dirname(config_file_path)
-            model_abs_path = os.path.abspath(
-                os.path.join(config_folder, local)
-            )
-            if os.path.exists(model_abs_path):
-                return model_abs_path
             self.on_message("Model path not found: {model_path}".format(model_path=local))
-            return
 
         # Download model from url
         self.on_message("Downloading model from registry...")

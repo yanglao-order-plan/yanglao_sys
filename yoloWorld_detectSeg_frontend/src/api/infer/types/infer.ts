@@ -64,13 +64,22 @@ export interface ISwitchWeightRequestData {
   switchWeightKey: string | number
   switchWeightName: string
 }
+export interface ICurrentWeightRequestData {
+  currentWeightKey: string | number
+}
 export interface ISwitchParamRequestData {
   switchParamName: string | number
   switchParamValue: any
 }
+export interface ICurrentParamRequestData {
+  currentParamName: string | number
+}
 export interface ISwitchHyperRequestData {
-  switchHyperName: string
+  switchHyperName: string|number
   switchHyperValue: any
+}
+export interface ICurrentHyperRequestData {
+  currentHyperName: string | number
 }
 export interface IpredictModelRequestData {
   originalBase64: string
@@ -78,9 +87,9 @@ export interface IpredictModelRequestData {
 // 数据回显对象（current）
 export type GetCurrentTaskResponseData = IApiResponseData<ITaskData>
 export type GetCurrentFlowResponseData = IApiResponseData<OFlowData>  // 字典转数组
-export type GetCurrentParamResponseData = IApiResponseData<[OArgData]>
-export type GetCurrentWeightResponseData = IApiResponseData<[OWeightData]>
-export type GetCurrentHyperResponseData = IApiResponseData<[OArgData]>
+export type GetCurrentParamResponseData = IApiResponseData<OArgData>
+export type GetCurrentWeightResponseData = IApiResponseData<OWeightData>
+export type GetCurrentHyperResponseData = IApiResponseData<OArgData>
 // 数据回显对象（switch）
 export type SwitchTaskResponseData = IApiResponseData<IFlowData[]>
 export type SwitchFlowResponseData = IApiResponseData<{weight: IWeightData[]; param: IArgData[];}>
