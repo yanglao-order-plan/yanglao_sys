@@ -22,7 +22,7 @@ code: 206 前端通知弹窗Warning
 code: 207 前端通知弹窗Info
 '''
 
-bp = Blueprint('user-manage', __name__, url_prefix='/user-manage')
+bp = Blueprint('user', __name__, url_prefix='/user-manage')
 
 
 @bp.route('/list', methods=['GET'])

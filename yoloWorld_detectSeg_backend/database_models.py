@@ -24,7 +24,7 @@ class UserModel(db.Model):
             'email': self.email,
             'createTime': self.join_time.strftime('%Y-%m-%d %H:%M:%S'),
             'status': self.status,
-            'roles': self.roles.role_name,
+            'roles': self.roles.name,
         }
 
 
@@ -63,6 +63,12 @@ class TaskTypeModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='任务类型名称')
     tasks = db.relationship('TaskModel', backref='task_type', lazy=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'taskType': self.name,
+        }
+
 
 # Task Model
 class TaskModel(db.Model):
@@ -74,7 +80,10 @@ class TaskModel(db.Model):
 
     def to_dict(self):
         return {
-            'name': self.name,
+            'id': self.id,
+            'task': self.name,
+            'taskType': self.task_type.name,
+            'typeId': self.type_id,
         }
 
 
@@ -86,6 +95,15 @@ class FlowModel(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
     releases = db.relationship('ReleaseModel', backref='flow', lazy=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'flow': self.name,
+            'task': self.task.name,
+            'taskId': self.task_id,
+            'taskType': self.task.task_type.name,
+            'typeId': self.task.task_type.id,
+        }
 
 # Release Model
 class ReleaseModel(db.Model):
@@ -94,8 +112,8 @@ class ReleaseModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='版本名称')
     show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
     flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')
-    release_weights = db.relationship('ReleaseWeightModel', backref='release', lazy=True)
-    release_args = db.relationship('ReleaseArgModel', backref='release', lazy=True)
+    release_weights = db.relationship('ModelModel', backref='release', lazy=True)
+    release_args = db.relationship('ArgumentModel', backref='release', lazy=True)
 
     def __init__(self):
         self._weights = None
@@ -214,8 +232,8 @@ class WeightModel(db.Model):
 
 
 # ReleaseWeight Model (Junction table for release and weight)
-class ReleaseWeightModel(db.Model):
-    __tablename__ = 'release_weight'
+class ModelModel(db.Model):
+    __tablename__ = 'model'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
     release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
                            comment='版本ID')
@@ -239,8 +257,8 @@ class ReleaseWeightModel(db.Model):
         self._weight = value
 
 
-class ReleaseArgModel(db.Model):
-    __tablename__ = 'release_arg'
+class ArgumentModel(db.Model):
+    __tablename__ = 'argument'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联参数ID')
     name = db.Column(db.String(100), nullable=False, comment='参数名称')
     type = db.Column(db.String(100), nullable=True, comment='参数类型')

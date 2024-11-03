@@ -350,11 +350,11 @@ const handleTaskSwitch = () => {
 }
 const loadDefault = (mode: string ) => {
   if (mode === 'param'){
-    paramsData.value.forEach(element => {
+    paramsData.value.forEach((element: any) => {
       handledParamData[element.argName] = element?.argDefault
     });
   } else if (mode === 'hyper'){
-    hypersData.value.forEach(element => {
+    hypersData.value.forEach((element: any) => {
       handledHyperData[element.argName] = element?.argDefault
     });
   }

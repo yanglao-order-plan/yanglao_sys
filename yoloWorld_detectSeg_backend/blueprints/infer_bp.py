@@ -14,9 +14,8 @@ import base64
 from io import BytesIO
 from flask_jwt_extended import jwt_required
 from database_models import (WeightModel, TaskTypeModel, TaskModel, FlowModel, ReleaseModel,
-                             WeightModel, ReleaseWeightModel, ResultModel)
+                             WeightModel, ModelModel, ResultModel)
 from utils.backend_utils.dir_utils import *
-from utils.backend_utils.model_handler import load_model
 from utils.backend_utils.response_utils import response
 from utils.backend_utils.colorprinter import *
 from work_flow.engines.model_manager import ModelManager

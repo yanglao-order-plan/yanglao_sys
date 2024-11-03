@@ -11,7 +11,6 @@ from flask_jwt_extended import JWTManager
 
 from extensions import *
 from utils.backend_utils.colorprinter import *
-from utils.backend_utils.model_handler import load_model
 
 from database_models import *
 from blueprints.auth_bp import bp as auth_bp
@@ -19,6 +18,9 @@ from blueprints.server_bp import bp as server_bp
 from blueprints.user_manage_bp import bp as user_manage_bp
 from blueprints.infer_bp import bp as infer_bp
 from blueprints.infer_local_bp import bp as infer_local_bp
+from blueprints.task_type_manage_bp import bp as task_type_manage_bp
+from blueprints.task_manage_bp import bp as task_manage_bp
+from blueprints.flow_manage_bp import bp as flow_manage_bp
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -36,7 +38,6 @@ repo_dir = os.getcwd()
 weights_path = 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt'
 model_load_path = os.path.join(repo_dir, weights_path)
 weights_name = 'yolov5-3.1'
-default_model = load_model(repo_dir, model_load_path)
 
 app = Flask(__name__)
 app.config.from_object(config)
@@ -63,6 +64,9 @@ migrate = Migrate(app, db)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(server_bp, url_prefix='/server')
 app.register_blueprint(user_manage_bp, url_prefix='/user-manage')
+app.register_blueprint(task_type_manage_bp, url_prefix='/task_type-manage')
+app.register_blueprint(task_manage_bp, url_prefix='/task-manage')
+app.register_blueprint(flow_manage_bp, url_prefix='/flow-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
 app.register_blueprint(infer_local_bp, url_prefix='/infer_local')
 
@@ -94,14 +98,11 @@ if __name__ == "__main__":
     # weights_path = 'weights/yolov5-6.2/Sample_yolov5s6_300_epochs.pt'
 
     parser = argparse.ArgumentParser(description="Flask app exposing yolov5 models")
-    parser.add_argument("--port", default=5001, type=int, help="port number")
+    parser.add_argument("--port", default=5000, type=int, help="port number")
     args = parser.parse_args()
 
     # webapp启动后加载默认调用权重
     test_database_connection()
     print_cyan('项目已启动')
-    print_cyan(f'当前工作目录: {repo_dir}')
-    print_cyan(f'当前调用权重: {weights_path}')
-    print_cyan(f'模型推断请访问: http://localhost:{args.port}/detect-demo/upload')
 
     app.run(host="127.0.0.1", port=args.port, debug=True)

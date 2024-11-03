@@ -73,7 +73,7 @@ class PPOCRv4(Model):
             self.rec_char_dict = "japan_dict.txt"
 
     def parse_args(self):
-        args = Args(
+        args = Args(  # 关键参数直接写死，你妈是不是死了？
             use_onnx=True,
             # params for prediction engine
             use_gpu=True,
