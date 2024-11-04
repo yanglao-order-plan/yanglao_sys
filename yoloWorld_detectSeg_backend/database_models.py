@@ -111,9 +111,9 @@ class ReleaseModel(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本ID')
     name = db.Column(db.String(100), nullable=False, comment='版本名称')
     show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
-    flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')
-    release_weights = db.relationship('ModelModel', backref='release', lazy=True)
-    release_args = db.relationship('ArgumentModel', backref='release', lazy=True)
+    flow_id = db.Column(db.Integer, db.ForeignKey('flow.id'), nullable=False, comment='流程ID')   # 级联删除
+    release_weights = db.relationship('ModelModel', backref='release', lazy=True, cascade='all, delete')
+    release_args = db.relationship('ArgumentModel', backref='release', lazy=True, cascade='all, delete')
 
     def __init__(self):
         self._weights = None
@@ -123,6 +123,19 @@ class ReleaseModel(db.Model):
         self._to_hypers = None
         self._hypers = None
         self._params = None
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'release': self.name,
+            'releaeName': self.show_name,
+            'flow': self.flow.name,
+            'flowId': self.flow_id,
+            'task': self.flow.task.name,
+            'taskId': self.flow.task_id,
+            'taskType': self.flow.task.task_type.name,
+            'typeId': self.flow.task.type_id,
+        }
 
     def check_weight(self, weight):
         for release_weight in self.release_weights:
@@ -199,13 +212,6 @@ class ReleaseModel(db.Model):
         return self._hypers
 
 
-# class ArgTypeModel(db.Model):
-#     __tablename__ = 'arg_type'
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='参数类型ID')
-#     name = db.Column(db.String(100), nullable=False, comment='参数类型名称')
-#     form = db.Column(db.JSON, nullable=False, comment='配置表单')
-
-
 class WeightModel(db.Model):
     __tablename__ = 'weight'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='权重id')
@@ -221,6 +227,15 @@ class WeightModel(db.Model):
         return {
             'weightName': self.name,
             'weightEnable': self.enable,
+        }
+
+    def to_dict_detail(self):
+        return {
+            'id': self.id,
+            'weight': self.name,
+            'localPath': self.local_path,
+            'onlineUrl': self.online_url,
+            'enable': self.enable,
         }
 
     @property
@@ -256,6 +271,13 @@ class ModelModel(db.Model):
     def weight(self, value):
         self._weight = value
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'weight': self.weight['weightName']
+        }
+
 
 class ArgumentModel(db.Model):
     __tablename__ = 'argument'
@@ -286,6 +308,16 @@ class ArgumentModel(db.Model):
     @arg.setter
     def arg(self, value):
         self._arg = value
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type,
+            'default': self.default,
+            'config': self.config,
+            'dynamic': self.dynamic,
+        }
 
 
 class ResultModel(db.Model):

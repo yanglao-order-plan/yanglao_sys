@@ -242,7 +242,6 @@ def load_model():
     data = release.to_hypers
     session['hyper'] = release.hypers  # 存初始值
     print_cyan(f'模型装载成功')
-    print(data)
     return response(code=200, message=f'{release.name}模型装载成功', data=data)
 
 

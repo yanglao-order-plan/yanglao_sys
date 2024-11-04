@@ -30,26 +30,37 @@ bp = Blueprint('release', __name__, url_prefix='/release-manage')
 def get_releases():
     page = int(request.args.get('currentPage', 1))  # 获取页码，默认为第一页
     per_page = int(request.args.get('size', 10))  # 获取每页显示的数据量，默认为 10 条
+    release = request.args.get('rleease', '').strip()  # 获取任务类型名称
+    releaseName = request.args.get('rleeaseName', '').strip()  # 获取任务类型名称
     flow = request.args.get('flow', '').strip()  # 获取任务类型名称
     task = request.args.get('task', '').strip()  # 获取任务类型名称
     taskType = request.args.get('taskType', '').strip()  # 获取任务类型名称
     # 构造查询语句
-    query = FlowModel.query  # 使用 TaskTypeModel 模型进行查询
-    if flow:  # 如果任务不为空
+    query = ReleaseModel.query  # 使用 TaskTypeModel 模型进行查询
+    if release:  # 如果流程名称不为空
+        query = query.filter(ReleaseModel.name.ilike(f'%{release}%'))
+    if releaseName:  # 如果流程名称不为空
+        query = query.filter(ReleaseModel.showName.ilike(f'%{releaseName}%'))
+    query = query.join(FlowModel)
+    if flow:  # 如果流程名称不为空
         query = query.filter(FlowModel.name.ilike(f'%{flow}%'))
-    if task:  # 如果任务类型不为空
-        query = query.join(TaskModel).filter(TaskModel.name.ilike(f'%{task}%'))
+    query = query.join(TaskModel)
+    if task:  # 如果任务名称不为空
+        query = query.filter(TaskModel.name.ilike(f'%{task}%'))
+    query = query.join(TaskTypeModel)
+    if taskType:  # 如果任务类型不为空
+        query = query.filter(TaskTypeModel.name.ilike(f'%{taskType}%'))
     if page == 1 and per_page == -1:  # 检查是否为获取全部数据的请求
-        flows = query.all()  # 获取全部数据
-        total = len(flows)  # 计算总数据量
+        releases = query.all()  # 获取全部数据
+        total = len(releases)  # 计算总数据量
     else:
         # 分页查询
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)  # 使用 paginate() 方法进行分页查询，不抛出异常
-        flows = pagination.items  # 获取当前页的数据
+        releases = pagination.items  # 获取当前页的数据
         total = pagination.total  # 获取总数据量
     # 构造返回数据
     data = {
-        'list': [flow.to_dict() for flow in flows],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
+        'list': [release.to_dict() for release in releases],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
         'total': total,  # 总数据量
     }
     return response(code=0, data=data, message='获取任务类型列表成功')
@@ -60,28 +71,26 @@ def get_releases():
 def add_release():
     name = request.json.get('name', '').strip()
     showName = request.json.get('showName', '').strip()
-    mdoels = request.json.get('models', [])
-    arguments = request.json.get('arguments', [])
-    flowId =int(request.json.get('taskId', 0))
+    flowId =int(request.json.get('flowId', 0))
     if not name or not taskId:
         return response(code=1, message='添加失败，缺少必要参数')
-    flow = FlowModel.query.filter_by(name=name).first()
-    if flow is not None:
-        return response(code=1, message='添加失败，工作流已存在')
-    task = TaskModel.query.get(taskId)
-    if task is None:
-        return response(code=1, message='添加失败，任务不存在')
-    flow = FlowModel(name=name, task_id=taskId)
-    db.session.add(flow)
+    release = ReleaseModel.query.filter_by(name=name).first()
+    if release is not None:
+        return response(code=1, message='添加失败，版本已存在')
+    flow = FlowModel.query.get(flowId)
+    if flow is None:
+        return response(code=1, message='添加失败，工作流不存在')
+    release = ReleaseModel(name=name, show_name=showName, flow_id=flowId)
+    db.session.add(release)
     db.session.commit()
-    return response(code=0, message='添加工作流成功')
+    return response(code=0, message='添加版本成功')
 
 
 @bp.route('/delete/<int:release_id>', methods=['DELETE'])
 @jwt_required(refresh=True)
-def delete_release(release_id):
+def delete_flow(release_id):
     release = ReleaseModel.query.get(release_id)
-    if flow is None:
+    if release is None:
         return response(code=1, message='删除失败，版本不存在')
     db.session.delete(release)
     db.session.commit()
@@ -90,15 +99,155 @@ def delete_release(release_id):
 
 @bp.route('/update', methods=['PUT'])
 @jwt_required(refresh=True)
-def update_release():
+def update_flow():
     id = int(request.json.get('id', ''))
     name = request.json.get('name', '').strip()
-    flowId = int(request.json.get('flowId', 0))
-    if not id or not name or not flowId:
+    taskId = int(request.json.get('taskId', 0))
+    if not id or not name or not taskId:
         return response(code=1, message='修改失败，缺少必要参数')
-    release = ReleaseModel.query.get(id)
-    release.name = name
-    release.flow_id = flowId
+    flow = FlowModel.query.get(id)
+    flow.name = name
+    flow.task_id = taskId
     db.session.commit()
-    return response(code=0, message='修改版本成功')
+    return response(code=0, message='修改工作流成功')
 
+
+@bp.route('/model_list', methods=['POST'])
+@jwt_required(refresh=True)
+def get_models():
+    # 构造查询语句
+    release_id =int(request.json.get('releaseId', 0))
+    query = ModelModel.query.filter(ModelModel.release_id == release_id)
+    models = query.all()  # 获取全部数据
+    total = query.count()  # 获取总数据量
+    # 构造返回数据
+    data = {
+        'list': [model.to_dict() for model in models],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
+        'total': total,  # 总数据量
+    }
+    print(data['list'])
+    return response(code=0, data=data, message='获取版本模型配置成功')
+
+
+@bp.route('/model_add', methods=['POST'])
+@jwt_required(refresh=True)
+def add_model():
+    name = request.json.get('name', '').strip()
+    weightId = request.json.get('weightId', '').strip()
+    releaseId =int(request.json.get('releaseId', 0))
+    if not name or not weightId or not releaseId:
+        return response(code=1, message='添加失败，缺少必要参数')
+    release = ReleaseModel.query.get(releaseId)
+    if release is None:
+        return response(code=1, message='添加失败，版本不存在')
+    weight = WeightModel.query.get(weightId)
+    if weight is None:
+        return response(code=1, message='添加失败，权重不存在')
+    model = ModelModel(name=name, weight_id=weightId, release_id=releaseId)
+    db.session.add(model)
+    db.session.commit()
+    return response(code=0, message='添加模型成功')
+
+
+@bp.route('/model_delete/<int:model_id>', methods=['DELETE'])
+@jwt_required(refresh=True)
+def delete_model(model_id):
+    model = ModelModel.query.get(model_id)
+    if model is None:
+        return response(code=1, message='删除失败，模型不存在')
+    db.session.delete(model)
+    db.session.commit()
+    return response(code=0, message='删除模型成功')
+
+
+@bp.route('/model_update', methods=['PUT'])
+@jwt_required(refresh=True)
+def update_model():
+    id = int(request.json.get('id', ''))
+    name = request.json.get('name', '').strip()
+    weightId = int(request.json.get('weightId', 0))
+    releaseId = int(request.json.get('releaseId', 0))
+    if not id or not name or not weightId or not releaseId:
+        return response(code=1, message='修改失败，缺少必要参数')
+    model = ModelModel.query.get(id)
+    model.name = name
+    model.weight_id = weightId
+    model.release_id = releaseId
+    db.session.commit()
+    return response(code=0, message='修改模型成功')
+
+
+@bp.route('/argument_list', methods=['POST'])
+@jwt_required(refresh=True)
+def get_arguments():
+    # 构造查询语句
+    release_id =int(request.json.get('releaseId', 0))
+    query = ArgumentModel.query.filter(ArgumentModel.release_id == release_id)
+    arguments = query.all()  # 获取全部数据
+    total = query.count()  # 获取总数据量
+    # 构造返回数据
+    data = {
+        'list': [argument.to_dict() for argument in arguments],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
+        'total': total,  # 总数据量
+    }
+    print(data['list'])
+    return response(code=0, data=data, message='获取版本参数配置成功')
+
+
+@bp.route('/argument_add', methods=['POST'])
+@jwt_required(refresh=True)
+def add_argument():
+    name = request.json.get('name', '').strip()
+    type = request.json.get('type', '').strip()
+    default = request.json.get('default', None)
+    config = request.json.get('config', None)
+    releaseId = int(request.json.get('releaseId', 0))
+
+    if not name or not type or releaseId == 0:
+        return response(code=1, message='添加失败，缺少必要参数')
+
+    release = ReleaseModel.query.get(releaseId)
+    if release is None:
+        return response(code=1, message='添加失败，版本不存在')
+
+    argument = ArgumentModel(name=name, type=type, default=default, config=config, release_id=releaseId)
+    db.session.add(argument)
+    db.session.commit()
+    return response(code=0, message='添加参数成功')
+
+
+@bp.route('/argument_delete/<int:argument_id>', methods=['DELETE'])
+@jwt_required(refresh=True)
+def delete_argument(argument_id):
+    argument = ArgumentModel.query.get(argument_id)
+    if argument is None:
+        return response(code=1, message='删除失败，参数不存在')
+    db.session.delete(argument)
+    db.session.commit()
+    return response(code=0, message='删除参数成功')
+
+
+@bp.route('/argument_update', methods=['PUT'])
+@jwt_required(refresh=True)
+def update_argument():
+    id = int(request.json.get('id', ''))
+    name = request.json.get('name', '').strip()
+    type = request.json.get('type', '').strip()
+    default = request.json.get('default', None)
+    config = request.json.get('config', None)
+    releaseId = int(request.json.get('releaseId', 0))
+
+    if not id or not name or not type or releaseId == 0:
+        return response(code=1, message='修改失败，缺少必要参数')
+
+    argument = ArgumentModel.query.get(id)
+    if argument is None:
+        return response(code=1, message='修改失败，参数不存在')
+
+    argument.name = name
+    argument.type = type
+    argument.default = default
+    argument.config = config
+    argument.release_id = releaseId
+    db.session.commit()
+    return response(code=0, message='修改参数成功')

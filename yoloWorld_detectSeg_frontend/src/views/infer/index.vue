@@ -7,6 +7,7 @@ import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightA
   switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi} from "@/api/infer"
 import { ElMessage } from "element-plus"
 import UploadFile from "@/components/UploadFile/index.vue"
+import type { CascaderValue } from 'element-plus'
 // 将模式与参数的加载分开
 
 defineOptions({
@@ -257,20 +258,20 @@ const generateWeightOptions = (list: IWeightData[]) => {
   return optionsMap; // 返回每个 key 对应的 options 数组
 };
 // 下拉菜单的选择事件
-const handleTaskChange = (selectedOptions: string[]) => {
-  if (selectedOptions.length !== 2) return // 如果选中的项数不为2，则返回
-  selectedTaskData.taskType = selectedOptions[0]
-  selectedTaskData.task = selectedOptions[1]
+const handleTaskChange = (selectedOptions: CascaderValue) => {
+  if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
+  selectedTaskData.taskType = selectedOptions[0] as string
+  selectedTaskData.task = selectedOptions[1] as string
   const message = `已选择任务类型：${selectedOptions[0]} 任务：${selectedOptions[1]}`
   ElMessage({
     message: message,
     type: "success"
   })
 }
-const handleFlowChange = (selectedOptions: string[]) => {
-  if (selectedOptions.length !== 2) return // 如果选中的项数不为2，则返回
-  selectedFlowData.flow = selectedOptions[0]
-  selectedFlowData.release = selectedOptions[1]
+const handleFlowChange = (selectedOptions: CascaderValue) => {
+  if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
+  selectedFlowData.flow = selectedOptions[0] as string
+  selectedFlowData.release = selectedOptions[1] as string
   const message = `已选择工作流：${selectedOptions[0]} 版本：${selectedOptions[1]}`
   ElMessage({
     message: message,

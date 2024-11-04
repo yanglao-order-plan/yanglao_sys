@@ -21,6 +21,8 @@ from blueprints.infer_local_bp import bp as infer_local_bp
 from blueprints.task_type_manage_bp import bp as task_type_manage_bp
 from blueprints.task_manage_bp import bp as task_manage_bp
 from blueprints.flow_manage_bp import bp as flow_manage_bp
+from blueprints.weight_manage_bp import bp as weight_manage_bp
+from blueprints.release_manage_bp import bp as release_manage_bp
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -67,6 +69,8 @@ app.register_blueprint(user_manage_bp, url_prefix='/user-manage')
 app.register_blueprint(task_type_manage_bp, url_prefix='/task_type-manage')
 app.register_blueprint(task_manage_bp, url_prefix='/task-manage')
 app.register_blueprint(flow_manage_bp, url_prefix='/flow-manage')
+app.register_blueprint(weight_manage_bp, url_prefix='/weight-manage')
+app.register_blueprint(release_manage_bp, url_prefix='/release-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
 app.register_blueprint(infer_local_bp, url_prefix='/infer_local')
 

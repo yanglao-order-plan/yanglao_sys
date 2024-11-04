@@ -418,6 +418,24 @@ export const asyncRoutes: RouteRecordRaw[] = [
           elIcon: "Grid"
         }
       },
+      {
+        path: "release-manage",
+        component: () => import("@/views/manage/release/index.vue"),
+        name: "ReleaseManage",
+        meta: {
+          title: "版本管理",
+          elIcon: "Grid"
+        }
+      },
+      {
+        path: "weight-manage",
+        component: () => import("@/views/manage/weight/index.vue"),
+        name: "WeightManage",
+        meta: {
+          title: "权重管理",
+          elIcon: "Grid"
+        }
+      },
     ]
   },
   {

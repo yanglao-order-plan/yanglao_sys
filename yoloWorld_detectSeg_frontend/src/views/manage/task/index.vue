@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, watch } from "vue"
+import { reactive, ref, watch, computed } from "vue"
 import { 
   createTaskDataApi, deleteTaskDataApi, updateTaskDataApi, getTaskDataApi, getTaskTypeDataApi
 } from "@/api/manage"
@@ -7,6 +7,7 @@ import { type IGetTaskData } from "@/api/manage/types/task"
 import { type FormInstance, type FormRules, ElMessage, ElMessageBox, ElTable } from "element-plus"
 import { Search, Refresh, CirclePlus, Delete, Download, RefreshRight } from "@element-plus/icons-vue"
 import { usePagination } from "@/hooks/usePagination"
+import { type IGetTaskTypeData } from "@/api/manage/types/task_type"
 
 defineOptions({
   name: "TaskManage"
@@ -21,8 +22,11 @@ const dialogVisible = ref<boolean>(false)
 const formRef = ref<FormInstance | null>(null)
 const formData = reactive({
   name: "",
-  typeId: "",
+  typeId: 0,
 })
+const formTypeId = computed(() => {
+  return formData.typeId === 0 ? '' : formData.typeId;
+});
 const formRules: FormRules = reactive({
   name: [{ required: true, trigger: "blur", message: "请输入任务名称" }],
   typeId: [{ required: true, trigger: "blur", message: "请选择任务类型" }],
@@ -54,15 +58,13 @@ const handleCreate = () => {
           getTableData()
         })
       }
-    } else {
-      return false
     }
   })
 }
 const resetForm = () => {
   currentUpdateId.value = undefined
   formData.name = ""
-  formData.typeId = ""
+  formData.typeId = 0
 }
 //#region 删
 const handleDelete = (row: IGetTaskData) => {
@@ -103,7 +105,7 @@ const handleBatchDelete = () => {
 }
 
 //#region 改
-const currentUpdateId = ref<undefined | string>(undefined)
+const currentUpdateId = ref<undefined | number>(undefined)
 const handleUpdate = (row: IGetTaskData) => {
   currentUpdateId.value = row.id
   formData.name = row.task
@@ -114,9 +116,13 @@ const handleUpdate = (row: IGetTaskData) => {
 
 //#region 查
 const tableData = ref<IGetTaskData[]>([])
-const taskTypeData = ref([])
+const taskTypeData = ref<IGetTaskTypeData[]>([])
 const searchFormRef = ref<FormInstance | null>(null)
 const searchData = reactive({
+  task: "",
+  taskType: ""
+})
+const currentSearchData = reactive({
   task: "",
   taskType: ""
 })
@@ -125,7 +131,7 @@ const getTableData = () => {
   getTaskDataApi({
     currentPage: paginationData.currentPage,
     size: paginationData.pageSize,
-    task: searchData.task || undefined,
+    task: currentSearchData.task || undefined,
     taskType: searchData.taskType || undefined,
   })
     .then((res) => {
@@ -140,6 +146,13 @@ const getTableData = () => {
     })
 }
 const handleSearch = () => {
+  if (
+    currentSearchData.taskType !== searchData.taskType ||
+    currentSearchData.task !== searchData.task
+  ){
+    currentSearchData.taskType = searchData.taskType
+    currentSearchData.task = searchData.task
+  }
   if (paginationData.currentPage === 1) {
     getTableData()
   }
@@ -246,7 +259,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
     >
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px" label-position="left">
         <el-form-item prop="name" label="任务类型">
-          <el-select v-model="formData.typeId" placeholder="请选择任务类型">
+          <el-select v-model="formTypeId" placeholder="请选择任务类型">
             <el-option
               v-for="type in taskTypeData"
               :key="type.id"

@@ -47,7 +47,7 @@ const handleCreate = () => {
           if (res.code === 0) {
             ElMessage.success("新增成功")
             dialogVisible.value = false
-            getUserData()
+            getTableData()
           } else {
             ElMessage.error(res.message)
           }
@@ -65,8 +65,6 @@ const handleCreate = () => {
           getTableData()
         })
       }
-    } else {
-      return false
     }
   })
 }
@@ -86,7 +84,7 @@ const handleDelete = (row: IGetUserData) => {
   }).then(() => {
     deleteUserDataApi(row.id).then(() => {
       ElMessage.success("删除成功")
-      getUserData()
+      getTableData()
     })
   })
 }
@@ -106,7 +104,7 @@ const handleBatchDelete = () => {
     } else {
       selectionRows.forEach((row: any) => {
         deleteUserDataApi(row.id).then(() => {
-          getUserData()
+          getTableData()
         })
       })
       ElMessage.success("删除成功")
@@ -117,7 +115,7 @@ const handleBatchDelete = () => {
 
 //#region 改
 const currentUpdateId = ref<undefined | string>(undefined)
-const handleUpdate = (row: IGetTableData) => {
+const handleUpdate = (row: IGetUserData) => {
   currentUpdateId.value = row.id
   formData.username = row.username
   formData.email = row.email
@@ -128,7 +126,7 @@ const handleUpdate = (row: IGetTableData) => {
 //#endregion
 
 //#region 查
-const tableData = ref<IGetTableData[]>([])
+const tableData = ref<IGetUserData[]>([])
 const searchFormRef = ref<FormInstance | null>(null)
 const searchData = reactive({
   username: "",

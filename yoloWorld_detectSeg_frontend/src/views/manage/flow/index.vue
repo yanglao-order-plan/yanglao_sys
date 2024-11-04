@@ -4,14 +4,20 @@ import {
   createFlowDataApi, deleteFlowDataApi, updateFlowDataApi, getFlowDataApi, getTaskDataApi
 } from "@/api/manage"
 import { type IGetFlowData } from "@/api/manage/types/flow"
+import { type IGetTaskData } from "@/api/manage/types/task"
 import { type FormInstance, type FormRules, ElMessage, ElMessageBox, ElTable } from "element-plus"
 import { Search, Refresh, CirclePlus, Delete, Download, RefreshRight } from "@element-plus/icons-vue"
 import { usePagination } from "@/hooks/usePagination"
-
+import type { CascaderValue } from 'element-plus'
 defineOptions({
-  name: "TaskManage"
+  name: "FlowManage"
 })
-
+interface CascaderProps {
+  expandTrigger?: "click" | "hover"
+}
+const props: CascaderProps = {
+  expandTrigger: "hover" as const
+}
 const loading = ref<boolean>(false)
 const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
 const multipleTableRef = ref<InstanceType<typeof ElTable>>()
@@ -19,10 +25,10 @@ const multipleTableRef = ref<InstanceType<typeof ElTable>>()
 //#region 增
 const dialogVisible = ref<boolean>(false)
 const formRef = ref<FormInstance | null>(null)
-const selectedTaskOptions = ref([])
+const selectedTaskOptions = ref<number[]>([])
 const formData = reactive({
   name: "",
-  taskId: "",
+  taskId: 0,
 })
 const formRules: FormRules = reactive({
   name: [{ required: true, trigger: "blur", message: "请输入工作流名称" }],
@@ -55,15 +61,13 @@ const handleCreate = () => {
           getTableData()
         })
       }
-    } else {
-      return false
     }
   })
 }
 const resetForm = () => {
   currentUpdateId.value = undefined
   formData.name = ""
-  formData.taskId = ""
+  formData.taskId = 0
 }
 //#region 删
 const handleDelete = (row: IGetFlowData) => {
@@ -104,7 +108,7 @@ const handleBatchDelete = () => {
 }
 
 //#region 改
-const currentUpdateId = ref<undefined | string>(undefined)
+const currentUpdateId = ref<undefined | number>(undefined)
 const handleUpdate = (row: IGetFlowData) => {
   currentUpdateId.value = row.id
   formData.name = row.flow
@@ -117,8 +121,8 @@ const handleUpdate = (row: IGetFlowData) => {
 
 //#region 查
 const tableData = ref<IGetFlowData[]>([])
-const taskData = ref([])
-const taskOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
+const taskData = ref<IGetTaskData[]>([]) // 添加明确的类型声明
+const taskOptions = ref<{ value: number; label: string; children: { value: number; label: string }[] }[]>([])
 const currentSearchData = reactive({
   flow: "",
   task: "",
@@ -153,10 +157,9 @@ const generateTaskCascaderOptions = () => {
   })
   return options
 }
-const handleTaskChange = (selectedOptions: string[]) => {
-  if (selectedOptions.length !== 2) return // 如果选中的项数不为2，则返回
-  formData.taskId = selectedOptions[1]
-  console.log(formData.taskId)
+const handleTaskChange = (selectedOptions: CascaderValue) => {
+  if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
+  formData.taskId = selectedOptions[1] as number
 }
 
 const getTableData = () => {

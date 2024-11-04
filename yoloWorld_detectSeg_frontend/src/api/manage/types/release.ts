@@ -8,14 +8,16 @@ export interface ICreateReleaseRequestData {
 }
 export interface ICreateModelRequestData {
   name: string
-  weightId: string
+  weightId: number
+  releaseId: number
 }
 export interface ICreateArgumentRequestData {
   name: string
   type: string
-  default: any
+  default: JSON
   config: JSON
   dynamic: number
+  releaseId: number
 }
 export interface IUpdateReleaseRequestData {
   id: number
@@ -28,13 +30,13 @@ export interface IUpdateReleaseRequestData {
 export interface IUpdateModelRequestData {  // 兼update
   id: number
   name: string
-  weightId: string
+  weightId: number
 }
-export interface IUpdateModelRequestData {  // 兼update
+export interface IUpdateArgumentRequestData {  // 兼update
   id: number
   name: string
   type: string
-  default: any
+  default: JSON
   config: JSON
   dynamic: number
 }
@@ -48,19 +50,42 @@ export interface IGetReleaseRequestData {
 }
 export interface IGetReleaseData {
   id: number
-  name: string 
-  showName: string
+  release: string 
+  releaseShow: string
+  flowId: number
   flow: string
-  models: IGetModelData[]
-  arguments: IGetArgumentData[]
+  task: string
+  taskId: number
+  taskType: string
+  typeId: number
 }
 export type GetReleaseResponseData = IApiResponseData<{
   list: IGetReleaseData[]
   total: number
 }>
+export interface IGetModelRequestData {
+  releaseId: number
+}
 export type IGetModelData = IUpdateModelRequestData;
-export type IGetArgumentData = IUpdateModelRequestData;
+export type GetModelResponseData = IApiResponseData<{
+  list: IGetModelData[]
+  total: number
+}>
+export type IGetArgumentRequestData = IGetModelRequestData
+export type IGetArgumentData = IUpdateArgumentRequestData;
+export type GetArgumentResponseData = IApiResponseData<{
+  list: IGetArgumentData[]
+  total: number
+}>
 
 export type createReleaseResponseData = IApiResponseData<string>
 export type deleteReleaseResponseData = IApiResponseData<string>
 export type upDateReleaseResponseData = IApiResponseData<string>
+
+export type createModelResponseData = IApiResponseData<string>
+export type deleteModelResponseData = IApiResponseData<string>
+export type upDateModelResponseData = IApiResponseData<string>
+
+export type createArgumentResponseData = IApiResponseData<string>
+export type deleteArgumentResponseData = IApiResponseData<string>
+export type upDateArgumentResponseData = IApiResponseData<string>

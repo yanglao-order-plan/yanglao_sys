@@ -14,19 +14,12 @@ export interface IUpdateWeightTypeRequestData {
 export interface IGetWeightRequestData {
   currentPage: number
   size: number
-  name?: string
+  weight?: string
   enable?: number
 }
-export interface IGetWeightRequestData {
-  currentPage: number
-  size: number
-  weight?: string
-  enbale?: number
-}
-
 export interface IGetWeightData {
   id: number
-  name: string
+  weight: string
   localPath: string
   onlineUrl: string
   enable: number

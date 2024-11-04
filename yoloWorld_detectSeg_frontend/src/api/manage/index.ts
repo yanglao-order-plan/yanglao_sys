@@ -121,58 +121,113 @@ export function getFlowDataApi(params: Flow.IGetFlowRequestData) {
 
 export function createReleaseDataApi(data: Release.ICreateReleaseRequestData) {
   return request<Release.createReleaseResponseData>({
-    url: "release-manager/add",
+    url: "release-manage/add",
     method: "post",
     data
   })
 }
 export function deleteReleaseDataApi(id: number) {
   return request<Release.deleteReleaseResponseData>({
-    url: `release-manager/delete/${id}`,
+    url: `release-manage/delete/${id}`,
     method: "delete"
   })
 }
 export function updateReleaseDataApi(data: Release.IUpdateReleaseRequestData) {
   return request<Release.upDateReleaseResponseData>({
-    url: "release-manager/update",
+    url: "release-manage/update",
     method: "put",
     data
   })
 }
 export function getReleaseDataApi(params: Release.IGetReleaseRequestData) {
   return request<Release.GetReleaseResponseData>({
-    url: "release-manager/list",
+    url: "release-manage/list",
     method: "get",
     params
   })
 }
 
 
-
 export function createWeightDataApi(data: Weight.ICreateWeightRequestData) {
   return request<Weight.createWeightResponseData>({
-    url: "weight-manager/add",
+    url: "weight-manage/add",
     method: "post",
     data
   })
 }
 export function deleteWeightDataApi(id: number) {
   return request<Weight.deleteWeightResponseData>({
-    url: `weight-manager/delete/${id}`,
+    url: `weight-manage/delete/${id}`,
     method: "delete"
   })
 }
 export function updateWeightDataApi(data: Weight.IUpdateWeightTypeRequestData) {
   return request<Weight.upDateWeightResponseData>({
-    url: "weight-manager/update",
+    url: "weight-manage/update",
     method: "put",
     data
   })
 }
 export function getWeightDataApi(params: Weight.IGetWeightRequestData) {
   return request<Weight.GetWeightResponseData>({
-    url: "weight-manager/list",
+    url: "weight-manage/list",
     method: "get",
     params
+  })
+}
+
+export function createModelDataApi(data: Release.ICreateModelRequestData) {
+  return request<Release.createModelResponseData>({
+    url: "release-manage/model_add",
+    method: "post",
+    data
+  })
+}
+export function deleteModelDataApi(id: number) {
+  return request<Release.deleteModelResponseData>({
+    url: `release-manage/moedel_delete/${id}`,
+    method: "delete"
+  })
+}
+export function updateModelDataApi(data: Release.IUpdateModelRequestData) {
+  return request<Release.upDateModelResponseData>({
+    url: "release-manage/model_update",
+    method: "put",
+    data
+  })
+}
+export function getModelDataApi(data: Release.IGetModelRequestData) {
+  return request<Release.GetModelResponseData>({
+    url: "release-manage/model_list",
+    method: "post",
+    data
+  })
+}
+
+export function createArgumentDataApi(data: Release.ICreateArgumentRequestData) {
+  return request<Release.createArgumentResponseData>({
+    url: "release-manage/argument_add",
+    method: "post",
+    data
+  })
+}
+export function deleteArgumentDataApi(id: number) {
+  return request<Release.deleteArgumentResponseData>({
+    url: `release-manage/argument_delete/${id}`,
+    method: "delete"
+  })
+}
+export function updateArgumentDataApi(data: Release.IUpdateArgumentRequestData) {
+  return request<Release.upDateArgumentResponseData>({
+    url: "release-manage/argument_update",
+    method: "put",
+    data
+  })
+}
+export function getArugmentDataApi(data: Release.IGetArgumentRequestData) {
+  return request<Release.GetArgumentResponseData>({
+    url: "release-manage/argument_list",
+    method: "post",
+    data
   })
 }
