@@ -56,15 +56,28 @@ const formWeightId = computed(() => {
   return formModelData.weightId === 0 ? '' : formModelData.weightId;
 });
 const currentDefault = computed(() => {
+  dialogDefaultVisible.value = true
   if (formArgumentData.default === JSON){
+    currentMode.value='view'
     return formArgumentData.default
-  }else{
-    return argumentData[]
+  }else if (currentShowId.value !== 0 && 
+  currentShowId.value in argumentData.value && 
+  currentShowArgumentId.value !== 0){
+    currentMode.value='code'
+    return argumentData.value[currentShowId.value][currentShowArgumentId.value].default
   }
-  return formModelData.weightId === 0 ? '' : formModelData.weightId;
 });
 const currentConfig = computed(() => {
-  return formModelData.weightId === 0 ? '' : formModelData.weightId;
+  dialogConfigVisible.value = true
+  if (formArgumentData.config === JSON){
+    currentMode.value='view'
+    return formArgumentData.config
+  }else if (currentShowId.value !== 0 && 
+  currentShowId.value in argumentData.value && 
+  currentShowArgumentId.value !== 0){
+    currentMode.value='code'
+    return argumentData.value[currentShowId.value][currentShowArgumentId.value].config
+  }
 });
 const formArgumentData = reactive({
   name: "",
@@ -322,6 +335,9 @@ const handleBatchDelete = () => {
 }
 //#region 改
 const currentUpdateId = ref<undefined | number>(undefined)
+const currentShowId = ref(0)
+const currentShowArgumentId = ref(0)
+const currentMode = ref('')
 const currentModelUpdateId = ref<undefined | number>(undefined)
 const currentArgumentUpdateId = ref<undefined | number>(undefined)
 const handleUpdate = (row: IGetReleaseData) => {
@@ -349,13 +365,10 @@ const handleArgumentUpdate = (row: IGetArgumentData, releaseId: number) => {
   formArgumentData.releaseId = releaseId
   dialogArgumentVisible.value = true
 }
-const handleDefaultOpen = (releaseId: number) => {
-  if (formArgumentData.default === JSON) {
-    
-  }
-  
+const handleDefaultOpen = (releaseId: number, argumentIdx: number) => {
+  currentShowArgumentId.value
 }
-const handleConfigOpen = (releaseId: number) => {
+const handleConfigOpen = (releaseId: number, argumentIdx: number) => {
 
 }
 //#region 查
@@ -501,6 +514,7 @@ const getArgumentData = (releaseId: number) => {
     })
 }
 const handleExpandChange = (row: IGetFlowData) => {
+  currentShowId.value = row.id
   getModelData(row.id)
   getArgumentData(row.id)
 }
@@ -679,16 +693,14 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                         <el-table-column prop="name" label="参数名称" align="center" /> 
                         <el-table-column prop="type" label="参数类型" align="center" />
                         <el-table-column prop="defult" label="参数初始值" align="center">
-                          <!-- <template #default="scope"> -->
-                          <el-button @click="handleDefaultOpen(slotProps.row.id)"/>
-                            <!-- <JsonEditorVue v-model="scope.row.default" placeholder="请输入" currentMode='view'/> -->
-                          <!-- </template> -->
+                          <template #default="scope">
+                            <el-button @click="currentShowArgumentId=scope.row.id"/>
+                          </template>
                         </el-table-column>
                         <el-table-column prop="config" label="参数配置" align="center">
-                          <!-- <template #default="scope">
-                            <JsonEditorVue v-model="scope.row.config" placeholder="请输入" currentMode='view'/>
-                          </template> -->
-                          <el-button @click="handleConfigOpen(slotProps.row.id)"/>
+                          <template #default="scope">
+                            <el-button @click="currentShowArgumentId=scope.row.id"/>
+                          </template>
                         </el-table-column>
                         <el-table-column prop="dynamic" label="动态性" align="center" />
                         <el-table-column fixed="right" label="操作" width="150" align="center">
