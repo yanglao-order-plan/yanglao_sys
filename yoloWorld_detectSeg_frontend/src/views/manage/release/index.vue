@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, watch, computed } from "vue"
+import { reactive, ref, watch, computed} from "vue"
 import { 
   createReleaseDataApi, deleteReleaseDataApi, updateReleaseDataApi, getReleaseDataApi, getFlowDataApi,
   getModelDataApi, getArugmentDataApi,deleteModelDataApi, deleteArgumentDataApi, createModelDataApi,
@@ -13,6 +13,7 @@ import { Search, Refresh, CirclePlus, Delete, Download, RefreshRight } from "@el
 import { usePagination } from "@/hooks/usePagination"
 import type { CascaderValue } from 'element-plus'
 import JsonEditorVue from 'json-editor-vue3'
+import { template } from "xe-utils"
 defineOptions({
   name: "ReleaseManage"
 })
@@ -34,6 +35,8 @@ const dialogVisible = ref<boolean>(false)
 const dialogModelVisible = ref<boolean>(false)
 const dialogArgumentVisible = ref<boolean>(false)
 const dialogDefaultVisible = ref<boolean>(false)
+const editDefault = ref<boolean>(false)
+const editConfig = ref<boolean>(false)
 const dialogConfigVisible = ref<boolean>(false)
 const formArgumentRef = ref<FormInstance | null>(null)
 const formModelRef = ref<FormInstance | null>(null)
@@ -55,30 +58,8 @@ const formModelData = reactive({
 const formWeightId = computed(() => {
   return formModelData.weightId === 0 ? '' : formModelData.weightId;
 });
-const currentDefault = computed(() => {
-  dialogDefaultVisible.value = true
-  if (formArgumentData.default === JSON){
-    currentMode.value='view'
-    return formArgumentData.default
-  }else if (currentShowId.value !== 0 && 
-  currentShowId.value in argumentData.value && 
-  currentShowArgumentId.value !== 0){
-    currentMode.value='code'
-    return argumentData.value[currentShowId.value][currentShowArgumentId.value].default
-  }
-});
-const currentConfig = computed(() => {
-  dialogConfigVisible.value = true
-  if (formArgumentData.config === JSON){
-    currentMode.value='view'
-    return formArgumentData.config
-  }else if (currentShowId.value !== 0 && 
-  currentShowId.value in argumentData.value && 
-  currentShowArgumentId.value !== 0){
-    currentMode.value='code'
-    return argumentData.value[currentShowId.value][currentShowArgumentId.value].config
-  }
-});
+const currentDefault = ref()
+const currentConfig = ref()
 const formArgumentData = reactive({
   name: "",
   type: "",
@@ -86,24 +67,43 @@ const formArgumentData = reactive({
   config: JSON,
   dynamic: 0,
   releaseId: 0,
-  weightId: 0
 })
 const formRules: FormRules = reactive({
-  release: [{ required: true, trigger: "blur", message: "请输入版本名称" }],
-  releaseName: [{ required: true, trigger: "blur", message: "请输入版本显示名称" }],
+  name: [{ required: true, trigger: "blur", message: "请输入版本名称" }],
+  showName: [{ required: true, trigger: "blur", message: "请输入版本显示名称" }],
   flowId: [{ required: true, trigger: "blur", message: "请选择工作流" }],
 })
 const formModelRules: FormRules = reactive({
-  model: [{ required: true, trigger: "blur", message: "请输入模型名称" }],
+  name: [{ required: true, trigger: "blur", message: "请输入模型名称" }],
   weightId: [{ required: true, trigger: "blur", message: "请选择权重" }],
 })
 const formArgumentRules: FormRules = reactive({
-  argument: [{ required: true, trigger: "blur", message: "请输入参数名称" }],
+  name: [{ required: true, trigger: "blur", message: "请输入参数名称" }],
   type: [{ required: true, trigger: "blur", message: "请输入参数类型名称" }],
-  // default: [{ required: true, trigger: "blur", message: "请输入参数初始值" }],
-  // config: [{ required: true, trigger: "blur", message: "请设置参数配置" }],
+  default: [{ required: false, trigger: "blur", message: "请输入参数初始值" }],
+  config: [{ required: false, trigger: "blur", message: "请设置参数配置" }],
   dynamic: [{ required: true, trigger: "blur", message: "请设置参数动态性" }],
 })
+const handleShow = (rowId: number, which: number, where: number) => {
+  let temper;
+  let edit = false;
+  if (where === 0){
+    temper = argumentData.value[currentShowId.value][rowId]
+    edit=false
+  } else if (where === 1) {
+    temper = formArgumentData
+    edit=true
+  }
+  if (which === 0){
+    currentDefault.value = temper?.default
+    editDefault.value = edit
+    dialogDefaultVisible.value=true
+  } else if (which === 1){
+    currentConfig.value = temper?.config
+    editConfig.value = edit
+    dialogConfigVisible.value=true
+  }
+}
 const handleCreate = () => {
   formRef.value?.validate((valid: boolean) => {
     if (valid) {
@@ -158,9 +158,10 @@ const handleModelCreate = () => {
           }
         })
       } else {
-        updateModelDataApi({  //更新不考虑迁移到其他版本下
+        updateModelDataApi({ 
           id: currentModelUpdateId.value,
           name: formModelData.name,
+          weight: formModelData.name,  // 不算
           weightId: formModelData.weightId,
         }).then(() => {
           ElMessage.success("修改成功")
@@ -172,9 +173,11 @@ const handleModelCreate = () => {
   })
 }
 const handleArgumentCreate = () => {
-  formModelRef.value?.validate((valid: boolean) => {
+  formArgumentRef.value?.validate((valid: boolean) => {
     if (valid) {
       if (currentArgumentUpdateId.value === undefined) {
+        console.log(formArgumentData.default)
+        console.log(formArgumentData.config)
         createArgumentDataApi({
           name: formArgumentData.name,
           type: formArgumentData.type,
@@ -188,6 +191,7 @@ const handleArgumentCreate = () => {
             dialogArgumentVisible.value = false
             getArgumentData(formArgumentData.releaseId)
           } else {
+            console.log(1000)
             ElMessage.error(res.message)
           }
         })
@@ -226,9 +230,15 @@ const resetArgumentForm = () => {
   currentArgumentUpdateId.value = undefined
   formArgumentData.name = ""
   formArgumentData.releaseId = 0,
-  formArgumentData.weightId = 0
   formArgumentData.default = JSON
   formArgumentData.config = JSON
+}
+const resetEditForm = (which: number) => {
+  if (which === 0) {
+    if (editDefault) formArgumentData.default = currentDefault.value
+  } else if (which === 1) {
+    if (editConfig) formArgumentData.config = currentConfig.value
+  }
 }
 //#region 删
 const handleDelete = (row: IGetFlowData) => {
@@ -336,8 +346,6 @@ const handleBatchDelete = () => {
 //#region 改
 const currentUpdateId = ref<undefined | number>(undefined)
 const currentShowId = ref(0)
-const currentShowArgumentId = ref(0)
-const currentMode = ref('')
 const currentModelUpdateId = ref<undefined | number>(undefined)
 const currentArgumentUpdateId = ref<undefined | number>(undefined)
 const handleUpdate = (row: IGetReleaseData) => {
@@ -364,12 +372,6 @@ const handleArgumentUpdate = (row: IGetArgumentData, releaseId: number) => {
   formArgumentData.dynamic = row.dynamic
   formArgumentData.releaseId = releaseId
   dialogArgumentVisible.value = true
-}
-const handleDefaultOpen = (releaseId: number, argumentIdx: number) => {
-  currentShowArgumentId.value
-}
-const handleConfigOpen = (releaseId: number, argumentIdx: number) => {
-
 }
 //#region 查
 const tableData = ref<IGetReleaseData[]>([])
@@ -487,7 +489,6 @@ const getModelData = (releaseId: number) => {
     releaseId: releaseId
   })
     .then((res) => {
-      // paginationData.total = res.data.total
       modelData.value[releaseId] = res.data.list
     })
     .catch(() => {
@@ -503,7 +504,6 @@ const getArgumentData = (releaseId: number) => {
     releaseId: releaseId
   })
     .then((res) => {
-      // paginationData.total = res.data.total
       argumentData.value[releaseId] = res.data.list
     })
     .catch(() => {
@@ -517,6 +517,8 @@ const handleExpandChange = (row: IGetFlowData) => {
   currentShowId.value = row.id
   getModelData(row.id)
   getArgumentData(row.id)
+  formModelData.releaseId = row.id
+  formArgumentData.releaseId = row.id
 }
 const handleSearch = () => {
   if (
@@ -694,12 +696,12 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                         <el-table-column prop="type" label="参数类型" align="center" />
                         <el-table-column prop="defult" label="参数初始值" align="center">
                           <template #default="scope">
-                            <el-button @click="currentShowArgumentId=scope.row.id"/>
+                            <el-button @click="handleShow(scope.$index, 0, 0)"/>
                           </template>
                         </el-table-column>
                         <el-table-column prop="config" label="参数配置" align="center">
                           <template #default="scope">
-                            <el-button @click="currentShowArgumentId=scope.row.id"/>
+                            <el-button @click="handleShow(scope.$index, 1, 0)"/>
                           </template>
                         </el-table-column>
                         <el-table-column prop="dynamic" label="动态性" align="center" />
@@ -760,10 +762,10 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
               placeholder="请选择工作流"
             />
         </el-form-item>
-        <el-form-item prop="release" label="版本名称">
+        <el-form-item prop="name" label="版本名称">
           <el-input v-model="formData.name" placeholder="请输入" />
         </el-form-item>
-        <el-form-item prop="releaseName" label="展示名称">
+        <el-form-item prop="showName" label="展示名称">
           <el-input v-model="formData.showName" placeholder="请输入" />
         </el-form-item>
       </el-form>
@@ -780,7 +782,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       width="30%"
     >
       <el-form ref="formModelRef" :model="formModelData" :rules="formModelRules" label-width="100px" label-position="left">
-        <el-form-item prop="model" label="模型名称">
+        <el-form-item prop="name" label="模型名称">
           <el-input v-model="formModelData.name" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="weightId" label="权重对象">
@@ -796,7 +798,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       </el-form>
       <template #footer>
         <el-button @click="dialogModelVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleModelCreate()">确认</el-button>
+        <el-button type="primary" @click="handleModelCreate">确认</el-button>
       </template>
     </el-dialog>
     <!-- 新增/修改argument -->
@@ -807,19 +809,19 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       width="30%"
     >
       <el-form ref="formArgumentRef" :model="formArgumentData" :rules="formArgumentRules" label-width="100px" label-position="left">
-        <el-form-item prop="argument" label="名称">
+        <el-form-item prop="name" label="名称">
           <el-input v-model="formArgumentData.name" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="type" label="类型">
           <el-input v-model="formArgumentData.type" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="default" label="初始值">
-          <JsonEditorVue v-model="formArgumentData.default" placeholder="请输入" currentMode='code'/>
+          <el-button @click="handleShow(-1, 0, 1)"/>    
         </el-form-item>
         <el-form-item prop="config" label="配置">
-          <JsonEditorVue v-model="formArgumentData.config" placeholder="请输入" currentMode='code'/>
+          <el-button @click="handleShow(-1, 1, 1)"/>  
         </el-form-item>
-        <el-form-item prop="flow" label="动态性">
+        <el-form-item prop="dynamic" label="动态性">
           <el-checkbox v-model="formArgumentData.dynamic" placeholder="请选择" />
         </el-form-item>
       </el-form>
@@ -828,20 +830,30 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
         <el-button type="primary" @click="handleArgumentCreate">确认</el-button>
       </template>
     </el-dialog>
-    <el-dialog :visible.sync="dialogDefaultVisible" title="参数默认值">
+    <el-dialog 
+    v-model="dialogDefaultVisible" title="参数默认值"
+    @close="resetEditForm(0)">
       <div>
-        <JsonEditorVue v-model="currentDefault" currentMode="currentMode" />
+        <JsonEditorVue v-if="editDefault" v-model="currentDefault"
+        :modeList="['code']" :currentMode="'code'" />
+        <JsonEditorVue v-else v-model="currentDefault"
+        :modeList="['view']" :currentMode="'view'" />
       </div>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">关闭</el-button>
+        <el-button @click="dialogDefaultVisible = false">关闭</el-button>
       </span>
     </el-dialog>
-    <el-dialog :visible.sync="dialogConfigVisible" title="参数配置">
+    <el-dialog 
+    v-model="dialogConfigVisible" title="参数配置"
+    @close="resetEditForm(1)">
       <div>
-        <JsonEditorVue v-model="currentConfig" currentMode="currentMode" />
+        <JsonEditorVue v-if="editConfig" v-model="currentConfig"
+        :modeList="['code']" :currentMode="'code'"/>
+        <JsonEditorVue v-else v-model="currentConfig"
+        :modeList="['view']" :currentMode="'view'"/>
       </div>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">关闭</el-button>
+        <el-button @click="dialogConfigVisible = false">关闭</el-button>
       </span>
     </el-dialog>
   </div>

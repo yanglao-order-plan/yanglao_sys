@@ -3,6 +3,8 @@ import os
 import copy
 
 import time
+import traceback
+from idlelib.configdialog import tracers
 from importlib.resources import files
 
 import pkg_resources
@@ -309,7 +311,6 @@ class ModelManager:
             self.loaded_model_config = None
             self.auto_segmentation_model_unselected.emit(None)
         model_config = copy.deepcopy(self.model_configs[model_id])
-        print(model_config)
         if model_config["type"] == "yolov10":
             from work_flow.flows.yolov10 import YOLOv10
 
@@ -642,7 +643,6 @@ class ModelManager:
             self.request_next_files_requested.emit(None)
         elif model_config["type"] == "ppocr_v4":
             from work_flow.flows.ppocr_v4 import PPOCRv4
-
             try:
                 model_config["model"] = PPOCRv4(
                     model_config, on_message=self.new_model_status.emit
@@ -652,10 +652,10 @@ class ModelManager:
                     f"✅ Model loaded successfully: {model_config['type']}"
                 )
             except Exception as e:  # noqa
+                error_message = traceback.format_exc()
+                logging.error(f"Error in loading model: {model_config['type']}\n{error_message}")
                 self.new_model_status.emit(
-                    "Error in loading model: {error_message}".format(
-                        error_message=str(e)
-                    )
+                    "Error in loading model: {error_message}".format(error_message=str(e))
                 )
                 self.new_model_status.emit(
                     f"❌ Error in loading model: {model_config['type']} with error: {str(e)}"

@@ -33,7 +33,7 @@ class PPOCRv4(Model):
     def load_model(self, model_name):
         model_abs_path = self.get_model_abs_path(self.config, model_name)
         model_task = os.path.splitext(
-            os.path.basename(self.config[model_name])
+            model_abs_path
         )[0]
         if not model_abs_path or not os.path.isfile(model_abs_path):
             raise FileNotFoundError(
@@ -71,6 +71,15 @@ class PPOCRv4(Model):
             self.rec_char_dict = "ppocr_keys_v1.txt"
         elif self.lang == "japan":
             self.rec_char_dict = "japan_dict.txt"
+
+        self.args = self.parse_args()
+
+    def set_args(self, **kwargs):
+        """
+        修改 args 对象中的内容，kwargs 的键会对应 args 对象中的属性名
+        """
+        for key, value in kwargs.items():
+            setattr(self.args, key, value)
 
     def parse_args(self):
         args = Args(  # 关键参数直接写死，你妈是不是死了？
@@ -124,7 +133,7 @@ class PPOCRv4(Model):
             rec_batch_num=6,
             max_text_length=25,
             rec_char_dict_path=os.path.join(
-                self.current_dir, f"configs/ppocr/{self.rec_char_dict}"
+                self.current_dir, f"../configs/ppocr/{self.rec_char_dict}"
             ),
             use_space_char=True,
             drop_score=self.drop_score,
@@ -136,7 +145,7 @@ class PPOCRv4(Model):
             # PGNet parmas
             e2e_pgnet_score_thresh=0.5,
             e2e_char_dict_path=os.path.join(
-                self.current_dir, "configs/ppocr/ppocr_ic15_dict.txt"
+                self.current_dir, "../configs/ppocr/ppocr_ic15_dict.txt"
             ),
             e2e_pgnet_valid_set="totaltext",
             e2e_pgnet_mode="fast",

@@ -30,6 +30,7 @@ export interface IUpdateReleaseRequestData {
 export interface IUpdateModelRequestData {  // 兼update
   id: number
   name: string
+  weight: string
   weightId: number
 }
 export interface IUpdateArgumentRequestData {  // 兼update

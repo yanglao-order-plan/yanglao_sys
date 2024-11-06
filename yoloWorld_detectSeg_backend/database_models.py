@@ -115,7 +115,10 @@ class ReleaseModel(db.Model):
     release_weights = db.relationship('ModelModel', backref='release', lazy=True, cascade='all, delete')
     release_args = db.relationship('ArgumentModel', backref='release', lazy=True, cascade='all, delete')
 
-    def __init__(self):
+    def __init__(self, name, show_name, flow_id):
+        self.name = name
+        self.show_name = show_name
+        self.flow_id = flow_id
         self._weights = None
         self._flow = None
         self._to_weights = None
@@ -257,7 +260,10 @@ class ModelModel(db.Model):
     name = db.Column(db.String(100), nullable=False, comment='关键字')
 
     # Relationships
-    def __init__(self):
+    def __init__(self, release_id, weight_id, name):
+        self.release_id = release_id
+        self.weight_id = weight_id
+        self.name = name
         self._weight = None
 
     @property
@@ -275,7 +281,8 @@ class ModelModel(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'weight': self.weight['weightName']
+            'weight': self.weight['weightName'],
+            'weightId': self.weight_id
         }
 
 
@@ -290,7 +297,13 @@ class ArgumentModel(db.Model):
     release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
                            comment='版本ID')
 
-    def __init__(self):
+    def __init__(self, name, type, default, config, dynamic, release_id):
+        self.name = name
+        self.type = type
+        self.default = default
+        self.config = config
+        self.dynamic = dynamic
+        self.release_id = release_id
         self._arg = None
 
     @property

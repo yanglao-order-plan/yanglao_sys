@@ -72,7 +72,7 @@ def add_release():
     name = request.json.get('name', '').strip()
     showName = request.json.get('showName', '').strip()
     flowId =int(request.json.get('flowId', 0))
-    if not name or not taskId:
+    if not name or not flowId:
         return response(code=1, message='添加失败，缺少必要参数')
     release = ReleaseModel.query.filter_by(name=name).first()
     if release is not None:
@@ -190,7 +190,6 @@ def get_arguments():
         'list': [argument.to_dict() for argument in arguments],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
         'total': total,  # 总数据量
     }
-    print(data['list'])
     return response(code=0, data=data, message='获取版本参数配置成功')
 
 
@@ -201,16 +200,18 @@ def add_argument():
     type = request.json.get('type', '').strip()
     default = request.json.get('default', None)
     config = request.json.get('config', None)
+    dynamic = request.json.get('dynamic', None)
     releaseId = int(request.json.get('releaseId', 0))
-
-    if not name or not type or releaseId == 0:
+    print(name, type, default, config, dynamic, releaseId)
+    if not name or not type or dynamic is None or releaseId == 0:
         return response(code=1, message='添加失败，缺少必要参数')
 
     release = ReleaseModel.query.get(releaseId)
     if release is None:
         return response(code=1, message='添加失败，版本不存在')
 
-    argument = ArgumentModel(name=name, type=type, default=default, config=config, release_id=releaseId)
+    argument = ArgumentModel(name=name, type=type, default=default,
+                             config=config, dynamic=dynamic, release_id=releaseId)
     db.session.add(argument)
     db.session.commit()
     return response(code=0, message='添加参数成功')
