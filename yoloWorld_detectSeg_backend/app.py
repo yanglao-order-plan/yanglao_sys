@@ -40,7 +40,7 @@ repo_dir = os.getcwd()
 weights_path = 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt'
 model_load_path = os.path.join(repo_dir, weights_path)
 weights_name = 'yolov5-3.1'
-os.environ['FLASK_DEBUG'] = '0'
+# os.environ['FLASK_DEBUG'] = '0'
 app = Flask(__name__)
 app.config.from_object(config)
 # 配置 Redis 作为会话存储
@@ -109,4 +109,4 @@ if __name__ == "__main__":
     test_database_connection()
     print_cyan('项目已启动')
 
-    app.run(host="127.0.0.1", port=args.port, debug=False)
+    app.run(host="127.0.0.1", port=args.port, debug=True)

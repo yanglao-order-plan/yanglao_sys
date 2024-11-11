@@ -131,7 +131,7 @@ class ReleaseModel(db.Model):
         return {
             'id': self.id,
             'release': self.name,
-            'releaeName': self.show_name,
+            'releaseName': self.show_name,
             'flow': self.flow.name,
             'flowId': self.flow_id,
             'task': self.flow.task.name,
@@ -253,9 +253,9 @@ class WeightModel(db.Model):
 class ModelModel(db.Model):
     __tablename__ = 'model'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
-    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), nullable=False,
                            comment='版本ID')
-    weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), primary_key=True, nullable=False,
+    weight_id = db.Column(db.Integer, db.ForeignKey('weight.id'), nullable=False,
                           comment='权重ID')
     name = db.Column(db.String(100), nullable=False, comment='关键字')
 
@@ -294,8 +294,7 @@ class ArgumentModel(db.Model):
     default = db.Column(db.JSON, nullable=True, comment='默认值')
     config = db.Column(db.JSON, nullable=True, comment='参数配置')
     dynamic = db.Column(db.Boolean, default=False, nullable=False, comment='是否为动态参数')
-    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), primary_key=True, nullable=False,
-                           comment='版本ID')
+    release_id = db.Column(db.Integer, db.ForeignKey('release.id'), nullable=False, comment='版本ID')
 
     def __init__(self, name, type, default, config, dynamic, release_id):
         self.name = name

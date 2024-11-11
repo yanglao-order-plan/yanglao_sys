@@ -174,7 +174,7 @@ def predict_model():
     start_time = datetime.datetime.now()
     model_manager.set_model_hyper(hyper)
     image = base64_img_to_rgb_cv_img(base64_data)
-    auto_labeling_result = model_manager.predict_shapes_threading(image)
+    auto_labeling_result = model_manager.predict_shapes()
     predict_shapes = auto_labeling_result.shapes
     predict_description = auto_labeling_result.description
     predict_drawer.load_image(image)

@@ -11,8 +11,6 @@ import PIL.Image
 import PIL.ImageOps
 from PIL import Image
 
-from PyQt5 import QtGui
-
 from utils.backend_utils.colorprinter import print_red
 
 

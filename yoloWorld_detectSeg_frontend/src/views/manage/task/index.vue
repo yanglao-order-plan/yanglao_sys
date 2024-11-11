@@ -24,8 +24,13 @@ const formData = reactive({
   name: "",
   typeId: 0,
 })
-const formTypeId = computed(() => {
-  return formData.typeId === 0 ? '' : formData.typeId;
+const formTypeId = computed({
+  get() {
+    return formData.typeId === 0 ? '' : formData.typeId;
+  },
+  set(value) {
+    formData.typeId = value === '' ? 0 : value;
+  }
 });
 const formRules: FormRules = reactive({
   name: [{ required: true, trigger: "blur", message: "请输入任务名称" }],
@@ -95,7 +100,6 @@ const handleBatchDelete = () => {
     } else {
       selectionRows.forEach((row: any) => {
         deleteTaskDataApi(row.id).then(() => {
-          getTableData()
         })
       })
       ElMessage.success("删除成功")

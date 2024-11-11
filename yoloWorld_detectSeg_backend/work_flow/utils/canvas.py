@@ -3,8 +3,10 @@ import math
 import copy
 import numpy as np
 import cv2
-
+from sqlalchemy.testing.plugin.plugin_base import logging
+import logging
 from .shape import Shape  # 假设已调整为使用 OpenCV 的 Shape 类
+from ..engines.types import AutoLabelingMode, AutoLabelingResult
 
 LABEL_COLORMAP = imgviz.label_colormap()
 
@@ -13,12 +15,9 @@ class Canvas:
 
     def __init__(self):
         self.shapes = []
-        self.shapes_backups = []
-        self.current = None
-        self.selected_shapes = []
         self.scale = 1.0
         self.image = None  # 这是一个 NumPy 数组，表示加载的图像
-        self.visible = {}
+        self.visible = True
         self._fill_drawing = False
         self._hide_background = False
         self.show_groups = False
@@ -27,7 +26,10 @@ class Canvas:
         self.show_scores = True
         self.show_degrees = False
         self.show_linking = True
-
+        self.auto_color = True
+        self.description = ''
+        self.his_labels = []
+        self.shift_auto_shape_color = 0
         # 其他必要的属性
 
     def set_fill_drawing(self, value):
@@ -37,8 +39,19 @@ class Canvas:
     def load_image(self, image):
         """加载图像（NumPy 数组）。"""
         self.image = image.copy()
-        self.shapes = []
         self.update()
+
+    def load_results(self, auto_labeling_result: AutoLabelingResult):
+        self.load_shapes(auto_labeling_result.shapes)
+        self.load_image(auto_labeling_result.image)
+        self.description = auto_labeling_result.description
+        self.visible = auto_labeling_result.visible
+
+    def get_results(self):
+        return [shape.to_dict() for shape in self.shapes], self.description
+
+    def get_shape_dict(self):
+        return [shape.to_dict() for shape in self.shapes]
 
     def load_shapes(self, shapes, replace=True):
         """加载形状。"""
@@ -60,24 +73,45 @@ class Canvas:
         # 实现需要的逻辑
         pass
 
-    def is_visible(self, shape):
-        """检查形状是否可见。"""
-        return self.visible.get(shape, True)
+    def merge_cache_label(self):
+        """Finish auto labeling object."""
+        for shape in self.shapes:
+            if shape.cache_label is not None and shape.label == AutoLabelingMode.OBJECT:
+                # Ask a label for the object
+                text = shape.cache_label
+                flags, group_id, description, difficult, kie_linking = (
+                    {},
+                    None,
+                    None,
+                    False,
+                    [],
+                )
+                if shape.attributes:
+                    text = shape.reset_attribute(text)
+                self.his_labels.append(text)
+                shape.label = text
+                shape.flags = flags
+                shape.group_id = group_id
+                shape.description = description
+                shape.difficult = difficult
+                shape.kie_linking = kie_linking
+        for shape in self.shapes:
+            self._update_shape_color(shape)
+
 
     def draw(self):
         """在图像上绘制形状并返回绘制结果。"""
-        if self.image is None:
-            return None
-
-        # 创建图像的副本以进行绘制
         image = self.image.copy()
+
+        if self.image is None or not self.visible:
+            logging.info("No image loaded.")
+            return image
+        self.merge_cache_label()
 
         # 绘制形状
         for shape in self.shapes:
-            if self.is_visible(shape):
-                shape.fill = self._fill_drawing
-                print(shape.fill)
-                shape.paint(image)
+            shape.fill = self._fill_drawing
+            shape.paint(image)  # visuable 属性在 Shape 类中实现
 
         # 绘制组
         if self.show_groups:
@@ -293,23 +327,16 @@ class Canvas:
 
         return image
 
-    # 根据需要添加管理形状的方法
-
-    def set_shape_visible(self, shape, value):
-        """设置形状的可见性。"""
-        self.visible[shape] = value
-        self.update()
-
     def reset_state(self):
         """清除形状和图像。"""
         self.image = None
-        self.shapes_backups = []
+        self.his_labels.clear()
         self.update()
 
     def _update_shape_color(self, shape):
         """更新形状颜色，适用于 OpenCV 图像处理"""
         r, g, b = self._get_rgb_by_label(shape.label)
-
+        r, g, b = int(r), int(g), int(b)
         # OpenCV 使用 BGR 顺序，填充和线条颜色使用整数元组
         shape.line_color = (b, g, r)  # 边界线的颜色
         shape.fill_color = (b, g, r, 128)  # 填充颜色，注意这里保持透明度信息
@@ -320,29 +347,13 @@ class Canvas:
         shape.select_line_color = (255, 255, 255)  # 选择形状的边框颜色
         shape.select_fill_color = (b, g, r, 155)  # 选择形状的填充颜色（包含透明度）
 
-    def _get_rgb_by_label(self, label, skip_label_info=False):
+    def _get_rgb_by_label(self, label):
         """根据标签获取 RGB 颜色，用于 OpenCV 图像处理"""
-        if label in self.label_info and not skip_label_info:
-            return tuple(self.label_info[label]["color"])
-
-        if self._config["shape_color"] == "auto":
-            # 在唯一标签列表中查找或添加标签以获取对应颜色
-            if not self.unique_label_list.find_items_by_label(label):
-                item = self.unique_label_list.create_item_from_label(label)
-                self.unique_label_list.addItem(item)
-            item = self.unique_label_list.find_items_by_label(label)[0]
-            label_id = self.unique_label_list.indexFromItem(item).row() + 1
-            label_id += self._config["shift_auto_shape_color"]
+        unique_label_set = list(set(self.his_labels))  # 使用集合来存储唯一标签
+        if self.auto_color and label in unique_label_set:
+            # 查找对应的标签索引
+            label_id = unique_label_set.index(label) + 1
+            label_id += self.shift_auto_shape_color
             return LABEL_COLORMAP[label_id % len(LABEL_COLORMAP)]
-
-        if (
-                self._config["shape_color"] == "manual"
-                and self._config["label_colors"]
-                and label in self._config["label_colors"]
-        ):
-            return self._config["label_colors"][label]
-
-        if self._config["default_shape_color"]:
-            return self._config["default_shape_color"]
-
-        return (0, 255, 0)  # 默认颜色：绿色
+        else:
+            return (0, 255, 0)  # 默认颜色：绿色

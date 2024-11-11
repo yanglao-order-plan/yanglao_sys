@@ -19,6 +19,14 @@ export interface ICreateArgumentRequestData {
   dynamic: number
   releaseId: number
 }
+export interface ISearchArgumentRequestData {
+  name: string
+  type: string
+  default: JSON
+  config: JSON
+  dynamic: number
+  releaseId: number
+}
 export interface IUpdateReleaseRequestData {
   id: number
   name: string
@@ -45,6 +53,7 @@ export interface IGetReleaseRequestData {
   currentPage: number
   size: number
   release?: string
+  releaseName?: string
   flow?: string
   task?: string
   taskType?: string
@@ -52,7 +61,7 @@ export interface IGetReleaseRequestData {
 export interface IGetReleaseData {
   id: number
   release: string 
-  releaseShow: string
+  releaseName: string
   flowId: number
   flow: string
   task: string
@@ -62,9 +71,17 @@ export interface IGetReleaseData {
 }
 export type GetReleaseResponseData = IApiResponseData<{
   list: IGetReleaseData[]
+  whole: { [key: number]: string }
   total: number
 }>
 export interface IGetModelRequestData {
+  model: string
+  releaseId: number
+}
+export interface IGetArgumentRequestData {
+  argument: string
+  type: string
+  dynamic: number
   releaseId: number
 }
 export type IGetModelData = IUpdateModelRequestData;
@@ -72,7 +89,6 @@ export type GetModelResponseData = IApiResponseData<{
   list: IGetModelData[]
   total: number
 }>
-export type IGetArgumentRequestData = IGetModelRequestData
 export type IGetArgumentData = IUpdateArgumentRequestData;
 export type GetArgumentResponseData = IApiResponseData<{
   list: IGetArgumentData[]

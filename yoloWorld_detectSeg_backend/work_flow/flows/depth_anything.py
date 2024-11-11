@@ -2,8 +2,6 @@ import os
 import cv2
 import numpy as np
 
-from PyQt5.QtCore import QCoreApplication
-
 from . import __preferred_device__, Model, AutoLabelingResult, OnnxBaseModel
 
 

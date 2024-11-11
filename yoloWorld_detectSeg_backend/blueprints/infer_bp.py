@@ -150,7 +150,7 @@ def switch_flow():
         'param': release.to_params
     }
     session['param'] = release.params
-    session['weight'] = {key: None for key in release.weights}
+    session['weight'] = {key: wid_list[0] for key, wid_list in release.weights.items()}
     return response(code=0, message='切换模型成功', data=data)
 
 
@@ -162,9 +162,16 @@ def get_current_weight():
     wid = session['weight'][weightKey]
     weight = WeightModel.query.filter_by(id=wid).first()
     data = {'weightName': weight.name if weight is not None else None}
-
     return response(code=0, message='获取当前调用选中模型成功', data=data)
 
+@bp.route('/weight/all', methods=['GET'])
+@jwt_required(refresh=True)
+def get_all_current_weights():
+    data = []
+    for key, wid in session['weight'].items():
+        weight = WeightModel.query.filter_by(id=wid).first()
+        data.append({'weightKey': key, 'weightName': weight.name if weight is not None else None})
+    return response(code=0, message='获取初始模型成功', data=data)
 
 # 暂时使用weights代替flows
 @bp.route('/weight/switch', methods=['POST'])
@@ -204,13 +211,15 @@ def get_current_param():
 @bp.route('/param/switch', methods=['POST'])
 @jwt_required(refresh=True)
 def switch_param():
-    paramName = request.json.get('switchParamName', None).strip()
-    paramValue = request.json.get('switchParamValue', None).strip()
-    if paramName:
+    paramName = request.json.get('switchParamName', '').strip()
+    paramValue = request.json.get('switchParamValue', None)
+    if isinstance(paramValue, str):
+        paramValue = paramValue.strip()
+    if not paramName:
         return response(code=1, message='修改配置失败，未设置配置')
 
     release = ReleaseModel.query.filter_by(id=session['release']).first()
-    if paramName not in release.params:
+    if not paramName or paramName not in release.params:
         return response(code=1, message='切换配置失败，该配置不属于工作流主键')
 
     if 'param' not in session:
@@ -256,9 +265,9 @@ def get_current_hyper():
 @bp.route('/hyper/switch', methods=['POST'])
 @jwt_required(refresh=True)
 def switch_hyper():
-    hyperName = request.json.get('switchHyperName', None)
+    hyperName = request.json.get('switchHyperName', '').strip()
     hyperValue = request.json.get('switchHyperValue', None)
-    if hyperName is None or hyperValue is None:
+    if not hyperName or hyperValue is None:
         return response(code=1, message='修改超参数失败，未设置超参数')
     try:
         session['hyper'][hyperName] = hyperValue
@@ -267,34 +276,25 @@ def switch_hyper():
     return response(code=0, message='配置修改成功')
 
 
-@bp.route('/model/predict', methods=['POST'])
+@bp.route('/model/predict', methods=['GET'])
 def predict_model():
-    # 检查请求中是否包含 base64 字符串
-    if "originalBase64" not in request.json:
-        return response(code=1, message='模型推断失败，未检测到图像base64编码')
-    # 获取 base64 编码的图片字符串
-    base64_data = request.json["originalBase64"]
-    # 解码 base64 字符串
-    hyper = session['hyper']
-    # 模型推理
+    model_manager.set_model_hyper(session['hyper'])
     start_time = datetime.datetime.now()
-    model_manager.set_model_hyper(hyper)
-    image = base64_img_to_rgb_cv_img(base64_data)
-    auto_labeling_result = model_manager.predict_shapes_threading(image)
-    predict_shapes = auto_labeling_result.shapes
-    predict_description = auto_labeling_result.description
-    predict_drawer.load_image(image)
-    predict_drawer.load_shapes(predict_shapes)
-    resultImage = predict_drawer.draw()
-    result_base64 = base64_encode_image(resultImage)
+    auto_labeling_result = model_manager.predict_shapes()
     end_time = datetime.datetime.now()
-    predict_shapes = [shape.to_dict() for shape in predict_shapes]
+    predict_drawer.load_results(auto_labeling_result)
+    # auto_labeling_result.check_shapes()
+    resultImage = predict_drawer.draw()
+    image = Image.fromarray(resultImage)
+    image.show()
+    result_base64 = base64_encode_image(resultImage)
     data = {
         'resultBase64': result_base64,
-        'inferResult': predict_shapes,
-        'inferDescription': predict_description,
+        'inferResult': predict_drawer.get_shape_dict(),
+        'inferDescription': predict_drawer.description,
         'inferPeriod': (end_time - start_time).total_seconds()
     }
+    print(data['inferDescription'])
     return response(code=0, message='模型推断已完成', data=data)
 
 

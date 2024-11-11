@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { reactive, ref, watch, computed} from "vue"
-import { 
+import {
   createReleaseDataApi, deleteReleaseDataApi, updateReleaseDataApi, getReleaseDataApi, getFlowDataApi,
   getModelDataApi, getArugmentDataApi,deleteModelDataApi, deleteArgumentDataApi, createModelDataApi,
-  updateModelDataApi, updateArgumentDataApi, getWeightDataApi, createArgumentDataApi
+  updateModelDataApi, updateArgumentDataApi, getWeightDataApi, createArgumentDataApi, deleteArgumentBlurApi
 } from "@/api/manage"
 import { type IGetFlowData } from "@/api/manage/types/flow"
 import { type IGetWeightData } from "@/api/manage/types/weight"
 import { type IGetReleaseData, IGetModelData, IGetArgumentData } from "@/api/manage/types/release"
-import { type FormInstance, type FormRules, ElMessage, ElMessageBox, ElTable } from "element-plus"
+import { type FormInstance, type FormRules, ElMessage, ElMessageBox, ElTable, selectKey } from "element-plus"
 import { Search, Refresh, CirclePlus, Delete, Download, RefreshRight } from "@element-plus/icons-vue"
 import { usePagination } from "@/hooks/usePagination"
 import type { CascaderValue } from 'element-plus'
@@ -23,10 +23,10 @@ interface CascaderProps {
 const props: CascaderProps = {
   expandTrigger: "hover" as const
 }
+const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
 const loading = ref<boolean>(false)
 const loadingModel = ref<boolean>(false)
 const loadingArgument = ref<boolean>(false)
-const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
 const multipleTableRef = ref<InstanceType<typeof ElTable>>()
 const multipleModelTableRef = ref<InstanceType<typeof ElTable>>()
 const multipleArgumentTableRef = ref<InstanceType<typeof ElTable>>()
@@ -34,6 +34,10 @@ const multipleArgumentTableRef = ref<InstanceType<typeof ElTable>>()
 const dialogVisible = ref<boolean>(false)
 const dialogModelVisible = ref<boolean>(false)
 const dialogArgumentVisible = ref<boolean>(false)
+const batchAddArgument = ref<boolean>(false)
+const batchDeleteArgument = ref<boolean>(false)
+const copyArgument = ref<boolean>(false)
+const copyModel = ref<boolean>(false)
 const dialogDefaultVisible = ref<boolean>(false)
 const editDefault = ref<boolean>(false)
 const editConfig = ref<boolean>(false)
@@ -51,12 +55,17 @@ const formData = reactive({
   flowId: 0,
 })
 const formModelData = reactive({
-  name: "", 
+  name: "",
   weightId: 0,
   releaseId: 0
 })
-const formWeightId = computed(() => {
-  return formModelData.weightId === 0 ? '' : formModelData.weightId;
+const formWeightId = computed({
+  get() {
+    return formModelData.weightId === 0 ? '' : formModelData.weightId;
+  },
+  set(value) {
+    formModelData.weightId = value === '' ? 0 : value;
+  }
 });
 const currentDefault = ref()
 const currentConfig = ref()
@@ -95,12 +104,12 @@ const handleShow = (rowId: number, which: number, where: number) => {
     edit=true
   }
   if (which === 0){
-    currentDefault.value = temper?.default
     editDefault.value = edit
+    currentDefault.value = temper?.default
     dialogDefaultVisible.value=true
   } else if (which === 1){
-    currentConfig.value = temper?.config
     editConfig.value = edit
+    currentConfig.value = temper?.config
     dialogConfigVisible.value=true
   }
 }
@@ -140,6 +149,32 @@ const handleCreate = () => {
     }
   })
 }
+const handleModel = () => {
+  if (copyModel.value) handleModelCopy()
+  else handleModelCreate()
+}
+const handleModelCopy = () => {
+  ElMessageBox.confirm(`正在拷贝模型：${formModelData.name}，确认拷贝？`, "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning"
+  }).then(() => {
+    if (currentShowId.value === formModelData.releaseId) {
+      ElMessage.error(`拷贝失败，目标版本与当前版本相同：${formArgumentData.name}`)
+    }
+    createModelDataApi({
+      name: formModelData.name,
+      weightId: formModelData.weightId,
+      releaseId: formModelData.releaseId
+    }).then(() => {
+      ElMessage.success("拷贝成功")
+      if (check_in(formModelData.releaseId)) {
+        getModelData(formModelData.releaseId)
+      }
+      dialogModelVisible.value = false
+    })
+  })
+}
 const handleModelCreate = () => {
   formModelRef.value?.validate((valid: boolean) => {
     if (valid) {
@@ -158,7 +193,7 @@ const handleModelCreate = () => {
           }
         })
       } else {
-        updateModelDataApi({ 
+        updateModelDataApi({
           id: currentModelUpdateId.value,
           name: formModelData.name,
           weight: formModelData.name,  // 不算
@@ -172,41 +207,45 @@ const handleModelCreate = () => {
     }
   })
 }
+
+const handleArgument = () => {
+  if (batchAddArgument.value) handleBatchCreateArgument()
+  else if (batchDeleteArgument.value) handleBatchDeleteArgument()
+  else if (copyArgument.value) handleArgumentCopy()
+  else handleArgumentCreate()
+}
 const handleArgumentCreate = () => {
   formArgumentRef.value?.validate((valid: boolean) => {
     if (valid) {
       if (currentArgumentUpdateId.value === undefined) {
-        console.log(formArgumentData.default)
-        console.log(formArgumentData.config)
         createArgumentDataApi({
           name: formArgumentData.name,
           type: formArgumentData.type,
           default: formArgumentData.default,
           config: formArgumentData.config,
           dynamic: formArgumentData.dynamic,
-          releaseId: formModelData.releaseId,
+          releaseId: formArgumentData.releaseId,
         }).then((res) => {
           if (res.code === 0) {
             ElMessage.success("新增成功")
-            dialogArgumentVisible.value = false
             getArgumentData(formArgumentData.releaseId)
+            dialogArgumentVisible.value = false
           } else {
-            console.log(1000)
             ElMessage.error(res.message)
           }
         })
       } else {
         updateArgumentDataApi({  //更新不考虑迁移到其他版本下
           id: currentArgumentUpdateId.value,
-          name: formModelData.name,
+          name: formArgumentData.name,
           type: formArgumentData.type,
           default: formArgumentData.default,
           config: formArgumentData.config,
           dynamic: formArgumentData.dynamic,
         }).then(() => {
           ElMessage.success("修改成功")
+          getArgumentData(formModelData.releaseId)
           dialogArgumentVisible.value = false
-          getModelData(formModelData.releaseId)
         })
       }
     }
@@ -229,15 +268,26 @@ const resetModelForm = () => {
 const resetArgumentForm = () => {
   currentArgumentUpdateId.value = undefined
   formArgumentData.name = ""
-  formArgumentData.releaseId = 0,
+  formArgumentData.type = ""
   formArgumentData.default = JSON
   formArgumentData.config = JSON
+  formArgumentData.dynamic = 0
+  formArgumentData.releaseId = 0
+  batchAddArgument.value = false
+  batchDeleteArgument.value = false
+  copyArgument.value = false
 }
 const resetEditForm = (which: number) => {
-  if (which === 0) {
-    if (editDefault) formArgumentData.default = currentDefault.value
-  } else if (which === 1) {
-    if (editConfig) formArgumentData.config = currentConfig.value
+  if (which === 0) {  // 编辑初始值
+    if (editDefault.value){
+      formArgumentData.default = currentDefault.value
+      currentDefault.value = null
+    } 
+  } else if (which === 1) {  // 编辑配置
+    if (editConfig.value) {
+      formArgumentData.config = currentConfig.value
+      currentConfig.value = null
+    }
   }
 }
 //#region 删
@@ -253,7 +303,7 @@ const handleDelete = (row: IGetFlowData) => {
     })
   })
 }
-const handleModelDelete = (row: IGetModelData) => {
+const handleModelDelete = (row: IGetModelData, releaseId: number) => {
   ElMessageBox.confirm(`正在删除模型：${row.name}，确认删除？`, "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -261,7 +311,7 @@ const handleModelDelete = (row: IGetModelData) => {
   }).then(() => {
     deleteModelDataApi(row.id).then(() => {
       ElMessage.success("删除成功")
-      getModelData(formModelData.releaseId)
+      getModelData(releaseId)
     })
   })
 }
@@ -273,12 +323,65 @@ const handleArgumentDelete = (row: IGetArgumentData) => {
   }).then(() => {
     deleteArgumentDataApi(row.id).then(() => {
       ElMessage.success("删除成功")
-      getArgumentData(formArgumentData.releaseId)
+      getArgumentData(currentShowId.value)
+    })
+  })
+}
+const preHandleArgumentCopy = (row: IGetArgumentData) => {
+  formArgumentData.name = row.name
+  formArgumentData.type = row.type
+  formArgumentData.default = row.default
+  formArgumentData.config = row.config
+  formArgumentData.dynamic = row.dynamic
+  formArgumentData.releaseId = currentShowId.value
+  dialogArgumentVisible.value = true
+  copyArgument.value = true
+}
+const preHandleModelCopy = (row: IGetModelData) => {
+  formModelData.name = row.name
+  formModelData.weightId = row.weightId
+  formModelData.releaseId = currentShowId.value  // 借用
+  dialogModelVisible.value = true
+  copyModel.value = true
+}
+const handleArgumentCopy = () => {
+  ElMessageBox.confirm(`正在拷贝参数：${formArgumentData.name}，确认拷贝？`, "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning"
+  }).then(() => {
+    if (currentShowId.value === formArgumentData.releaseId) {
+      ElMessage.error(`拷贝失败，目标版本与当前版本相同：${formArgumentData.name}`)
+    }
+    createArgumentDataApi({
+      name: formArgumentData.name,
+      type: formArgumentData.type,
+      default: formArgumentData.default,
+      config: formArgumentData.config,
+      dynamic: formArgumentData.dynamic,
+      releaseId: formArgumentData.releaseId
+    }).then(() => {
+      ElMessage.success("拷贝成功")
+      if (check_in(formArgumentData.releaseId)) {
+        getArgumentData(formArgumentData.releaseId)
+      }
+      dialogArgumentVisible.value = false
     })
   })
 }
 //#endregion
-
+const check_select = () => {
+  Object.entries(tableKey.value).forEach(([id, _]) => {
+    if(tableKey.value[Number(id)]) return true
+  })
+  return false
+}
+const check_in = (rid: number) => {
+  tableData.value.forEach((item) => {
+    if (item.id === rid) return true
+  });
+  return false
+}
 // 批量删除
 const handleModelBatchDelete = () => {
   ElMessageBox.confirm("确认删除选中的模型？", "提示", {
@@ -297,7 +400,7 @@ const handleModelBatchDelete = () => {
         })
       })
       ElMessage.success("删除成功")
-      handleModelRefresh()
+      handleModelRefresh(formModelData.releaseId)
     }
   })
 }
@@ -307,18 +410,17 @@ const handleArgumentBatchDelete = () => {
     cancelButtonText: "取消",
     type: "warning"
   }).then(() => {
-    const selectionRows = multipleArgumentTableRef.value!.getSelectionRows()
-    if (selectionRows.length === 0) {
+    if (check_select()) {
       ElMessage.warning("请先选择要删除的参数")
       return
     } else {
-      selectionRows.forEach((row: any) => {
-        deleteArgumentDataApi(row.id).then(() => {
-          getArgumentData(formArgumentData.releaseId)
+      Object.entries(tableKey.value).forEach(([id, _]) => {
+        deleteArgumentDataApi(Number(id)).then(() => {
+          if (Number(id) in argumentData) getArgumentData(Number(id))
         })
       })
-      ElMessage.success("删除成功")
-      handleArgumentRefresh()
+      dialogArgumentVisible.value = false
+      ElMessage.success("批量删除成功")
     }
   })
 }
@@ -343,15 +445,68 @@ const handleBatchDelete = () => {
     }
   })
 }
+const handleBatchCreateArgument = () => {
+  ElMessageBox.confirm("确认批量添加参数？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning"
+  }).then(() => {
+    if (check_select()) {
+      ElMessage.warning("请先选择关联的版本")
+      return
+    } else {
+      Object.entries(tableKey.value).forEach(([id, _]) => {
+        createArgumentDataApi({
+          name: formArgumentData.name,
+          type: formArgumentData.type,
+          default: formArgumentData.default,
+          config: formArgumentData.config,
+          dynamic: formArgumentData.dynamic,
+          releaseId: Number(id),
+        })
+        if (Number(id) in argumentData) getArgumentData(Number(id))
+      })
+      dialogArgumentVisible.value = false
+      ElMessage.success("批量添加成功")
+    }
+  })
+}
+const handleBatchDeleteArgument = () => {
+  ElMessageBox.confirm("确认批量删除参数？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning"
+  }).then(() => {
+    const selectionRows = multipleTableRef.value!.getSelectionRows()
+    if (selectionRows.length === 0) {
+      ElMessage.warning("请先选择关联的版本")
+      return
+    } else {
+      Object.entries(tableKey.value).forEach(([id, _]) => {
+        deleteArgumentBlurApi({
+          argument: formArgumentData.name,
+          type: formArgumentData.type,
+          dynamic: formArgumentData.dynamic,
+          releaseId: Number(id)
+        })
+        if (Number(id) in argumentData) getArgumentData(Number(id))
+      })
+      dialogArgumentVisible.value = false
+      ElMessage.success("批量删除成功")
+    }
+  })
+}
 //#region 改
+const expands = ref<string[]>([]);
 const currentUpdateId = ref<undefined | number>(undefined)
 const currentShowId = ref(0)
 const currentModelUpdateId = ref<undefined | number>(undefined)
 const currentArgumentUpdateId = ref<undefined | number>(undefined)
 const handleUpdate = (row: IGetReleaseData) => {
   currentUpdateId.value = row.id
-  formData.name = row.flow
-  formData.flowId = row.taskId
+  formData.name = row.release
+  formData.showName = row.releaseName
+  formData.flowId = row.flowId
   selectedFlowOptions.value.length = 0
   selectedFlowOptions.value.push(row.typeId, row.taskId, row.flowId)
   dialogVisible.value = true
@@ -363,25 +518,29 @@ const handleModelUpdate = (row: IGetModelData, releaseId: number) => {
   formModelData.releaseId = releaseId
   dialogModelVisible.value = true
 }
-const handleArgumentUpdate = (row: IGetArgumentData, releaseId: number) => {
+const handleArgumentUpdate = (row: IGetArgumentData) => {
   currentArgumentUpdateId.value = row.id
   formArgumentData.name = row.name
   formArgumentData.type = row.type
   formArgumentData.default = row.default
   formArgumentData.config = row.config
   formArgumentData.dynamic = row.dynamic
-  formArgumentData.releaseId = releaseId
+  formArgumentData.releaseId = currentShowId.value
   dialogArgumentVisible.value = true
 }
 //#region 查
+const isAboveSelected = ref(false); // 全页全选状态
+const isAllSelected = ref(false); // 全页全选状态
 const tableData = ref<IGetReleaseData[]>([])
+const tableKey = ref<{ [key: number]: boolean }>({});
+const tableName = ref<{ [key: number]: string }>({});
 const modelData = ref<{[releaseId: number]: IGetModelData[]}>({})
 const weightData = ref<IGetWeightData[]>([]) // 添加明确的类型声明
 const argumentData = ref<{[releaseId: number]: IGetArgumentData[]}>({})
 const flowData = ref<IGetFlowData[]>([]) // 添加明确的类型声明
-const flowOptions = ref<{ value: number; label: string; children: { value: number; label: string; children: { value: number; label: string}[] }[] }[]>([])
+const flowOptions = ref<{ value: number; label: string; children: { value: number; label: string; children: { value: number; label: string; }[] }[]}[]>([])
 const currentSearchData = reactive({
-  releaseShow: "",
+  releaseName: "",
   release: "",
   flow: "",
   task: "",
@@ -389,74 +548,91 @@ const currentSearchData = reactive({
 })
 const searchFormRef = ref<FormInstance | null>(null)
 const searchData = reactive({
-  releaseShow: "",
+  releaseName: "",
   release: "",
   flow: "",
   task: "",
   taskType: ""
-})
-const generateFlowCascaderOptions = () => {
-  const options: {
-    value: number;
-    label: string;
-    children: {
-      value: number;
-      label: string;
-      children: {
-        value: number;
-        label: string;
-      }[];
-    }[];
-  }[] = [];
+})  
 
-  const map: {
-    [key: string]: {
-      value: number;
-      label: string;
-      children: {
-        value: number;
-        label: string;
-        children: {
-          value: number;
-          label: string;
-        }[];
-      }[];
-    };
-  } = {};
+const titleText = computed(() => {
+  if (batchDeleteArgument.value) return '批量删除参数'
+  else if (copyArgument.value) return '拷贝参数'
+  return currentArgumentUpdateId.value === undefined ? '新增参数' : '修改参数';
+});
+
+const handleToggleSelectAbove = () => {
+  if (multipleTableRef.value) {
+    if (isAboveSelected.value) {
+      tableData.value.forEach((row) => {
+        tableKey.value[row.id] = true; // 更新选中状态
+      });
+    } else {
+      tableData.value.forEach((row) => {
+        tableKey.value[row.id] = false; // 更新选中状态
+      });
+    }
+  }
+};
+const handleToggleSelectAll = () => {
+  if (multipleTableRef.value) {
+    if (isAllSelected.value) {
+      { 
+        Object.entries(tableKey.value).forEach(([id, _]) => {
+          tableKey.value[Number(id)] = true;
+        })
+        isAboveSelected.value = true
+      }
+    } else { 
+        Object.entries(tableKey.value).forEach(([id, _]) => {
+          tableKey.value[Number(id)] = false;
+        })
+        isAboveSelected.value = false
+      }
+  }
+}
+const generateFlowCascaderOptions = () => {
+  const options: { value: number; label: string; children: { value: number; label: string; children: { value: number; label: string }[] }[] }[] = [];
+  const map: { [key: string]: { value: number; label: string; children: { value: number; label: string; children: { value: number; label: string }[] }[] } } = {};
 
   flowData.value.forEach((item: any) => {
-    const {id, flow, task, taskId, taskType, typeId} = item
+    const { flow, id, task, taskId, taskType, typeId } = item;
+
+    // 处理 taskType 层级，确保每个 taskType 只有一个唯一项
     if (!map[taskType]) {
       map[taskType] = {
         value: typeId,
         label: taskType,
         children: []
       };
-      options.push(map[taskType]);
+      options.push(map[taskType]);  // 将新的 taskType 加入最终的选项列表
     }
 
-    let taskObj = map[taskType].children.find((t) => t.value === task);
+    // 处理 task 层级，确保每个 task 在该 taskType 下只有唯一项
+    let taskObj = map[taskType].children.find(t => t.value === taskId);
     if (!taskObj) {
       taskObj = {
         value: taskId,
         label: task,
-        children: []
+        children: []  // 新的 task 不包含子项，flow 会是它的子项
       };
-      map[taskType].children.push(taskObj);
+      map[taskType].children.push(taskObj);  // 将新的 task 加入该 taskType 的 children
     }
 
-    let flowObj = taskObj.children.find((f) => f.value === flow);
+    // 处理 flow 层级，确保每个 task 下的 flow 唯一
+    let flowObj = taskObj.children.find(f => f.value === id);
     if (!flowObj) {
       flowObj = {
         value: id,
         label: flow,
       };
-      taskObj.children.push(flowObj);
+      taskObj.children.push(flowObj);  // 将新的 flow 加入该 task 的 children
     }
   });
 
   return options;
 };
+
 
 const handleFlowChange = (selectedOptions: CascaderValue) => {
   if (!Array.isArray(selectedOptions) || selectedOptions.length !== 3) return
@@ -468,6 +644,8 @@ const getTableData = () => {
   getReleaseDataApi({
     currentPage: paginationData.currentPage,
     size: paginationData.pageSize,
+    release: currentSearchData.release,
+    releaseName: currentSearchData.releaseName,
     flow: currentSearchData.flow || undefined,
     task: currentSearchData.task || undefined,
     taskType: currentSearchData.taskType || undefined,
@@ -475,6 +653,26 @@ const getTableData = () => {
     .then((res) => {
       paginationData.total = res.data.total
       tableData.value = res.data.list
+      for (const key in res.data.whole) {
+        const id = Number(key);
+        if (!(id in tableKey.value)) {
+          tableKey.value[id] = false;
+        }
+        if (!(id in tableName.value)) {
+          tableName.value[id] = res.data.whole[id];
+        }
+      }
+      tableName.value = res.data.whole
+      for (const id in tableKey.value) {
+        if (!(id in res.data.whole)) {
+          delete tableKey.value[id];
+        }
+      }
+      for (const id in tableName.value) {
+        if (!(id in res.data.whole)) {
+          delete tableName.value[id];
+        }
+      }
     })
     .catch(() => {
       tableData.value = []
@@ -483,9 +681,11 @@ const getTableData = () => {
       loading.value = false
     })
 }
+
 const getModelData = (releaseId: number) => {
   loadingModel.value = true
   getModelDataApi({
+    model: "",
     releaseId: releaseId
   })
     .then((res) => {
@@ -501,6 +701,9 @@ const getModelData = (releaseId: number) => {
 const getArgumentData = (releaseId: number) => {
   loadingArgument.value = true
   getArugmentDataApi({
+    argument: "",
+    type: "",
+    dynamic: -1,
     releaseId: releaseId
   })
     .then((res) => {
@@ -513,22 +716,33 @@ const getArgumentData = (releaseId: number) => {
       loadingArgument.value = false
     })
 }
-const handleExpandChange = (row: IGetFlowData) => {
+const handleExpandChange = (row: IGetFlowData, expandedRows: Array<number>) => {
   currentShowId.value = row.id
   getModelData(row.id)
   getArgumentData(row.id)
   formModelData.releaseId = row.id
   formArgumentData.releaseId = row.id
+
+  if (expandedRows.length) { 
+    //展开
+    expands.value = []; //先干掉之前展开的行
+    if (row) {
+      expands.value.push(String(row.id)); //push新的行 (原理有点类似防抖)
+    }
+  } else {
+    expands.value = []; //折叠 就清空expand-row-keys对应的数组
+  }
+
 }
 const handleSearch = () => {
   if (
-    currentSearchData.releaseShow !== searchData.releaseShow ||
+    currentSearchData.releaseName !== searchData.releaseName ||
     currentSearchData.release !== searchData.release ||
     currentSearchData.flow !== searchData.flow ||
     currentSearchData.task !== searchData.task ||
     currentSearchData.taskType !== searchData.taskType
   ){
-    currentSearchData.releaseShow = searchData.releaseShow
+    currentSearchData.releaseName = searchData.releaseName
     currentSearchData.release = searchData.release
     currentSearchData.flow = searchData.flow
     currentSearchData.task = searchData.task
@@ -586,11 +800,11 @@ const handleRefresh = () => {
   getFlowData()
   getWeightData()
 }
-const handleModelRefresh = () => {
-  getModelData(formModelData.releaseId)
+const handleModelRefresh = (releaseId: number) => {
+  getModelData(releaseId)
 }
-const handleArgumentRefresh = () => {
-  getArgumentData(formArgumentData.releaseId)
+const handleArgumentRefresh = (releaseId: number) => {
+  getArgumentData(releaseId)
 }
 //#endregion
 getFlowData()
@@ -616,7 +830,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
           <el-input v-model="searchData.release" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="task" label="展示名称">
-          <el-input v-model="searchData.releaseShow" placeholder="请输入" />
+          <el-input v-model="searchData.releaseName" placeholder="请输入" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
@@ -629,9 +843,11 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
         <div>
           <el-button type="primary" :icon="CirclePlus" @click="dialogVisible = true">新增版本</el-button>
           <el-button type="danger" :icon="Delete" @click="handleBatchDelete">批量删除</el-button>
+          <el-button type="primary" :icon="CirclePlus" @click="()=>{dialogArgumentVisible=true;batchAddArgument=true}">批量新增参数</el-button>
+          <el-button type="danger" :icon="Delete" @click="()=>{dialogArgumentVisible=true;batchDeleteArgument=true}">批量删除参数</el-button>
         </div>
         <div>
-          <el-tooltip content="下载">
+          <el-tooltip content="下载"> 
             <el-button type="primary" :icon="Download" circle />
           </el-tooltip>
           <el-tooltip content="刷新表格">
@@ -640,7 +856,19 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
         </div>
       </div>
       <div class="table-wrapper">
-        <el-table ref="multipleTableRef" :data="tableData" @expand-change="handleExpandChange">
+        <el-table ref="multipleTableRef" :data="tableData" @expand-change="handleExpandChange" :expand-row-keys="expands"
+            :row-key="row => row.id">
+            <el-table-column width="50" align="center">
+              <template #header>
+                <div style="display: flex; align-items: center; justify-content: center;">
+                  <el-checkbox v-model="isAboveSelected" @change="handleToggleSelectAbove" style="margin-right: 4px;"/>
+                  <el-checkbox v-model="isAllSelected" @change="handleToggleSelectAll"/>
+                </div>
+              </template>
+              <template #default="{ row }">
+                <el-checkbox v-model="tableKey[row.id]" />
+              </template>
+            </el-table-column>
           <el-table-column type="expand">
             <template class="demo-table-expand" #default="slotProps">
               <el-tabs type="border-card" v-model="activeName" class="demo-tabs">
@@ -648,7 +876,8 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                   <el-card v-loading="loadingModel" shadow="never">
                     <div class="toolbar-wrapper">
                       <div>
-                        <el-button type="primary" :icon="CirclePlus" @click="dialogModelVisible = true">新增模型</el-button>
+                        <el-button type="primary" :icon="CirclePlus" @click="()=>{dialogModelVisible = true; 
+                          formModelData.releaseId=slotProps.row.id}">新增模型</el-button>
                         <el-button type="danger" :icon="Delete" @click="handleModelBatchDelete">批量删除</el-button>
                       </div>
                       <div>
@@ -656,19 +885,21 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                           <el-button type="primary" :icon="Download" circle />
                         </el-tooltip>
                         <el-tooltip content="刷新表格">
-                          <el-button type="primary" :icon="RefreshRight" circle @click="handleModelRefresh" />
+                          <el-button type="primary" :icon="RefreshRight" circle @click="handleModelRefresh(slotProps.row.id)" />
                         </el-tooltip>
                       </div>
                     </div>
                     <div class="table-wrapper">
                       <el-table ref="multipleModelTableRef" :data="modelData[slotProps.row.id]">
-                        <el-table-column prop="name" label="模型名称" align="center" /> 
+                        <el-table-column prop="name" label="模型名称" align="center" />
                         <el-table-column prop="weight" label="权重名称" align="center" />
-                        <el-table-column fixed="right" label="操作" width="150" align="center">
+                        <el-table-column fixed="right" label="操作" width="200" align="center">
                           <template #default="scope">
                             <el-button type="primary" text bg size="small" @click="handleModelUpdate(scope.row, slotProps.row.id)">修改</el-button>
-                            <el-button type="danger" text bg size="small" @click="handleModelDelete(scope.row)">删除</el-button>
+                            <el-button type="success" text bg size="small" @click="preHandleModelCopy(scope.row)">拷贝</el-button>
+                            <el-button type="danger" text bg size="small" @click="handleModelDelete(scope.row, slotProps.row.id)">删除</el-button>
                           </template>
+                          
                         </el-table-column>
                       </el-table>
                     </div>
@@ -678,7 +909,8 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                   <el-card v-loading="loadingArgument" shadow="never">
                     <div class="toolbar-wrapper">
                       <div>
-                        <el-button type="primary" :icon="CirclePlus" @click="dialogArgumentVisible = true">新增参数</el-button>
+                        <el-button type="primary" :icon="CirclePlus" @click="()=>{dialogArgumentVisible = true; 
+                          formArgumentData.releaseId=slotProps.row.id}">新增参数</el-button>
                         <el-button type="danger" :icon="Delete" @click="handleArgumentBatchDelete">批量删除</el-button>
                       </div>
                       <div>
@@ -686,13 +918,13 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                           <el-button type="primary" :icon="Download" circle />
                         </el-tooltip>
                         <el-tooltip content="刷新表格">
-                          <el-button type="primary" :icon="RefreshRight" circle @click="handleArgumentRefresh" />
+                          <el-button type="primary" :icon="RefreshRight" circle @click="handleArgumentRefresh(slotProps.row.id)" />
                         </el-tooltip>
                       </div>
                     </div>
                     <div class="table-wrapper">
                       <el-table ref="multipleArgumentTableRef" :data="argumentData[slotProps.row.id]">
-                        <el-table-column prop="name" label="参数名称" align="center" /> 
+                        <el-table-column prop="name" label="参数名称" align="center" />
                         <el-table-column prop="type" label="参数类型" align="center" />
                         <el-table-column prop="defult" label="参数初始值" align="center">
                           <template #default="scope">
@@ -705,9 +937,10 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
                           </template>
                         </el-table-column>
                         <el-table-column prop="dynamic" label="动态性" align="center" />
-                        <el-table-column fixed="right" label="操作" width="150" align="center">
+                        <el-table-column fixed="right" label="操作" width="200" align="center">
                           <template #default="scope">
-                            <el-button type="primary" text bg size="small" @click="handleArgumentUpdate(scope.row, slotProps.row.id)">修改</el-button>
+                            <el-button type="primary" text bg size="small" @click="handleArgumentUpdate(scope.row)">修改</el-button>
+                            <el-button type="success" text bg size="small" @click="preHandleArgumentCopy(scope.row)">拷贝</el-button>
                             <el-button type="danger" text bg size="small" @click="handleArgumentDelete(scope.row)">删除</el-button>
                           </template>
                         </el-table-column>
@@ -718,12 +951,11 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
               </el-tabs>
             </template>
           </el-table-column>
-          <el-table-column type="selection" width="50" align="center" />
           <el-table-column prop="taskType" label="任务类型" align="center" />
           <el-table-column prop="task" label="任务" align="center" />
           <el-table-column prop="flow" label="工作流" align="center" />
           <el-table-column prop="release" label="版本" align="center" />
-          <el-table-column prop="releaseShow" label="展示" align="center" />
+          <el-table-column prop="releaseName" label="展示" align="center" />
           <el-table-column fixed="right" label="操作" width="150" align="center">
             <template #default="scope">
               <el-button type="primary" text bg size="small" @click="handleUpdate(scope.row)">修改</el-button>
@@ -782,11 +1014,19 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       width="30%"
     >
       <el-form ref="formModelRef" :model="formModelData" :rules="formModelRules" label-width="100px" label-position="left">
+        <el-select v-if="copyModel" v-model="formModelData.releaseId" placeholder="请选择目标版本" filterable>
+          <el-option
+            v-for="([rid, rname]) in Object.entries(tableName)"
+            :key="Number(rid)"
+            :label="rname"
+            :value="Number(rid)"
+          />
+        </el-select>
         <el-form-item prop="name" label="模型名称">
           <el-input v-model="formModelData.name" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="weightId" label="权重对象">
-          <el-select v-model="formWeightId" placeholder="请选择权重">
+          <el-select v-model="formWeightId" placeholder="请选择权重" filterable>
             <el-option
               v-for="weight in weightData"
               :key="weight.id"
@@ -798,39 +1038,47 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       </el-form>
       <template #footer>
         <el-button @click="dialogModelVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleModelCreate">确认</el-button>
+        <el-button type="primary" @click="handleModel">确认</el-button>
       </template>
     </el-dialog>
     <!-- 新增/修改argument -->
     <el-dialog
       v-model="dialogArgumentVisible"
-      :title="currentArgumentUpdateId === undefined ? '新增参数' : '修改参数'"
+      :title="titleText"
       @close="resetArgumentForm"
       width="30%"
     >
       <el-form ref="formArgumentRef" :model="formArgumentData" :rules="formArgumentRules" label-width="100px" label-position="left">
+        <el-select v-if="copyArgument" v-model="formArgumentData.releaseId" placeholder="请选择目标版本" filterable>
+          <el-option
+            v-for="([rid, rname]) in Object.entries(tableName)"
+            :key="Number(rid)"
+            :label="rname"
+            :value="Number(rid)"
+          />
+        </el-select>
         <el-form-item prop="name" label="名称">
           <el-input v-model="formArgumentData.name" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="type" label="类型">
           <el-input v-model="formArgumentData.type" placeholder="请输入" />
         </el-form-item>
-        <el-form-item prop="default" label="初始值">
-          <el-button @click="handleShow(-1, 0, 1)"/>    
+        <el-form-item v-if="!batchDeleteArgument" prop="default" label="初始值">
+          <el-button @click="handleShow(-1, 0, 1)"/>
         </el-form-item>
-        <el-form-item prop="config" label="配置">
-          <el-button @click="handleShow(-1, 1, 1)"/>  
+        <el-form-item v-if="!batchDeleteArgument" prop="config" label="配置">
+          <el-button @click="handleShow(-1, 1, 1)"/>
         </el-form-item>
         <el-form-item prop="dynamic" label="动态性">
           <el-checkbox v-model="formArgumentData.dynamic" placeholder="请选择" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogArgumentVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleArgumentCreate">确认</el-button>
+        <el-button @click="dialogArgumentVisible=false">关闭</el-button>
+        <el-button type="primary" @click="handleArgument">确认</el-button>
       </template>
     </el-dialog>
-    <el-dialog 
+    <el-dialog
     v-model="dialogDefaultVisible" title="参数默认值"
     @close="resetEditForm(0)">
       <div>
@@ -843,7 +1091,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
         <el-button @click="dialogDefaultVisible = false">关闭</el-button>
       </span>
     </el-dialog>
-    <el-dialog 
+    <el-dialog
     v-model="dialogConfigVisible" title="参数配置"
     @close="resetEditForm(1)">
       <div>

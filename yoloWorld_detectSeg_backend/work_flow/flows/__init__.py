@@ -11,7 +11,7 @@ from work_flow.__base__.yolo import YOLO
 from work_flow.utils.general import Args, is_possible_rectangle
 import work_flow.configs as configs
 from work_flow.utils import softmax
-from work_flow.utils.ppocr_utils.text_system import TextSystem
+from work_flow.utils.ppocr.text_system import TextSystem
 from work_flow.__base__.ram import RecognizeAnything
 from work_flow.utils.points_conversion import cxywh2xyxy, xywh2xyxy
 from work_flow.pose.rtmo_onnx import RTMO

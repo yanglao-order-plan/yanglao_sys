@@ -29,8 +29,8 @@ bp = Blueprint('weight', __name__, url_prefix='/weight-manage')
 @jwt_required(refresh=True)
 def get_weights():
     # 构造查询语句
-    weightName = request.args.get('weightName', '').strip()  # 获取权重名称
-    weightEnable = request.args.get('weightEnable', '').strip()  # 获取权重是否启用
+    weightName = request.args.get('weight', '').strip()  # 获取权重名称
+    weightEnable = request.args.get('enable', '').strip()  # 获取权重是否启用
     page = int(request.args.get('currentPage', 1))  # 获取页码，默认为第一页
     per_page = int(request.args.get('size', 10))  # 获取每页显示的数据量，默认为 10 条
     query = WeightModel.query  # 使用 TaskTypeModel 模型进行查询

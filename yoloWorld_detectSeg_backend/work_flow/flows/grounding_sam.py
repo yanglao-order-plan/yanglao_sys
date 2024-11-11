@@ -529,12 +529,12 @@ class GroundingSAM(Model):
 
         return shapes if label is None else shapes[0]
 
-    def predict_shapes(self, cv_image, image_path=None, text_prompt=None):
+    def predict_shapes(self, image, image_path=None, text_prompt=None):
         """
         Predict shapes from image
         """
 
-        if cv_image is None:
+        if image is None:
             return []
 
         try:
@@ -544,7 +544,7 @@ class GroundingSAM(Model):
             else:
                 if self.stop_inference:
                     return AutoLabelingResult([], replace=False)
-                image_embedding = self.model.encode(cv_image)
+                image_embedding = self.model.encode(image)
                 self.image_embedding_cache.put(
                     image_path,
                     image_embedding,
@@ -554,13 +554,13 @@ class GroundingSAM(Model):
 
             if text_prompt:
                 blob, inputs, caption = self.preprocess(
-                    cv_image, text_prompt, None
+                    image, text_prompt, None
                 )
                 outputs = self.net.get_ort_inference(
                     blob, inputs=inputs, extract=False
                 )
                 boxes_filt, pred_phrases = self.postprocess(outputs, caption)
-                img_h, img_w, _ = cv_image.shape
+                img_h, img_w, _ = image.shape
                 boxes = self.rescale_boxes(boxes_filt, img_h, img_w)
                 shapes = []
                 for box, label_info in zip(boxes, pred_phrases):

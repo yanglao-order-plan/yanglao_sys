@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, watch } from "vue"
+import { reactive, ref, watch, computed } from "vue"
 import { 
   createWeightDataApi, deleteWeightDataApi, updateWeightDataApi, getWeightDataApi,
 } from "@/api/manage"
@@ -27,8 +27,8 @@ const formData = reactive({
 })
 const formRules: FormRules = reactive({
   name: [{ required: true, trigger: "blur", message: "请输入权重名称" }],
-  localPath: [{ required: true, trigger: "blur", message: "请配置本地路径" }],
-  onlineUrl: [{ required: true, trigger: "blur", message: "请配置在线路径" }],
+  localPath: [{ required: false, trigger: "blur", message: "请配置本地路径" }],
+  onlineUrl: [{ required: false, trigger: "blur", message: "请配置在线路径" }],
   enable: [{ required: true, trigger: "blur", message: "请确认是否可用" }],
 })
 const handleCreate = () => {
@@ -128,19 +128,28 @@ const tableData = ref<IGetWeightData[]>([])
 const searchFormRef = ref<FormInstance | null>(null)
 const searchData = reactive({
   weight: "",
-  enable: 0,
+  enable: 1,
 })
+const searchEnable = computed({
+  get() {
+    return searchData.enable === 1 ? true : false;
+  },
+  set(value) {
+    searchData.enable = value ? 1 : 0;
+  }
+});
 const currentSearchData = reactive({
   weight: "",
-  enable: 0,
+  enable: 1,
 })
 const getTableData = () => {
   loading.value = true
+  console.log(currentSearchData.enable)
   getWeightDataApi({
     currentPage: paginationData.currentPage,
     size: paginationData.pageSize,
-    weight: currentSearchData.weight || undefined,
-    enable: currentSearchData.enable || undefined,
+    weight: currentSearchData.weight,
+    enable: currentSearchData.enable
   })
     .then((res) => {
       paginationData.total = res.data.total
@@ -190,7 +199,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
           <el-input v-model="searchData.weight" placeholder="请输入" />
         </el-form-item>
         <el-form-item prop="weightEnable" label="是否可用">
-          <el-checkbox v-model="searchData.enable" placeholder="请确认" />
+          <el-checkbox v-model="searchEnable" placeholder="请确认" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>

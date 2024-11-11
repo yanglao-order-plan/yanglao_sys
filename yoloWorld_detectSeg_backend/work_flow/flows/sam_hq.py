@@ -7,7 +7,11 @@ import onnxruntime
 import numpy as np
 
 from copy import deepcopy
-from . import __preferred_device__, Shape, AutoLabelingResult, ChineseClipONNX
+
+from sqlalchemy.testing.plugin.plugin_base import logging
+
+from . import __preferred_device__, Shape, AutoLabelingResult, ChineseClipONNX, LRUCache
+from ..engines.model import Model
 
 
 class SegmentAnythingONNX:
@@ -451,8 +455,8 @@ class SAM_HQ(Model):
                 masks = masks[0]
             shapes = self.post_process(masks, cv_image)
         except Exception as e:  # noqa
-            logger.warning("Could not inference model")
-            logger.warning(e)
+            logging.warning("Could not inference model")
+            logging.warning(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 

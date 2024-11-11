@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 
@@ -11,6 +12,8 @@ from . import Shape
 
 from .lru_cache import LRUCache
 from work_flow.engines.model import Model
+from ..__base__.clip import ChineseClipONNX
+from ..__base__.sam import EdgeSAMONNX
 
 
 class EdgeSAM(Model):
@@ -64,6 +67,7 @@ class EdgeSAM(Model):
                 "Could not download or initialize decoder of EdgeSAM."
             )
 
+        self.read_mode = self.config.get("read_mode", 'batch')
         # Load flows
         self.target_length = self.config.get("target_length", 1024)
         self.model = EdgeSAMONNX(
@@ -206,25 +210,25 @@ class EdgeSAM(Model):
                 "rectangle" if self.output_mode == "rectangle" else "rotation"
             )
             shape.closed = True
-            if self.clip_net is not None and self.classes:
+            if self.clip_net is not None and self.classes:  # classes充当prompt
                 img = image[y_min:y_max, x_min:x_max]
                 out = self.clip_net(img, self.classes)
                 shape.cache_label = self.classes[int(np.argmax(out))]
+            print(shape.label, shape.cache_label)
             shape.label = "AUTOLABEL_OBJECT"
             shape.selected = False
             shapes.append(shape)
 
         return shapes
 
-    def predict_shapes(self, cv_image, filename=None) -> AutoLabelingResult:
+    def predict_shapes(self, image, filename=None) -> AutoLabelingResult:
         """
         Predict shapes from image
         """
 
-        if cv_image is None or not self.marks:
+        if image is None or not self.marks:
             return AutoLabelingResult([], replace=False)
 
-        shapes = []
         try:
             # Use cached image embedding if possible
             cached_data = self.image_embedding_cache.get(filename)
@@ -233,18 +237,27 @@ class EdgeSAM(Model):
             else:
                 if self.stop_inference:
                     return AutoLabelingResult([], replace=False)
-                image_embedding = self.model.encode(cv_image)
+                image_embedding = self.model.encode(image)
                 self.image_embedding_cache.put(
                     filename,
                     image_embedding,
                 )
+                "E:\Models\yanglao/xanylabeling_data/flows\Lama_fp32\lama_fp32.onnx"
             if self.stop_inference:
                 return AutoLabelingResult([], replace=False)
-            masks = self.model.predict_masks(image_embedding, self.marks)
-            shapes = self.post_process(masks, cv_image)
+            if self.read_mode == 'follow':
+                shapes = []
+                for mark in self.marks:
+                    masks = self.model.predict_masks(image_embedding, [mark,])
+                    shapes.extend(self.post_process(masks, image))
+            elif self.read_mode == 'batch':
+                masks = self.model.predict_masks(image_embedding, self.marks)
+                shapes = self.post_process(masks, image)
+            else:
+                raise
         except Exception as e:  # noqa
-            logger.warning("Could not inference model")
-            logger.warning(e)
+            logging.warning("Could not inference model")
+            logging.warning(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 
@@ -269,7 +282,7 @@ class EdgeSAM(Model):
                 continue
             if self.stop_inference:
                 return
-            cv_image = front_img_to_rgb_cv_img(image)
+            cv_image = image
             image_embedding = self.model.encode(cv_image)
             self.image_embedding_cache.put(
                 filename,

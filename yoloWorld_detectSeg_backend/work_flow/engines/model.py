@@ -1,4 +1,6 @@
 import base64
+import csv
+import glob
 import logging
 import os
 import pathlib
@@ -9,7 +11,7 @@ import yaml
 import onnx
 import urllib.request
 from urllib.parse import urlparse
-
+import re
 
 import ssl
 
@@ -29,9 +31,6 @@ socket.setdefaulttimeout(240)  # Prevent timeout when downloading flows
 
 from abc import abstractmethod
 
-from PyQt5.QtCore import QFile, QObject
-from PyQt5.QtGui import QImage
-
 from .types import AutoLabelingResult
 
 required_config_names = []
@@ -45,7 +44,8 @@ class Model:
     BASE_DOWNLOAD_URL = (
         "https://github.com/CVHub520/X-AnyLabeling/releases/tag"
     )
-    home_dir = os.path.expanduser("E:\models\yanglao")
+    # home_dir = os.path.expanduser("E:/models/yanglao")
+    home_dir = os.path.expanduser("/mnt/e/models/yanglao")
     class Meta:
         required_config_names = []
         widgets = ["button_run"]
@@ -103,6 +103,98 @@ class Model:
             self.on_message(f"An error occurred during data migration: {str(e)}")
             return False
 
+    @staticmethod
+    def check_model_shards(model_path):
+        """
+        检查模型分片文件是否存在且大小匹配，根据 model_path 目录下的任何 .csv 文件列出文件信息。
+
+        参数:
+        - model_path: str, 主模型文件路径，例如 'path/to/big-lama.pt'
+
+        返回:
+        - bool: 如果所有相关分片文件都存在且大小匹配，则返回 True，否则返回 False
+        """
+        # 获取目录路径和主文件的 basename（去掉扩展名）
+        model_dir = os.path.dirname(model_path)
+        base_name = os.path.splitext(os.path.basename(model_path))[0]
+
+        # 搜索目录下的任何 .csv 文件
+        csv_files = glob.glob(os.path.join(model_dir, '*.csv'))
+        if not csv_files:
+            print("未找到任何 .csv 文件。")
+            return False
+
+        # 在找到的 CSV 文件中查找分片信息
+        shard_files = []
+        for csv_file in csv_files:
+            with open(csv_file, mode='r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    filename = row['filename']
+                    expected_filesize = int(row['filesize'])
+
+                    # 过滤出与主文件 basename 匹配的分片文件
+                    if filename.startswith(base_name):
+                        shard_files.append((filename, expected_filesize))
+
+        # 检查是否找到相关的分片文件
+        if not shard_files:
+            print(f"在 CSV 文件中未找到与 {base_name} 相关的分片文件。")
+            return False
+
+        # 检查每个分片文件是否存在以及文件大小是否匹配
+        all_files_exist = True
+        for filename, expected_filesize in shard_files:
+            file_path = os.path.join(model_dir, filename)
+
+            # 检查文件是否存在
+            if not os.path.exists(file_path):
+                print(f"文件 {filename} 不存在。")
+                all_files_exist = False
+                continue
+
+            # 检查文件大小是否匹配
+            actual_filesize = os.path.getsize(file_path)
+            if actual_filesize != expected_filesize:
+                print(f"文件 {filename} 大小不匹配。预期: {expected_filesize}字节，实际: {actual_filesize}字节")
+                all_files_exist = False
+
+        # 返回检查结果
+        if all_files_exist:
+            print("所有相关的模型分片文件都存在且大小匹配。")
+        else:
+            print("存在缺失或大小不匹配的模型分片文件。")
+
+        return all_files_exist
+
+    @staticmethod
+    def convert_to_wsl_path(win_path):
+        """
+        将 Windows 路径转换为 WSL 路径。
+        Args:
+            win_path (str): Windows 文件路径 (例如 'C:\\path\\to\\file')。
+
+        Returns:
+            str: 转换后的 WSL 路径，如果路径无效则返回 None。
+        """
+        # 正则表达式匹配 Windows 路径格式（例如 C:\path\to\file）
+        windows_path_pattern = r'^[a-zA-Z]:\\.*'
+
+        # 检查输入是否符合 Windows 路径格式
+        if re.match(windows_path_pattern, win_path):
+            # 提取盘符并转换为小写（例如 "C:" -> "c"）
+            drive_letter = win_path[0].lower()
+            # 去除盘符，替换 \ 为 /，生成 WSL 路径
+            path_without_drive = win_path[2:].replace('\\', '/')
+            wsl_path = f"/mnt/{drive_letter}{path_without_drive}"
+
+            # 打印或返回转换后的路径
+            print(f"WSL path: {wsl_path}")
+            return wsl_path
+        else:
+            print("Invalid Windows path format.")
+            return None
+
     def get_model_abs_path(self, model_config, model_path_field_name):
         """
         Get model absolute path from config path or download from url
@@ -114,9 +206,44 @@ class Model:
         # Model path is a local path
         if local is not None:
             # Relative path to executable or absolute path?
-            model_abs_path = os.path.abspath(local)
-            if os.path.exists(model_abs_path):
+            # model_abs_path = os.path.abspath(local)
+            model_abs_path = local
+            print(model_abs_path)
+            if (os.path.exists(model_abs_path)
+                or self.check_model_shards(model_abs_path)
+            ):
                 return model_abs_path
+            else:
+                model_abs_path = self.convert_to_wsl_path(model_abs_path)
+                if (os.path.exists(model_abs_path)
+                        or self.check_model_shards(model_abs_path)
+                ):
+                    return model_abs_path
+                else:
+                    local_model_abs_path = os.path.abspath(
+                        os.path.join(
+                            model_path,
+                            "flows",
+                            model_config["name"],
+                            local_filename,
+                        )
+                    )
+                    if os.path.exists(local_model_abs_path):
+                        if local_model_abs_path.lower().endswith(".onnx"):
+                            try:
+                                onnx.checker.check_model(local_model_abs_path)
+                            except onnx.checker.ValidationError as e:
+                                self.on_message(f"{str(e)}")
+                                self.on_message("Action: Delete and redownload...")
+                                try:
+                                    os.remove(local_model_abs_path)
+                                except Exception as e:  # noqa
+                                    self.on_message(f"Could not delete: {str(e)}")
+                            else:
+                                return local_model_abs_path
+                        else:
+                            return local_model_abs_path
+
             self.on_message("Model path not found: {model_path}".format(model_path=local))
 
         # Download model from url
@@ -127,66 +254,69 @@ class Model:
             a = urlparse(url)
             return os.path.basename(a.path)
 
-        filename = get_filename_from_url(online)
-        download_url = online
+        if online is not None:
+            filename = get_filename_from_url(online)
+            download_url = online
 
-        # Continue with the rest of your function logic
-        migrate_flag = self.allow_migrate_data()
-        data_dir = "xanylabeling_data" if migrate_flag else "anylabeling_data"
+            # Continue with the rest of your function logic
+            migrate_flag = self.allow_migrate_data()
+            data_dir = "xanylabeling_data" if migrate_flag else "anylabeling_data"
 
-        # Create model folder
-        model_path = os.path.abspath(os.path.join(self.home_dir, data_dir))
-        model_abs_path = os.path.abspath(
-            os.path.join(
-                model_path,
-                "flows",
-                model_config["name"],
-                filename,
+            # Create model folder
+            model_path = os.path.abspath(os.path.join(self.home_dir, data_dir))
+            model_abs_path = os.path.abspath(
+                os.path.join(
+                    model_path,
+                    "flows",
+                    model_config["name"],
+                    filename,
+                )
             )
-        )
-        if os.path.exists(model_abs_path):
-            if model_abs_path.lower().endswith(".onnx"):
-                try:
-                    onnx.checker.check_model(model_abs_path)
-                except onnx.checker.ValidationError as e:
-                    self.on_message(f"{str(e)}")
-                    self.on_message("Action: Delete and redownload...")
+            if os.path.exists(model_abs_path):
+                if model_abs_path.lower().endswith(".onnx"):
                     try:
-                        os.remove(model_abs_path)
-                    except Exception as e:  # noqa
-                        self.on_message(f"Could not delete: {str(e)}")
+                        onnx.checker.check_model(model_abs_path)
+                    except onnx.checker.ValidationError as e:
+                        self.on_message(f"{str(e)}")
+                        self.on_message("Action: Delete and redownload...")
+                        try:
+                            os.remove(model_abs_path)
+                        except Exception as e:  # noqa
+                            self.on_message(f"Could not delete: {str(e)}")
+                    else:
+                        return model_abs_path
                 else:
                     return model_abs_path
-            else:
-                return model_abs_path
-        pathlib.Path(model_abs_path).parent.mkdir(parents=True, exist_ok=True)
 
-        # Download url
-        ellipsis_download_url = download_url
-        if len(download_url) > 40:
-            ellipsis_download_url = (
-                download_url[:20] + "..." + download_url[-20:]
-            )
-        print(download_url)
-        self.on_message(f"Downloading {ellipsis_download_url} to {model_abs_path}")
-        try:
-            # Download and show progress
-            def _progress(count, block_size, total_size):
-                percent = int(count * block_size * 100 / total_size)
-                self.on_message(
-                    "Downloading {download_url}: {percent}%".format(
-                        download_url=ellipsis_download_url, percent=percent
-                    )
+            pathlib.Path(model_abs_path).parent.mkdir(parents=True, exist_ok=True)
+
+            # Download url
+            ellipsis_download_url = download_url
+            if len(download_url) > 40:
+                ellipsis_download_url = (
+                    download_url[:20] + "..." + download_url[-20:]
                 )
+            print(download_url)
+            self.on_message(f"Downloading {ellipsis_download_url} to {model_abs_path}")
+            try:
+                # Download and show progress
+                def _progress(count, block_size, total_size):
+                    percent = int(count * block_size * 100 / total_size)
+                    self.on_message(
+                        "Downloading {download_url}: {percent}%".format(
+                            download_url=ellipsis_download_url, percent=percent
+                        )
+                    )
+                urllib.request.urlretrieve(
+                    download_url, model_abs_path, reporthook=_progress
+                )
+            except Exception as e:  # noqa
+                self.on_message(f"Could not download {download_url}: {e}")
+                return None
+            return model_abs_path
 
-            urllib.request.urlretrieve(
-                download_url, model_abs_path, reporthook=_progress
-            )
-        except Exception as e:  # noqa
-            self.on_message(f"Could not download {download_url}: {e}")
-            return None
-
-        return model_abs_path
+        else:
+            raise Exception("Model path local or online not found: {model_path}".format(model_path=local))
 
     def check_missing_config(self, config_names, config):
         """

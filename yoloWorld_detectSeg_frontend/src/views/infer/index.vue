@@ -1,12 +1,11 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from "vue"
-import { type ITaskData, IFlowData, IWeightData, IArgData, OArgData } from "@/api/infer/types/infer"
+import { type ITaskData, IFlowData, IWeightData, IArgData, OWeightData } from "@/api/infer/types/infer"
 import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
 import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightApi, getCurrentParamApi, getCurrentHyperApi,
-  switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi} from "@/api/infer"
+  switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi, getAllCurrentWeightsApi} from "@/api/infer"
 import { ElMessage } from "element-plus"
-import UploadFile from "@/components/UploadFile/index.vue"
 import type { CascaderValue } from 'element-plus'
 // 将模式与参数的加载分开
 
@@ -49,6 +48,7 @@ const selectedFlowData = reactive({
   flow: "",
   release: "",
 })
+
 // 动态参数设置与存储
 // 定义当前权重数据和已选择的权重数据，只包含一层字典结构
 const currentWeightData = reactive<{ [key: string]: string }>({});
@@ -93,16 +93,7 @@ const clearHelper = (keys: string[]) => {
 // 检测结果图片
 // base64解码
 const inferImageData: any = reactive({
-  originalBase64: "",
   resultBase64: "",
-  originalImageUrl: computed(() => {  // 自动计算url显示原始图片
-    if (inferImageData.originalBase64) {
-      const blob = dataURItoBlob(inferImageData.originalBase64)
-      return URL.createObjectURL(blob)
-    } else {
-      return ""
-    }
-  }),
   resultImageUrl: computed(() => {
     if (inferImageData.resultBase64) {  // 同样的，根据base64字符串自动计算
       const blob = dataURItoBlob(inferImageData.resultBase64)
@@ -115,18 +106,16 @@ const inferImageData: any = reactive({
   inferDescription: "",
   inferPeriod: ""
 })
-
-// 处理上传文件
-const onHandleUpload = (file: any) => {
-  // 如果后端的数据没有以 data:image/jpeg;base64 则需要判断加上
-  const a = new FileReader()
-      a.readAsDataURL(file.raw)
-      a.onload = (e) => {
-        if (e.target) {
-          inferImageData.originalBase64 = e.target.result
-        }
-      }
-}
+const originImageUrl = computed(() => { 
+  if(handledHyperData["origin_image"] !== null && 
+     handledHyperData["origin_image"] !== undefined
+  ) {
+    console.log(handledHyperData["origin_image"])
+    const blob = dataURItoBlob(handledHyperData["origin_image"])
+    return URL.createObjectURL(blob)
+  }
+  return null
+})
 // 图片base64解码
 const dataURItoBlob = (dataURI: any) => {
   const byteString = atob(dataURI.split(",")[1])
@@ -169,19 +158,45 @@ const getCurrentFlow = () => {
     paramsData.value.forEach((element: any) => {  // 提前装载初始值
       handledParamData[element['argName']] = element['argDefault']
     });
+    // for (const key in weightOptions.value) {
+    //   getCurrentWeight(key)
+    // }
+    getAllCurrentWeights()
   })
+
 }
+const getAllCurrentWeights = () => {
+  getAllCurrentWeightsApi().then((res) => {
+    res.data.forEach((element: any) => {  // 提前装载初始值
+      selectedWeightData[element.weightKey] = element.weightName
+    });
+  }).catch((error) => {
+    console.error("Error fetching weight data:", error);
+  });
+};
+
 // 从 API 获取当前的 weight 数据并赋值
 const getCurrentWeight = (weigthKey: string|number) => {
   getCurrentWeightApi({
     currentWeightKey: weigthKey
   }).then((res) => {
-    currentWeightData[res.data.weightKey] = res.data.weightName;
-    console.log(currentWeightData)
+    currentWeightData[weigthKey] = res.data.weightName;
+    selectedWeightData[weigthKey] = res.data.weightName;
   }).catch((error) => {
     console.error("Error fetching weight data:", error);
   });
 };
+
+// const getAllCurrentWeights = () => {
+//   getAllCurrentWeightsApi().then((res) => {
+//     res.data.forEach((item: OWeightData) => {
+//       currentWeightData[item.weightKey] = item.weightName
+//       selectedWeightData[item.weightKey] = item.weightName
+//     })
+//   }).catch((error) => {
+//     console.error("Error fetching all weights data:", error);
+//   });
+// };
 const getCurrentParam = (paramName: string) => {
   getCurrentParamApi({currentParamName: paramName}).then((res) => {
     currentParamData[res.data.argName] = res.data.argValue;
@@ -297,7 +312,6 @@ const handleParamChange = (paramName: string, paramValue: any) => {
   })
 }
 const handleHyperChange = (hyperName: string, hyperValue: any) => {
-  console.log(hyperName, hyperValue)
   handledHyperData[hyperName] = hyperValue
   handleHyperSwitch(hyperName)
   const message = `已经完成参数${hyperName}: ${hyperValue}`
@@ -360,6 +374,7 @@ const loadDefault = (mode: string ) => {
     });
   }
 }
+
 const handleFlowSwitch = () => {
   if (
     selectedFlowData.flow === currentFlowData.flow &&
@@ -384,6 +399,9 @@ const handleFlowSwitch = () => {
     clearHelper(['weight', 'param', 'hyper'])
     weightsData.value = res.data["weight"]
     weightOptions.value = generateWeightOptions(res.data["weight"])
+    // for (const key in selectedWeightData) {
+    //   selectedWeightData[key] = '';
+    // }
     if (res.data["param"] && res.data["param"].length > 0) {
         paramsData.value = res.data["param"]
         loadDefault('param')
@@ -403,7 +421,6 @@ const handleFlowSwitch = () => {
 }
 const handleWeightSwitch = (weightKey: string|number) => {
   const selectedWeightName = selectedWeightData[weightKey]
-  console.log(weightKey)
   if (  // 字典值比较
   selectedWeightName === currentWeightData[weightKey]
   ) {
@@ -522,12 +539,11 @@ const handleLoadModel = () => {
   })
 }
 const handleModelPredict = () => {
-  predictModelApi({'originalBase64': inferImageData.originalBase64}).then((res) => {
+  predictModelApi().then((res) => {
     inferImageData.resultBase64 = res.data.resultBase64
     inferImageData.inferResult = res.data.inferResult
     inferImageData.inferPeriod = res.data.inferPeriod
     inferImageData.inferDescription = res.data.inferDescription
-    console.log(10000)
   })
   .catch(() => {
     ElMessage({
@@ -538,6 +554,21 @@ const handleModelPredict = () => {
   .finally(() => {
     predicting.value = false
   })
+}
+const resetResult = () => {
+  inferImageData.resultBase64 = ""
+  inferImageData.inferResult = []
+  inferImageData.inferDescription = ""
+  inferImageData.inferPeriod = ""
+  
+  // 清除由 computed 创建的 Blob URL
+  if (inferImageData.resultImageUrl) {
+    URL.revokeObjectURL(inferImageData.resultImageUrl)
+  }
+  ElMessage({
+      message: "结果清除成功",
+      type: "success"
+    })
 }
 // getCurrentTask()
 getAllTasks()
@@ -663,7 +694,7 @@ getAllTasks()
       <el-row :gutter="20">
         <el-col :span="12" v-for="(hyperItem, idx) in hypersData" :key="idx">
           <Argument
-            :imageUrl="inferImageData.originalImageUrl"
+            :imageUrl="originImageUrl"
             :argName="hyperItem.argName"
             :argType="hyperItem.argType"
             :argValue="handledHyperData[hyperItem.argName]"
@@ -674,23 +705,10 @@ getAllTasks()
       </el-row>
     </el-card>
 
-    <el-card v-loading="loading" shadow="never" class="search-wrapper">
-      <UploadFile @handleUpload="onHandleUpload" />
-    </el-card>
     <el-card v-loading="predicting" shadow="never" class="search-wrapper">
       <el-button type="primary" @click="handleModelPredict">开始推理</el-button>
+      <el-button type="primary" @click="resetResult">结果清除</el-button>
       <el-row :gutter="20">
-        <el-col :span="10">
-          <div class="grid-content ep-bg-purple">
-            <el-image
-              v-if="inferImageData.originalBase64"
-              :src="inferImageData.originalImageUrl"
-              :fit="'scale-down'"
-              :preview-src-list="[inferImageData.originalImageUrl]"
-            />
-            <div v-else class="image-placeholder">原始图片</div>
-          </div>
-        </el-col>
         <el-col :span="10">
           <div class="grid-content ep-bg-purple">
             <el-image
@@ -702,31 +720,36 @@ getAllTasks()
             <div v-else class="image-placeholder">检测结果图片</div>
           </div>
         </el-col>
-        <el-col :span="4">
+        <el-col :span="10">
           <div class="grid-content ep-bg-purple">
             <el-table
-              :data="inferImageData.inferDescription"
-              v-if="inferImageData.inferDescription && inferImageData.inferDescription.length > 0"
+              :data="inferImageData.inferResult"
+              v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0"
             >
-              <el-table-column prop="className" label="检测类别" />
-              <el-table-column prop="confidence" label="置信度" />
+              <el-table-column prop="label" label="检测类别" />
+              <el-table-column prop="score" label="置信度" />
+              <el-table-column prop="points" label="锚点集" />
+              <el-table-column prop="group_id" label="分组" />
+              <el-table-column prop="description" label="描述" />
             </el-table>
             <div v-else class="image-placeholder">暂无结果</div>
           </div>
         </el-col>
       </el-row>
       <el-row :gutter="20">
-        <div class="grid-content ep-bg-purple">
-          <el-input
-            type="textarea"
-            v-if="inferImageData.predictDescription"
-            :value="inferImageData.predictDescription"
-            :rows="10"
-            disabled
-            class="no-margin-input"
-          />
-          <div v-else class="image-placeholder">暂无描述</div>
-        </div>
+        <el-col :span="24" class="infer-duration-container">
+          <div class="grid-content ep-bg-purple">
+            <el-input
+              type="textarea"
+              v-if="inferImageData.inferDescription"
+              :value="inferImageData.inferDescription"
+              :rows="10"
+              disabled
+              class="no-margin-input"
+            />
+            <div v-else class="image-placeholder">暂无描述</div>
+          </div>
+        </el-col>
           <!-- 推理时长组件 -->
         <el-col :span="24" class="infer-duration-container">
           <el-card v-if="inferImageData.inferPeriod" class="infer-duration-card">

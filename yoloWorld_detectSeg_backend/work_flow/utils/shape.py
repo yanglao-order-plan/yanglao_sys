@@ -1,4 +1,7 @@
 import copy
+import logging
+from difflib import SequenceMatcher
+
 import cv2
 import math
 import uuid
@@ -178,7 +181,7 @@ class Shape:
         self.flags = flags or {}
         self.other_data = {}
         self.attributes = attributes or {}
-        self.cache_label = None
+        self.cache_label = None  # 存储待标注的最终标签，一般为clip对比学习
         self.visible = True
 
         # Rotation setting
@@ -191,6 +194,33 @@ class Shape:
         if line_color is not None:
             # Override the class line_color attribute
             self._line_color = line_color
+
+    @staticmethod
+    def find_most_similar_label(text, valid_labels):
+        max_similarity = 0
+        most_similar_label = valid_labels[0]
+
+        for label in valid_labels:
+            similarity = SequenceMatcher(None, text, label).ratio()
+            if similarity > max_similarity:
+                max_similarity = similarity
+                most_similar_label = label
+
+        return most_similar_label
+
+    def reset_attribute(self, text):
+        valid_labels = list(self.attributes.keys())
+        if text not in valid_labels:
+            most_similar_label = self.find_most_similar_label(
+                text, valid_labels
+            )
+            logging.warning(
+                "Invalid label"
+                "Invalid label '{}' with validation type: {}!\n"
+                "Reset the label as {}.".format(text, valid_labels, most_similar_label),
+            )
+            text = most_similar_label
+        return text
 
     @property
     def shape_type(self):
@@ -454,15 +484,14 @@ class Shape:
     def paint(self, image):
         """Paint shape onto the image using OpenCV"""
         if not self.visible or not self.points:
+            print(100)
             return
         # Determine the color
         line_color = self.line_color
         fill_color = self.fill_color
         line_thickness = max(1, int(round(self.line_width)))
-
         # Convert points to integer tuples
         pts = [(int(p[0]), int(p[1])) for p in self.points]
-
         if self.shape_type == "rectangle":
             if len(pts) == 2:
                 top_left = pts[0]

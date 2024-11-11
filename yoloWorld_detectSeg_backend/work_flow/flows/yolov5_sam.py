@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from sqlalchemy.testing.plugin.plugin_base import logging
 
 from work_flow.app_info import __preferred_device__
 from work_flow.engines.types import AutoLabelingResult
@@ -211,8 +212,8 @@ class YOLOv5SegmentAnything(YOLO):
         try:
             cv_image = image
         except Exception as e:  # noqa
-            logger.warning("Could not inference model")
-            logger.warning(e)
+            logging.warning("Could not inference model")
+            logging.warning(e)
             return []
         if filename not in self.image_embed_cache:
             image_embedding = self.model.encode(cv_image)

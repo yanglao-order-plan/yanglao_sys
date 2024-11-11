@@ -89,6 +89,7 @@ export type GetCurrentTaskResponseData = IApiResponseData<ITaskData>
 export type GetCurrentFlowResponseData = IApiResponseData<OFlowData>  // 字典转数组
 export type GetCurrentParamResponseData = IApiResponseData<OArgData>
 export type GetCurrentWeightResponseData = IApiResponseData<OWeightData>
+export type GetAllCurrentWeightsResponseData = IApiResponseData<OWeightData[]>
 export type GetCurrentHyperResponseData = IApiResponseData<OArgData>
 // 数据回显对象（switch）
 export type SwitchTaskResponseData = IApiResponseData<IFlowData[]>

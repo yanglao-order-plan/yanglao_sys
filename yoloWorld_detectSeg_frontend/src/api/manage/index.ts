@@ -146,8 +146,12 @@ export function getReleaseDataApi(params: Release.IGetReleaseRequestData) {
     params
   })
 }
-
-
+export function getAllReleaseIdApi() {
+  return request<IApiResponseData<number[]>>({
+    url: "release-manage/all",
+    method: "get",
+  })
+}
 export function createWeightDataApi(data: Weight.ICreateWeightRequestData) {
   return request<Weight.createWeightResponseData>({
     url: "weight-manage/add",
@@ -185,7 +189,7 @@ export function createModelDataApi(data: Release.ICreateModelRequestData) {
 }
 export function deleteModelDataApi(id: number) {
   return request<Release.deleteModelResponseData>({
-    url: `release-manage/moedel_delete/${id}`,
+    url: `release-manage/model_delete/${id}`,
     method: "delete"
   })
 }
@@ -217,6 +221,14 @@ export function deleteArgumentDataApi(id: number) {
     method: "delete"
   })
 }
+export function deleteArgumentBlurApi(data: Release.IGetArgumentRequestData) {
+  return request<null>({
+    url: `release-manage/argument_delete_blur`,
+    method: "POST",
+    data
+  })
+}
+
 export function updateArgumentDataApi(data: Release.IUpdateArgumentRequestData) {
   return request<Release.upDateArgumentResponseData>({
     url: "release-manage/argument_update",

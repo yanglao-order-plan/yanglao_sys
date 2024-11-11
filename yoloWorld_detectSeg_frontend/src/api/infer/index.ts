@@ -21,6 +21,12 @@ export function getCurrentWeightApi(data: Infer.ICurrentWeightRequestData) {
     data
   })
 }
+export function getAllCurrentWeightsApi() {
+  return request<Infer.GetAllCurrentWeightsResponseData>({
+    url: "infer/weight/all",
+    method: "get",
+  })
+}
 export function getCurrentParamApi(data: Infer.ICurrentParamRequestData) {
   return request<Infer.GetCurrentParamResponseData>({
     url: "infer/param/current",
@@ -84,10 +90,9 @@ export function loadModelApi() {
     method: "get"
   })
 }
-export function predictModelApi(data: Infer.IpredictModelRequestData) {
+export function predictModelApi() {
   return request<Infer.PredictModelResponseData>({
     url: "infer/model/predict",
-    method: "post",
-    data
+    method: "get",
   })
 }

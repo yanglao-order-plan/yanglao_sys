@@ -32,6 +32,7 @@ class PPOCRv4(Model):
 
     def load_model(self, model_name):
         model_abs_path = self.get_model_abs_path(self.config, model_name)
+        print(model_abs_path)
         model_task = os.path.splitext(
             model_abs_path
         )[0]
@@ -63,6 +64,8 @@ class PPOCRv4(Model):
         self.det_net = self.load_model("det_model_path")
         self.rec_net = self.load_model("rec_model_path")
         self.cls_net = self.load_model("cls_model_path")
+        self.det_algorithm = self.config.get("det_algorithm", "DB")
+        self.rec_algorithm = self.config.get("rec_algorithm", "SVTR_LCNet")
         self.drop_score = self.config.get("drop_score", 0.5)
         self.use_angle_cls = self.config["use_angle_cls"]
         self.current_dir = os.path.dirname(__file__)
@@ -73,13 +76,7 @@ class PPOCRv4(Model):
             self.rec_char_dict = "japan_dict.txt"
 
         self.args = self.parse_args()
-
-    def set_args(self, **kwargs):
-        """
-        修改 args 对象中的内容，kwargs 的键会对应 args 对象中的属性名
-        """
-        for key, value in kwargs.items():
-            setattr(self.args, key, value)
+        self.text_sys = TextSystem(self.args)
 
     def parse_args(self):
         args = Args(  # 关键参数直接写死，你妈是不是死了？
@@ -96,7 +93,7 @@ class PPOCRv4(Model):
             gpu_id=0,
             # params for text detector
             page_num=0,
-            det_algorithm="DB",
+            det_algorithm=self.det_algorithm,
             det_model=self.det_net,
             det_limit_side_len=960,
             det_limit_type="max",
@@ -126,7 +123,7 @@ class PPOCRv4(Model):
             beta=1.0,
             fourier_degree=5,
             # params for text recognizer
-            rec_algorithm="SVTR_LCNet",
+            rec_algorithm=self.rec_algorithm,
             rec_model=self.rec_net,
             rec_image_inverse=True,
             rec_image_shape="3, 48, 320",
@@ -167,18 +164,7 @@ class PPOCRv4(Model):
         )
         return args
 
-    def predict_shapes(self, image, image_path=None):
-        """
-        Predict shapes from image
-        """
-
-        if image is None:
-            return []
-
-        args = self.parse_args()
-        text_sys = TextSystem(args)
-        dt_boxes, rec_res, scores = text_sys(image)
-
+    def pack_results(self, dt_boxes, rec_res, scores):
         results = [
             {
                 "description": rec_res[i][0],
@@ -217,8 +203,18 @@ class PPOCRv4(Model):
                 shape.closed = True
             shapes.append(shape)
 
-        result = AutoLabelingResult(shapes, replace=True)
-        return result
+        return AutoLabelingResult(shapes, replace=True)
+
+    def predict_shapes(self, image, image_path=None):
+        """
+        Predict shapes from image
+        """
+
+        if image is None:
+            return []
+        dt_boxes, rec_res, scores = self.text_sys(image)
+
+        return self.pack_results(dt_boxes, rec_res, scores)
 
     def unload(self):
         del self.det_net

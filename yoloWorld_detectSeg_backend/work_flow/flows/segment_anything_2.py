@@ -1,3 +1,4 @@
+import logging
 import os
 import threading
 
@@ -5,9 +6,6 @@ import cv2
 import traceback
 import numpy as np
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThread
-from PyQt5.QtCore import QCoreApplication
 from . import __preferred_device__, SegmentAnything2ONNX, ChineseClipONNX, Model, LRUCache, AutoLabelingResult, Shape
 
 
@@ -253,8 +251,8 @@ class SegmentAnything2(Model):
                 masks = masks[0]
             shapes = self.post_process(masks, cv_image)
         except Exception as e:  # noqa
-            print_red("Could not inference model")
-            print_red(e)
+            logging.warning("Could not inference model")
+            logging.warning(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 

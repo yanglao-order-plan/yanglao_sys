@@ -4,8 +4,6 @@ import numpy as np
 
 from typing import Dict
 from tokenizers import Tokenizer
-
-from PyQt5.QtCore import QCoreApplication
 import logging
 from . import __preferred_device__, Model, AutoLabelingResult, Shape, OnnxBaseModel, Args, configs
 
@@ -40,7 +38,6 @@ class Grounding_DINO(Model):
     def __init__(self, model_config, on_message) -> None:
         # Run the parent class's init method
         super().__init__(model_config, on_message)
-        print(model_config)
         model_type = self.config["model_type"]
         model_abs_path = self.get_model_abs_path(self.config, "model_path")
         if not model_abs_path or not os.path.isfile(model_abs_path):
@@ -323,9 +320,7 @@ class Grounding_DINO(Model):
             )
         else:
             raise ValueError(
-                QCoreApplication.translate(
-                    "Model", "Invalid model_type in GroundingDINO model."
-                )
+                "Invalid model_type in GroundingDINO model."
             )
         return configs
 

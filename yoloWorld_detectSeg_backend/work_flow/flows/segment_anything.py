@@ -3,13 +3,11 @@ import threading
 import traceback
 import cv2
 import numpy as np
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThread
-from PyQt5.QtCore import QCoreApplication
 import logging
 
 from . import __preferred_device__, Model,SegmentAnythingONNX, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult
+from ..engines import OnnxBaseModel
+
 
 class SegmentAnything(Model):
     """Segmentation model using SegmentAnything"""
@@ -64,7 +62,13 @@ class SegmentAnything(Model):
             raise FileNotFoundError(
                 "Could not download or initialize decoder of Segment Anything."
             )
-        print(encoder_model_abs_path, decoder_model_abs_path)
+        # reload with onnx
+        self.encoder_session = OnnxBaseModel(
+            encoder_model_abs_path, __preferred_device__
+        )
+        self.decoder_session = OnnxBaseModel(
+            decoder_model_abs_path, __preferred_device__
+        )
         # Load flows
         self.model = SegmentAnythingONNX(
             encoder_model_abs_path, decoder_model_abs_path

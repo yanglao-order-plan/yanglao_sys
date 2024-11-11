@@ -10,7 +10,7 @@ class SegmentAnythingONNX:
     """Segmentation model using SegmentAnything"""
 
     def __init__(
-        self, encoder_session, decoder_session, target_size, input_size
+        self, encoder_session, decoder_session, target_size=1024, input_size=(684, 1024)
     ) -> None:
         self.target_size = target_size
         self.input_size = input_size

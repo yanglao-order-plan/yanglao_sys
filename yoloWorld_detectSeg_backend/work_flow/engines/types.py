@@ -1,5 +1,8 @@
+import logging
+
+
 class AutoLabelingResult:
-    def __init__(self, shapes, replace=True, description=""):
+    def __init__(self, shapes, replace=True, description="", image=None, visible=True):
         """Initialize AutoLabelingResult
 
         Args:
@@ -13,7 +16,12 @@ class AutoLabelingResult:
         self.shapes = shapes
         self.replace = replace
         self.description = description
+        self.image = image
+        self.visible = visible
 
+    def check_shapes(self):
+        for shape in self.shapes:
+            logging.info(shape.to_dict())
 
 class AutoLabelingMode:
     OBJECT = "AUTOLABEL_OBJECT"

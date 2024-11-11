@@ -4,9 +4,6 @@ import math
 import numpy as np
 from typing import Union, Tuple, List
 from argparse import Namespace
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import QCoreApplication
 import logging
 from work_flow.app_info import __preferred_device__
 from work_flow.utils.shape import Shape
@@ -45,9 +42,9 @@ class YOLO(Model):
             "button_reset_tracker",
         ]
         output_modes = {
-            "point": QCoreApplication.translate("Model", "Point"),
-            "polygon": QCoreApplication.translate("Model", "Polygon"),
-            "rectangle": QCoreApplication.translate("Model", "Rectangle"),
+            "point": "Point",
+            "polygon": "Polygon",
+            "rectangle": "Rectangle",
         }
         default_output_mode = "rectangle"
 
@@ -447,10 +444,7 @@ class YOLO(Model):
             if self.task == "obb":
                 shape = self.create_obb_shape(box, score, class_id, track_id)
                 shapes.append(shape)
-        print(10000)
-        result = AutoLabelingResult(shapes, replace=self.replace)
-
-        return result
+        return AutoLabelingResult(shapes, replace=self.replace)
 
     def create_rectangle_shape(
         self,

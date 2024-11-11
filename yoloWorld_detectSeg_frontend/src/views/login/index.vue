@@ -83,9 +83,9 @@ const handleRegister = () => {
   <div class="login-container">
     <ThemeSwitch class="theme-switch" />
     <div class="login-card">
-      <div class="title">
+      <!-- <div class="title">
         <img src="@/assets/layout/logo-text-2.png" />
-      </div>
+      </div> -->
       <div class="content">
         <el-form ref="loginFormRef" :model="loginForm" :rules="loginFormRules" @keyup.enter="handleLogin">
           <el-form-item prop="username">
