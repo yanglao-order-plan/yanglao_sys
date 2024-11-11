@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : XYZ
+ Source Server         : 本地
  Source Server Type    : MySQL
- Source Server Version : 80036
+ Source Server Version : 80040 (8.0.40)
  Source Host           : localhost:3306
  Source Schema         : yanglao_order_sys
 
  Target Server Type    : MySQL
- Target Server Version : 80036
+ Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 06/11/2024 19:30:29
+ Date: 11/11/2024 17:49:13
 */
 
 SET NAMES utf8mb4;
@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `alembic_version`;
 CREATE TABLE `alembic_version`  (
   `version_num` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   PRIMARY KEY (`version_num`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of alembic_version
@@ -46,7 +46,7 @@ CREATE TABLE `argument`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_param_ibfk_1`(`release_id` ASC) USING BTREE,
   CONSTRAINT `argument_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 941 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of argument
@@ -168,11 +168,11 @@ INSERT INTO `argument` VALUES (114, 'text_prompt', 'text', NULL, '{\"disabled\":
 INSERT INTO `argument` VALUES (115, 'classes', 'json', '{\"0\": \"tench\", \"1\": \"goldfish\", \"2\": \"great white shark\", \"3\": \"tiger shark\", \"4\": \"hammerhead shark\", \"5\": \"electric ray\", \"6\": \"stingray\", \"7\": \"cock\", \"8\": \"hen\", \"9\": \"ostrich\", \"10\": \"brambling\", \"11\": \"goldfinch\", \"12\": \"house finch\", \"13\": \"junco\", \"14\": \"indigo bunting\", \"15\": \"American robin\", \"16\": \"bulbul\", \"17\": \"jay\", \"18\": \"magpie\", \"19\": \"chickadee\", \"20\": \"American dipper\", \"21\": \"kite\", \"22\": \"bald eagle\", \"23\": \"vulture\", \"24\": \"great grey owl\", \"25\": \"fire salamander\", \"26\": \"smooth newt\", \"27\": \"newt\", \"28\": \"spotted salamander\", \"29\": \"axolotl\", \"30\": \"American bullfrog\", \"31\": \"tree frog\", \"32\": \"tailed frog\", \"33\": \"loggerhead sea turtle\", \"34\": \"leatherback sea turtle\", \"35\": \"mud turtle\", \"36\": \"terrapin\", \"37\": \"box turtle\", \"38\": \"banded gecko\", \"39\": \"green iguana\", \"40\": \"Carolina anole\", \"41\": \"desert grassland whiptail lizard\", \"42\": \"agama\", \"43\": \"frilled-necked lizard\", \"44\": \"alligator lizard\", \"45\": \"Gila monster\", \"46\": \"European green lizard\", \"47\": \"chameleon\", \"48\": \"Komodo dragon\", \"49\": \"Nile crocodile\", \"50\": \"American alligator\", \"51\": \"triceratops\", \"52\": \"worm snake\", \"53\": \"ring-necked snake\", \"54\": \"eastern hog-nosed snake\", \"55\": \"smooth green snake\", \"56\": \"kingsnake\", \"57\": \"garter snake\", \"58\": \"water snake\", \"59\": \"vine snake\", \"60\": \"night snake\", \"61\": \"boa constrictor\", \"62\": \"African rock python\", \"63\": \"Indian cobra\", \"64\": \"green mamba\", \"65\": \"sea snake\", \"66\": \"Saharan horned viper\", \"67\": \"eastern diamondback rattlesnake\", \"68\": \"sidewinder\", \"69\": \"trilobite\", \"70\": \"harvestman\", \"71\": \"scorpion\", \"72\": \"yellow garden spider\", \"73\": \"barn spider\", \"74\": \"European garden spider\", \"75\": \"southern black widow\", \"76\": \"tarantula\", \"77\": \"wolf spider\", \"78\": \"tick\", \"79\": \"centipede\", \"80\": \"black grouse\", \"81\": \"ptarmigan\", \"82\": \"ruffed grouse\", \"83\": \"prairie grouse\", \"84\": \"peacock\", \"85\": \"quail\", \"86\": \"partridge\", \"87\": \"grey parrot\", \"88\": \"macaw\", \"89\": \"sulphur-crested cockatoo\", \"90\": \"lorikeet\", \"91\": \"coucal\", \"92\": \"bee eater\", \"93\": \"hornbill\", \"94\": \"hummingbird\", \"95\": \"jacamar\", \"96\": \"toucan\", \"97\": \"duck\", \"98\": \"red-breasted merganser\", \"99\": \"goose\", \"100\": \"black swan\", \"101\": \"tusker\", \"102\": \"echidna\", \"103\": \"platypus\", \"104\": \"wallaby\", \"105\": \"koala\", \"106\": \"wombat\", \"107\": \"jellyfish\", \"108\": \"sea anemone\", \"109\": \"brain coral\", \"110\": \"flatworm\", \"111\": \"nematode\", \"112\": \"conch\", \"113\": \"snail\", \"114\": \"slug\", \"115\": \"sea slug\", \"116\": \"chiton\", \"117\": \"chambered nautilus\", \"118\": \"Dungeness crab\", \"119\": \"rock crab\", \"120\": \"fiddler crab\", \"121\": \"red king crab\", \"122\": \"American lobster\", \"123\": \"spiny lobster\", \"124\": \"crayfish\", \"125\": \"hermit crab\", \"126\": \"isopod\", \"127\": \"white stork\", \"128\": \"black stork\", \"129\": \"spoonbill\", \"130\": \"flamingo\", \"131\": \"little blue heron\", \"132\": \"great egret\", \"133\": \"bittern\", \"134\": \"crane (bird)\", \"135\": \"limpkin\", \"136\": \"common gallinule\", \"137\": \"American coot\", \"138\": \"bustard\", \"139\": \"ruddy turnstone\", \"140\": \"dunlin\", \"141\": \"common redshank\", \"142\": \"dowitcher\", \"143\": \"oystercatcher\", \"144\": \"pelican\", \"145\": \"king penguin\", \"146\": \"albatross\", \"147\": \"grey whale\", \"148\": \"killer whale\", \"149\": \"dugong\", \"150\": \"sea lion\", \"151\": \"Chihuahua\", \"152\": \"Japanese Chin\", \"153\": \"Maltese\", \"154\": \"Pekingese\", \"155\": \"Shih Tzu\", \"156\": \"King Charles Spaniel\", \"157\": \"Papillon\", \"158\": \"toy terrier\", \"159\": \"Rhodesian Ridgeback\", \"160\": \"Afghan Hound\", \"161\": \"Basset Hound\", \"162\": \"Beagle\", \"163\": \"Bloodhound\", \"164\": \"Bluetick Coonhound\", \"165\": \"Black and Tan Coonhound\", \"166\": \"Treeing Walker Coonhound\", \"167\": \"English foxhound\", \"168\": \"Redbone Coonhound\", \"169\": \"borzoi\", \"170\": \"Irish Wolfhound\", \"171\": \"Italian Greyhound\", \"172\": \"Whippet\", \"173\": \"Ibizan Hound\", \"174\": \"Norwegian Elkhound\", \"175\": \"Otterhound\", \"176\": \"Saluki\", \"177\": \"Scottish Deerhound\", \"178\": \"Weimaraner\", \"179\": \"Staffordshire Bull Terrier\", \"180\": \"American Staffordshire Terrier\", \"181\": \"Bedlington Terrier\", \"182\": \"Border Terrier\", \"183\": \"Kerry Blue Terrier\", \"184\": \"Irish Terrier\", \"185\": \"Norfolk Terrier\", \"186\": \"Norwich Terrier\", \"187\": \"Yorkshire Terrier\", \"188\": \"Wire Fox Terrier\", \"189\": \"Lakeland Terrier\", \"190\": \"Sealyham Terrier\", \"191\": \"Airedale Terrier\", \"192\": \"Cairn Terrier\", \"193\": \"Australian Terrier\", \"194\": \"Dandie Dinmont Terrier\", \"195\": \"Boston Terrier\", \"196\": \"Miniature Schnauzer\", \"197\": \"Giant Schnauzer\", \"198\": \"Standard Schnauzer\", \"199\": \"Scottish Terrier\", \"200\": \"Tibetan Terrier\", \"201\": \"Australian Silky Terrier\", \"202\": \"Soft-coated Wheaten Terrier\", \"203\": \"West Highland White Terrier\", \"204\": \"Lhasa Apso\", \"205\": \"Flat-Coated Retriever\", \"206\": \"Curly-coated Retriever\", \"207\": \"Golden Retriever\", \"208\": \"Labrador Retriever\", \"209\": \"Chesapeake Bay Retriever\", \"210\": \"German Shorthaired Pointer\", \"211\": \"Vizsla\", \"212\": \"English Setter\", \"213\": \"Irish Setter\", \"214\": \"Gordon Setter\", \"215\": \"Brittany\", \"216\": \"Clumber Spaniel\", \"217\": \"English Springer Spaniel\", \"218\": \"Welsh Springer Spaniel\", \"219\": \"Cocker Spaniels\", \"220\": \"Sussex Spaniel\", \"221\": \"Irish Water Spaniel\", \"222\": \"Kuvasz\", \"223\": \"Schipperke\", \"224\": \"Groenendael\", \"225\": \"Malinois\", \"226\": \"Briard\", \"227\": \"Australian Kelpie\", \"228\": \"Komondor\", \"229\": \"Old English Sheepdog\", \"230\": \"Shetland Sheepdog\", \"231\": \"collie\", \"232\": \"Border Collie\", \"233\": \"Bouvier des Flandres\", \"234\": \"Rottweiler\", \"235\": \"German Shepherd Dog\", \"236\": \"Dobermann\", \"237\": \"Miniature Pinscher\", \"238\": \"Greater Swiss Mountain Dog\", \"239\": \"Bernese Mountain Dog\", \"240\": \"Appenzeller Sennenhund\", \"241\": \"Entlebucher Sennenhund\", \"242\": \"Boxer\", \"243\": \"Bullmastiff\", \"244\": \"Tibetan Mastiff\", \"245\": \"French Bulldog\", \"246\": \"Great Dane\", \"247\": \"St. Bernard\", \"248\": \"husky\", \"249\": \"Alaskan Malamute\", \"250\": \"Siberian Husky\", \"251\": \"Dalmatian\", \"252\": \"Affenpinscher\", \"253\": \"Basenji\", \"254\": \"pug\", \"255\": \"Leonberger\", \"256\": \"Newfoundland\", \"257\": \"Pyrenean Mountain Dog\", \"258\": \"Samoyed\", \"259\": \"Pomeranian\", \"260\": \"Chow Chow\", \"261\": \"Keeshond\", \"262\": \"Griffon Bruxellois\", \"263\": \"Pembroke Welsh Corgi\", \"264\": \"Cardigan Welsh Corgi\", \"265\": \"Toy Poodle\", \"266\": \"Miniature Poodle\", \"267\": \"Standard Poodle\", \"268\": \"Mexican hairless dog\", \"269\": \"grey wolf\", \"270\": \"Alaskan tundra wolf\", \"271\": \"red wolf\", \"272\": \"coyote\", \"273\": \"dingo\", \"274\": \"dhole\", \"275\": \"African wild dog\", \"276\": \"hyena\", \"277\": \"red fox\", \"278\": \"kit fox\", \"279\": \"Arctic fox\", \"280\": \"grey fox\", \"281\": \"tabby cat\", \"282\": \"tiger cat\", \"283\": \"Persian cat\", \"284\": \"Siamese cat\", \"285\": \"Egyptian Mau\", \"286\": \"cougar\", \"287\": \"lynx\", \"288\": \"leopard\", \"289\": \"snow leopard\", \"290\": \"jaguar\", \"291\": \"lion\", \"292\": \"tiger\", \"293\": \"cheetah\", \"294\": \"brown bear\", \"295\": \"American black bear\", \"296\": \"polar bear\", \"297\": \"sloth bear\", \"298\": \"mongoose\", \"299\": \"meerkat\", \"300\": \"tiger beetle\", \"301\": \"ladybug\", \"302\": \"ground beetle\", \"303\": \"longhorn beetle\", \"304\": \"leaf beetle\", \"305\": \"dung beetle\", \"306\": \"rhinoceros beetle\", \"307\": \"weevil\", \"308\": \"fly\", \"309\": \"bee\", \"310\": \"ant\", \"311\": \"grasshopper\", \"312\": \"cricket\", \"313\": \"stick insect\", \"314\": \"cockroach\", \"315\": \"mantis\", \"316\": \"cicada\", \"317\": \"leafhopper\", \"318\": \"lacewing\", \"319\": \"dragonfly\", \"320\": \"damselfly\", \"321\": \"red admiral\", \"322\": \"ringlet\", \"323\": \"monarch butterfly\", \"324\": \"small white\", \"325\": \"sulphur butterfly\", \"326\": \"gossamer-winged butterfly\", \"327\": \"starfish\", \"328\": \"sea urchin\", \"329\": \"sea cucumber\", \"330\": \"cottontail rabbit\", \"331\": \"hare\", \"332\": \"Angora rabbit\", \"333\": \"hamster\", \"334\": \"porcupine\", \"335\": \"fox squirrel\", \"336\": \"marmot\", \"337\": \"beaver\", \"338\": \"guinea pig\", \"339\": \"common sorrel\", \"340\": \"zebra\", \"341\": \"pig\", \"342\": \"wild boar\", \"343\": \"warthog\", \"344\": \"hippopotamus\", \"345\": \"ox\", \"346\": \"water buffalo\", \"347\": \"bison\", \"348\": \"ram\", \"349\": \"bighorn sheep\", \"350\": \"Alpine ibex\", \"351\": \"hartebeest\", \"352\": \"impala\", \"353\": \"gazelle\", \"354\": \"dromedary\", \"355\": \"llama\", \"356\": \"weasel\", \"357\": \"mink\", \"358\": \"European polecat\", \"359\": \"black-footed ferret\", \"360\": \"otter\", \"361\": \"skunk\", \"362\": \"badger\", \"363\": \"armadillo\", \"364\": \"three-toed sloth\", \"365\": \"orangutan\", \"366\": \"gorilla\", \"367\": \"chimpanzee\", \"368\": \"gibbon\", \"369\": \"siamang\", \"370\": \"guenon\", \"371\": \"patas monkey\", \"372\": \"baboon\", \"373\": \"macaque\", \"374\": \"langur\", \"375\": \"black-and-white colobus\", \"376\": \"proboscis monkey\", \"377\": \"marmoset\", \"378\": \"white-headed capuchin\", \"379\": \"howler monkey\", \"380\": \"titi\", \"381\": \"Geoffroy\'s spider monkey\", \"382\": \"common squirrel monkey\", \"383\": \"ring-tailed lemur\", \"384\": \"indri\", \"385\": \"Asian elephant\", \"386\": \"African bush elephant\", \"387\": \"red panda\", \"388\": \"giant panda\", \"389\": \"snoek\", \"390\": \"eel\", \"391\": \"coho salmon\", \"392\": \"rock beauty\", \"393\": \"clownfish\", \"394\": \"sturgeon\", \"395\": \"garfish\", \"396\": \"lionfish\", \"397\": \"pufferfish\", \"398\": \"abacus\", \"399\": \"abaya\", \"400\": \"academic gown\", \"401\": \"accordion\", \"402\": \"acoustic guitar\", \"403\": \"aircraft carrier\", \"404\": \"airliner\", \"405\": \"airship\", \"406\": \"altar\", \"407\": \"ambulance\", \"408\": \"amphibious vehicle\", \"409\": \"analog clock\", \"410\": \"apiary\", \"411\": \"apron\", \"412\": \"waste container\", \"413\": \"assault rifle\", \"414\": \"backpack\", \"415\": \"bakery\", \"416\": \"balance beam\", \"417\": \"balloon\", \"418\": \"ballpoint pen\", \"419\": \"Band-Aid\", \"420\": \"banjo\", \"421\": \"baluster\", \"422\": \"barbell\", \"423\": \"barber chair\", \"424\": \"barbershop\", \"425\": \"barn\", \"426\": \"barometer\", \"427\": \"barrel\", \"428\": \"wheelbarrow\", \"429\": \"baseball\", \"430\": \"basketball\", \"431\": \"bassinet\", \"432\": \"bassoon\", \"433\": \"swimming cap\", \"434\": \"bath towel\", \"435\": \"bathtub\", \"436\": \"station wagon\", \"437\": \"lighthouse\", \"438\": \"beaker\", \"439\": \"military cap\", \"440\": \"beer bottle\", \"441\": \"beer glass\", \"442\": \"bell-cot\", \"443\": \"bib\", \"444\": \"tandem bicycle\", \"445\": \"bikini\", \"446\": \"ring binder\", \"447\": \"binoculars\", \"448\": \"birdhouse\", \"449\": \"boathouse\", \"450\": \"bobsleigh\", \"451\": \"bolo tie\", \"452\": \"poke bonnet\", \"453\": \"bookcase\", \"454\": \"bookstore\", \"455\": \"bottle cap\", \"456\": \"bow\", \"457\": \"bow tie\", \"458\": \"brass\", \"459\": \"bra\", \"460\": \"breakwater\", \"461\": \"breastplate\", \"462\": \"broom\", \"463\": \"bucket\", \"464\": \"buckle\", \"465\": \"bulletproof vest\", \"466\": \"high-speed train\", \"467\": \"butcher shop\", \"468\": \"taxicab\", \"469\": \"cauldron\", \"470\": \"candle\", \"471\": \"cannon\", \"472\": \"canoe\", \"473\": \"can opener\", \"474\": \"cardigan\", \"475\": \"car mirror\", \"476\": \"carousel\", \"477\": \"tool kit\", \"478\": \"carton\", \"479\": \"car wheel\", \"480\": \"automated teller machine\", \"481\": \"cassette\", \"482\": \"cassette player\", \"483\": \"castle\", \"484\": \"catamaran\", \"485\": \"CD player\", \"486\": \"cello\", \"487\": \"mobile phone\", \"488\": \"chain\", \"489\": \"chain-link fence\", \"490\": \"chain mail\", \"491\": \"chainsaw\", \"492\": \"chest\", \"493\": \"chiffonier\", \"494\": \"chime\", \"495\": \"china cabinet\", \"496\": \"Christmas stocking\", \"497\": \"church\", \"498\": \"movie theater\", \"499\": \"cleaver\", \"500\": \"cliff dwelling\", \"501\": \"cloak\", \"502\": \"clogs\", \"503\": \"cocktail shaker\", \"504\": \"coffee mug\", \"505\": \"coffeemaker\", \"506\": \"coil\", \"507\": \"combination lock\", \"508\": \"computer keyboard\", \"509\": \"confectionery store\", \"510\": \"container ship\", \"511\": \"convertible\", \"512\": \"corkscrew\", \"513\": \"cornet\", \"514\": \"cowboy boot\", \"515\": \"cowboy hat\", \"516\": \"cradle\", \"517\": \"crane (machine)\", \"518\": \"crash helmet\", \"519\": \"crate\", \"520\": \"infant bed\", \"521\": \"Crock Pot\", \"522\": \"croquet ball\", \"523\": \"crutch\", \"524\": \"cuirass\", \"525\": \"dam\", \"526\": \"desk\", \"527\": \"desktop computer\", \"528\": \"rotary dial telephone\", \"529\": \"diaper\", \"530\": \"digital clock\", \"531\": \"digital watch\", \"532\": \"dining table\", \"533\": \"dishcloth\", \"534\": \"dishwasher\", \"535\": \"disc brake\", \"536\": \"dock\", \"537\": \"dog sled\", \"538\": \"dome\", \"539\": \"doormat\", \"540\": \"drilling rig\", \"541\": \"drum\", \"542\": \"drumstick\", \"543\": \"dumbbell\", \"544\": \"Dutch oven\", \"545\": \"electric fan\", \"546\": \"electric guitar\", \"547\": \"electric locomotive\", \"548\": \"entertainment center\", \"549\": \"envelope\", \"550\": \"espresso machine\", \"551\": \"face powder\", \"552\": \"feather boa\", \"553\": \"filing cabinet\", \"554\": \"fireboat\", \"555\": \"fire engine\", \"556\": \"fire screen sheet\", \"557\": \"flagpole\", \"558\": \"flute\", \"559\": \"folding chair\", \"560\": \"football helmet\", \"561\": \"forklift\", \"562\": \"fountain\", \"563\": \"fountain pen\", \"564\": \"four-poster bed\", \"565\": \"freight car\", \"566\": \"French horn\", \"567\": \"frying pan\", \"568\": \"fur coat\", \"569\": \"garbage truck\", \"570\": \"gas mask\", \"571\": \"gas pump\", \"572\": \"goblet\", \"573\": \"go-kart\", \"574\": \"golf ball\", \"575\": \"golf cart\", \"576\": \"gondola\", \"577\": \"gong\", \"578\": \"gown\", \"579\": \"grand piano\", \"580\": \"greenhouse\", \"581\": \"grille\", \"582\": \"grocery store\", \"583\": \"guillotine\", \"584\": \"barrette\", \"585\": \"hair spray\", \"586\": \"half-track\", \"587\": \"hammer\", \"588\": \"hamper\", \"589\": \"hair dryer\", \"590\": \"hand-held computer\", \"591\": \"handkerchief\", \"592\": \"hard disk drive\", \"593\": \"harmonica\", \"594\": \"harp\", \"595\": \"harvester\", \"596\": \"hatchet\", \"597\": \"holster\", \"598\": \"home theater\", \"599\": \"honeycomb\", \"600\": \"hook\", \"601\": \"hoop skirt\", \"602\": \"horizontal bar\", \"603\": \"horse-drawn vehicle\", \"604\": \"hourglass\", \"605\": \"iPod\", \"606\": \"clothes iron\", \"607\": \"jack-o\'-lantern\", \"608\": \"jeans\", \"609\": \"jeep\", \"610\": \"T-shirt\", \"611\": \"jigsaw puzzle\", \"612\": \"pulled rickshaw\", \"613\": \"joystick\", \"614\": \"kimono\", \"615\": \"knee pad\", \"616\": \"knot\", \"617\": \"lab coat\", \"618\": \"ladle\", \"619\": \"lampshade\", \"620\": \"laptop computer\", \"621\": \"lawn mower\", \"622\": \"lens cap\", \"623\": \"paper knife\", \"624\": \"library\", \"625\": \"lifeboat\", \"626\": \"lighter\", \"627\": \"limousine\", \"628\": \"ocean liner\", \"629\": \"lipstick\", \"630\": \"slip-on shoe\", \"631\": \"lotion\", \"632\": \"speaker\", \"633\": \"loupe\", \"634\": \"sawmill\", \"635\": \"magnetic compass\", \"636\": \"mail bag\", \"637\": \"mailbox\", \"638\": \"tights\", \"639\": \"tank suit\", \"640\": \"manhole cover\", \"641\": \"maraca\", \"642\": \"marimba\", \"643\": \"mask\", \"644\": \"match\", \"645\": \"maypole\", \"646\": \"maze\", \"647\": \"measuring cup\", \"648\": \"medicine chest\", \"649\": \"megalith\", \"650\": \"microphone\", \"651\": \"microwave oven\", \"652\": \"military uniform\", \"653\": \"milk can\", \"654\": \"minibus\", \"655\": \"miniskirt\", \"656\": \"minivan\", \"657\": \"missile\", \"658\": \"mitten\", \"659\": \"mixing bowl\", \"660\": \"mobile home\", \"661\": \"Model T\", \"662\": \"modem\", \"663\": \"monastery\", \"664\": \"monitor\", \"665\": \"moped\", \"666\": \"mortar\", \"667\": \"square academic cap\", \"668\": \"mosque\", \"669\": \"mosquito net\", \"670\": \"scooter\", \"671\": \"mountain bike\", \"672\": \"tent\", \"673\": \"computer mouse\", \"674\": \"mousetrap\", \"675\": \"moving van\", \"676\": \"muzzle\", \"677\": \"nail\", \"678\": \"neck brace\", \"679\": \"necklace\", \"680\": \"nipple\", \"681\": \"notebook computer\", \"682\": \"obelisk\", \"683\": \"oboe\", \"684\": \"ocarina\", \"685\": \"odometer\", \"686\": \"oil filter\", \"687\": \"organ\", \"688\": \"oscilloscope\", \"689\": \"overskirt\", \"690\": \"bullock cart\", \"691\": \"oxygen mask\", \"692\": \"packet\", \"693\": \"paddle\", \"694\": \"paddle wheel\", \"695\": \"padlock\", \"696\": \"paintbrush\", \"697\": \"pajamas\", \"698\": \"palace\", \"699\": \"pan flute\", \"700\": \"paper towel\", \"701\": \"parachute\", \"702\": \"parallel bars\", \"703\": \"park bench\", \"704\": \"parking meter\", \"705\": \"passenger car\", \"706\": \"patio\", \"707\": \"payphone\", \"708\": \"pedestal\", \"709\": \"pencil case\", \"710\": \"pencil sharpener\", \"711\": \"perfume\", \"712\": \"Petri dish\", \"713\": \"photocopier\", \"714\": \"plectrum\", \"715\": \"Pickelhaube\", \"716\": \"picket fence\", \"717\": \"pickup truck\", \"718\": \"pier\", \"719\": \"piggy bank\", \"720\": \"pill bottle\", \"721\": \"pillow\", \"722\": \"ping-pong ball\", \"723\": \"pinwheel\", \"724\": \"pirate ship\", \"725\": \"pitcher\", \"726\": \"hand plane\", \"727\": \"planetarium\", \"728\": \"plastic bag\", \"729\": \"plate rack\", \"730\": \"plow\", \"731\": \"plunger\", \"732\": \"Polaroid camera\", \"733\": \"pole\", \"734\": \"police van\", \"735\": \"poncho\", \"736\": \"billiard table\", \"737\": \"soda bottle\", \"738\": \"pot\", \"739\": \"potter\'s wheel\", \"740\": \"power drill\", \"741\": \"prayer rug\", \"742\": \"printer\", \"743\": \"prison\", \"744\": \"projectile\", \"745\": \"projector\", \"746\": \"hockey puck\", \"747\": \"punching bag\", \"748\": \"purse\", \"749\": \"quill\", \"750\": \"quilt\", \"751\": \"race car\", \"752\": \"racket\", \"753\": \"radiator\", \"754\": \"radio\", \"755\": \"radio telescope\", \"756\": \"rain barrel\", \"757\": \"recreational vehicle\", \"758\": \"reel\", \"759\": \"reflex camera\", \"760\": \"refrigerator\", \"761\": \"remote control\", \"762\": \"restaurant\", \"763\": \"revolver\", \"764\": \"rifle\", \"765\": \"rocking chair\", \"766\": \"rotisserie\", \"767\": \"eraser\", \"768\": \"rugby ball\", \"769\": \"ruler\", \"770\": \"running shoe\", \"771\": \"safe\", \"772\": \"safety pin\", \"773\": \"salt shaker\", \"774\": \"sandal\", \"775\": \"sarong\", \"776\": \"saxophone\", \"777\": \"scabbard\", \"778\": \"weighing scale\", \"779\": \"school bus\", \"780\": \"schooner\", \"781\": \"scoreboard\", \"782\": \"CRT screen\", \"783\": \"screw\", \"784\": \"screwdriver\", \"785\": \"seat belt\", \"786\": \"sewing machine\", \"787\": \"shield\", \"788\": \"shoe store\", \"789\": \"shoji\", \"790\": \"shopping basket\", \"791\": \"shopping cart\", \"792\": \"shovel\", \"793\": \"shower cap\", \"794\": \"shower curtain\", \"795\": \"ski\", \"796\": \"ski mask\", \"797\": \"sleeping bag\", \"798\": \"slide rule\", \"799\": \"sliding door\", \"800\": \"slot machine\", \"801\": \"snorkel\", \"802\": \"snowmobile\", \"803\": \"snowplow\", \"804\": \"soap dispenser\", \"805\": \"soccer ball\", \"806\": \"sock\", \"807\": \"solar thermal collector\", \"808\": \"sombrero\", \"809\": \"soup bowl\", \"810\": \"space bar\", \"811\": \"space heater\", \"812\": \"space shuttle\", \"813\": \"spatula\", \"814\": \"motorboat\", \"815\": \"spider web\", \"816\": \"spindle\", \"817\": \"sports car\", \"818\": \"spotlight\", \"819\": \"stage\", \"820\": \"steam locomotive\", \"821\": \"through arch bridge\", \"822\": \"steel drum\", \"823\": \"stethoscope\", \"824\": \"scarf\", \"825\": \"stone wall\", \"826\": \"stopwatch\", \"827\": \"stove\", \"828\": \"strainer\", \"829\": \"tram\", \"830\": \"stretcher\", \"831\": \"couch\", \"832\": \"stupa\", \"833\": \"submarine\", \"834\": \"suit\", \"835\": \"sundial\", \"836\": \"sunglass\", \"837\": \"sunglasses\", \"838\": \"sunscreen\", \"839\": \"suspension bridge\", \"840\": \"mop\", \"841\": \"sweatshirt\", \"842\": \"swimsuit\", \"843\": \"swing\", \"844\": \"switch\", \"845\": \"syringe\", \"846\": \"table lamp\", \"847\": \"tank\", \"848\": \"tape player\", \"849\": \"teapot\", \"850\": \"teddy bear\", \"851\": \"television\", \"852\": \"tennis ball\", \"853\": \"thatched roof\", \"854\": \"front curtain\", \"855\": \"thimble\", \"856\": \"threshing machine\", \"857\": \"throne\", \"858\": \"tile roof\", \"859\": \"toaster\", \"860\": \"tobacco shop\", \"861\": \"toilet seat\", \"862\": \"torch\", \"863\": \"totem pole\", \"864\": \"tow truck\", \"865\": \"toy store\", \"866\": \"tractor\", \"867\": \"semi-trailer truck\", \"868\": \"tray\", \"869\": \"trench coat\", \"870\": \"tricycle\", \"871\": \"trimaran\", \"872\": \"tripod\", \"873\": \"triumphal arch\", \"874\": \"trolleybus\", \"875\": \"trombone\", \"876\": \"tub\", \"877\": \"turnstile\", \"878\": \"typewriter keyboard\", \"879\": \"umbrella\", \"880\": \"unicycle\", \"881\": \"upright piano\", \"882\": \"vacuum cleaner\", \"883\": \"vase\", \"884\": \"vault\", \"885\": \"velvet\", \"886\": \"vending machine\", \"887\": \"vestment\", \"888\": \"viaduct\", \"889\": \"violin\", \"890\": \"volleyball\", \"891\": \"waffle iron\", \"892\": \"wall clock\", \"893\": \"wallet\", \"894\": \"wardrobe\", \"895\": \"military aircraft\", \"896\": \"sink\", \"897\": \"washing machine\", \"898\": \"water bottle\", \"899\": \"water jug\", \"900\": \"water tower\", \"901\": \"whiskey jug\", \"902\": \"whistle\", \"903\": \"wig\", \"904\": \"window screen\", \"905\": \"window shade\", \"906\": \"Windsor tie\", \"907\": \"wine bottle\", \"908\": \"wing\", \"909\": \"wok\", \"910\": \"wooden spoon\", \"911\": \"wool\", \"912\": \"split-rail fence\", \"913\": \"shipwreck\", \"914\": \"yawl\", \"915\": \"yurt\", \"916\": \"website\", \"917\": \"comic book\", \"918\": \"crossword\", \"919\": \"traffic sign\", \"920\": \"traffic light\", \"921\": \"dust jacket\", \"922\": \"menu\", \"923\": \"plate\", \"924\": \"guacamole\", \"925\": \"consomme\", \"926\": \"hot pot\", \"927\": \"trifle\", \"928\": \"ice cream\", \"929\": \"ice pop\", \"930\": \"baguette\", \"931\": \"bagel\", \"932\": \"pretzel\", \"933\": \"cheeseburger\", \"934\": \"hot dog\", \"935\": \"mashed potato\", \"936\": \"cabbage\", \"937\": \"broccoli\", \"938\": \"cauliflower\", \"939\": \"zucchini\", \"940\": \"spaghetti squash\", \"941\": \"acorn squash\", \"942\": \"butternut squash\", \"943\": \"cucumber\", \"944\": \"artichoke\", \"945\": \"bell pepper\", \"946\": \"cardoon\", \"947\": \"mushroom\", \"948\": \"Granny Smith\", \"949\": \"strawberry\", \"950\": \"orange\", \"951\": \"lemon\", \"952\": \"fig\", \"953\": \"pineapple\", \"954\": \"banana\", \"955\": \"jackfruit\", \"956\": \"custard apple\", \"957\": \"pomegranate\", \"958\": \"hay\", \"959\": \"carbonara\", \"960\": \"chocolate syrup\", \"961\": \"dough\", \"962\": \"meatloaf\", \"963\": \"pizza\", \"964\": \"pot pie\", \"965\": \"burrito\", \"966\": \"red wine\", \"967\": \"espresso\", \"968\": \"cup\", \"969\": \"eggnog\", \"970\": \"alp\", \"971\": \"bubble\", \"972\": \"cliff\", \"973\": \"coral reef\", \"974\": \"geyser\", \"975\": \"lakeshore\", \"976\": \"promontory\", \"977\": \"shoal\", \"978\": \"seashore\", \"979\": \"valley\", \"980\": \"volcano\", \"981\": \"baseball player\", \"982\": \"bridegroom\", \"983\": \"scuba diver\", \"984\": \"rapeseed\", \"985\": \"daisy\", \"986\": \"yellow lady\'s slipper\", \"987\": \"corn\", \"988\": \"acorn\", \"989\": \"rose hip\", \"990\": \"horse chestnut seed\", \"991\": \"coral fungus\", \"992\": \"agaric\", \"993\": \"gyromitra\", \"994\": \"stinkhorn mushroom\", \"995\": \"earth star\", \"996\": \"hen-of-the-woods\", \"997\": \"bolete\", \"998\": \"ear\", \"999\": \"toilet paper\"}', '{\"disabled\": true}', 0, 24);
 INSERT INTO `argument` VALUES (116, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 24);
 INSERT INTO `argument` VALUES (117, 'drop_score', 'number', '0.5', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 25);
-INSERT INTO `argument` VALUES (118, 'lang', 'select', '\"ch\"', '{\"options\": [\"ch\", \"japan\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 25);
+INSERT INTO `argument` VALUES (118, 'lang', 'select', '\"ch\"', '{\"options\": [\"ch\"], \"disabled\": true, \"multiple\": false, \"clearable\": false}', 0, 25);
 INSERT INTO `argument` VALUES (119, 'use_angle_cls', 'ratio', 'true', '{\"disabled\": false}', 0, 25);
 INSERT INTO `argument` VALUES (120, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 25);
 INSERT INTO `argument` VALUES (121, 'drop_score', 'number', '0.5', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 26);
-INSERT INTO `argument` VALUES (122, 'lang', 'select', '\"japan\"', '{\"options\": [\"ch\", \"japan\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 26);
+INSERT INTO `argument` VALUES (122, 'lang', 'select', '\"japan\"', '{\"options\": [\"japan\"], \"disabled\": true, \"multiple\": false, \"clearable\": false}', 0, 26);
 INSERT INTO `argument` VALUES (123, 'use_angle_cls', 'ratio', 'true', '{\"disabled\": false}', 0, 26);
 INSERT INTO `argument` VALUES (124, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 26);
 INSERT INTO `argument` VALUES (125, 'classes', 'json', '\"person\"', '{\"disabled\": true}', 0, 27);
@@ -824,7 +824,168 @@ INSERT INTO `argument` VALUES (770, 'kpt_threshold', 'number', '0.3', '{\"max\":
 INSERT INTO `argument` VALUES (771, 'det_cat_ids', 'select', '0', '{\"options\": {\"tv\": 62, \"bed\": 59, \"bus\": 5, \"car\": 2, \"cat\": 15, \"cow\": 19, \"cup\": 41, \"dog\": 16, \"tie\": 27, \"bear\": 21, \"bird\": 14, \"boat\": 8, \"book\": 73, \"bowl\": 45, \"cake\": 55, \"fork\": 42, \"kite\": 33, \"oven\": 69, \"sink\": 71, \"skis\": 30, \"vase\": 75, \"apple\": 47, \"bench\": 13, \"chair\": 56, \"clock\": 74, \"couch\": 57, \"donut\": 54, \"horse\": 17, \"knife\": 43, \"mouse\": 64, \"pizza\": 53, \"sheep\": 18, \"spoon\": 44, \"train\": 6, \"truck\": 7, \"zebra\": 22, \"banana\": 46, \"bottle\": 39, \"carrot\": 51, \"laptop\": 63, \"orange\": 49, \"person\": 0, \"remote\": 65, \"toilet\": 61, \"bicycle\": 1, \"frisbee\": 29, \"giraffe\": 23, \"handbag\": 26, \"hot dog\": 52, \"toaster\": 70, \"airplane\": 4, \"backpack\": 24, \"broccoli\": 50, \"elephant\": 20, \"keyboard\": 66, \"sandwich\": 48, \"scissors\": 76, \"suitcase\": 28, \"umbrella\": 25, \"microwave\": 68, \"snowboard\": 31, \"stop sign\": 11, \"surfboard\": 37, \"cell phone\": 67, \"hair drier\": 78, \"motorcycle\": 3, \"skateboard\": 36, \"teddy bear\": 77, \"toothbrush\": 79, \"wine glass\": 40, \"sports ball\": 32, \"baseball bat\": 34, \"dining table\": 60, \"fire hydrant\": 10, \"potted plant\": 58, \"refrigerator\": 72, \"parking meter\": 12, \"tennis racket\": 38, \"traffic light\": 9, \"baseball glove\": 35}, \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 142);
 INSERT INTO `argument` VALUES (772, 'det_classes', 'json', '[\"person\", \"bicycle\", \"car\", \"motorcycle\", \"airplane\", \"bus\", \"train\", \"truck\", \"boat\", \"traffic light\", \"fire hydrant\", \"stop sign\", \"parking meter\", \"bench\", \"bird\", \"cat\", \"dog\", \"horse\", \"sheep\", \"cow\", \"elephant\", \"bear\", \"zebra\", \"giraffe\", \"backpack\", \"umbrella\", \"handbag\", \"tie\", \"suitcase\", \"frisbee\", \"skis\", \"snowboard\", \"sports ball\", \"kite\", \"baseball bat\", \"baseball glove\", \"skateboard\", \"surfboard\", \"tennis racket\", \"bottle\", \"wine glass\", \"cup\", \"fork\", \"knife\", \"spoon\", \"bowl\", \"banana\", \"apple\", \"sandwich\", \"orange\", \"broccoli\", \"carrot\", \"hot dog\", \"pizza\", \"donut\", \"cake\", \"chair\", \"couch\", \"potted plant\", \"bed\", \"dining table\", \"toilet\", \"tv\", \"laptop\", \"mouse\", \"remote\", \"keyboard\", \"cell phone\", \"microwave\", \"oven\", \"toaster\", \"sink\", \"refrigerator\", \"book\", \"clock\", \"vase\", \"scissors\", \"teddy bear\", \"hair drier\", \"toothbrush\"]', '{\"disabled\": true}', 0, 142);
 INSERT INTO `argument` VALUES (773, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\", \"point\"], \"multiple\": false, \"clearable\": false}', 1, 142);
-INSERT INTO `argument` VALUES (774, 'det_algorithm', 'select', '\"DB\"', '{\"options\": [\"DB\", \"SAST\", \"PSE\", \"FCE\"], \"multiple\": false, \"clearable\": false}', 0, 25);
+INSERT INTO `argument` VALUES (775, 'origin_image', 'base64', 'null', 'null', 1, 1);
+INSERT INTO `argument` VALUES (776, 'origin_image', 'base64', 'null', 'null', 1, 2);
+INSERT INTO `argument` VALUES (777, 'origin_image', 'base64', 'null', 'null', 1, 4);
+INSERT INTO `argument` VALUES (778, 'origin_image', 'base64', 'null', 'null', 1, 6);
+INSERT INTO `argument` VALUES (779, 'origin_image', 'base64', 'null', 'null', 1, 3);
+INSERT INTO `argument` VALUES (780, 'origin_image', 'base64', 'null', 'null', 1, 5);
+INSERT INTO `argument` VALUES (781, 'origin_image', 'base64', 'null', 'null', 1, 10);
+INSERT INTO `argument` VALUES (782, 'origin_image', 'base64', 'null', 'null', 1, 7);
+INSERT INTO `argument` VALUES (783, 'origin_image', 'base64', 'null', 'null', 1, 9);
+INSERT INTO `argument` VALUES (784, 'origin_image', 'base64', 'null', 'null', 1, 8);
+INSERT INTO `argument` VALUES (785, 'origin_image', 'base64', 'null', 'null', 1, 12);
+INSERT INTO `argument` VALUES (786, 'origin_image', 'base64', 'null', 'null', 1, 11);
+INSERT INTO `argument` VALUES (787, 'origin_image', 'base64', 'null', 'null', 1, 13);
+INSERT INTO `argument` VALUES (788, 'origin_image', 'base64', 'null', 'null', 1, 14);
+INSERT INTO `argument` VALUES (789, 'origin_image', 'base64', 'null', 'null', 1, 15);
+INSERT INTO `argument` VALUES (790, 'origin_image', 'base64', 'null', 'null', 1, 16);
+INSERT INTO `argument` VALUES (791, 'origin_image', 'base64', 'null', 'null', 1, 17);
+INSERT INTO `argument` VALUES (792, 'origin_image', 'base64', 'null', 'null', 1, 18);
+INSERT INTO `argument` VALUES (793, 'origin_image', 'base64', 'null', 'null', 1, 19);
+INSERT INTO `argument` VALUES (794, 'origin_image', 'base64', 'null', 'null', 1, 20);
+INSERT INTO `argument` VALUES (795, 'origin_image', 'base64', 'null', 'null', 1, 21);
+INSERT INTO `argument` VALUES (796, 'origin_image', 'base64', 'null', 'null', 1, 22);
+INSERT INTO `argument` VALUES (797, 'origin_image', 'base64', 'null', 'null', 1, 24);
+INSERT INTO `argument` VALUES (798, 'origin_image', 'base64', 'null', 'null', 1, 23);
+INSERT INTO `argument` VALUES (799, 'origin_image', 'base64', 'null', 'null', 1, 25);
+INSERT INTO `argument` VALUES (800, 'origin_image', 'base64', 'null', 'null', 1, 26);
+INSERT INTO `argument` VALUES (801, 'origin_image', 'base64', 'null', 'null', 1, 27);
+INSERT INTO `argument` VALUES (802, 'origin_image', 'base64', 'null', 'null', 1, 28);
+INSERT INTO `argument` VALUES (803, 'origin_image', 'base64', 'null', 'null', 1, 29);
+INSERT INTO `argument` VALUES (804, 'origin_image', 'base64', 'null', 'null', 1, 30);
+INSERT INTO `argument` VALUES (805, 'origin_image', 'base64', 'null', 'null', 1, 31);
+INSERT INTO `argument` VALUES (806, 'origin_image', 'base64', 'null', 'null', 1, 32);
+INSERT INTO `argument` VALUES (807, 'origin_image', 'base64', 'null', 'null', 1, 33);
+INSERT INTO `argument` VALUES (808, 'origin_image', 'base64', 'null', 'null', 1, 34);
+INSERT INTO `argument` VALUES (809, 'origin_image', 'base64', 'null', 'null', 1, 35);
+INSERT INTO `argument` VALUES (810, 'origin_image', 'base64', 'null', 'null', 1, 36);
+INSERT INTO `argument` VALUES (811, 'origin_image', 'base64', 'null', 'null', 1, 37);
+INSERT INTO `argument` VALUES (812, 'origin_image', 'base64', 'null', 'null', 1, 38);
+INSERT INTO `argument` VALUES (813, 'origin_image', 'base64', 'null', 'null', 1, 39);
+INSERT INTO `argument` VALUES (814, 'origin_image', 'base64', 'null', 'null', 1, 40);
+INSERT INTO `argument` VALUES (815, 'origin_image', 'base64', 'null', 'null', 1, 42);
+INSERT INTO `argument` VALUES (816, 'origin_image', 'base64', 'null', 'null', 1, 41);
+INSERT INTO `argument` VALUES (817, 'origin_image', 'base64', 'null', 'null', 1, 43);
+INSERT INTO `argument` VALUES (818, 'origin_image', 'base64', 'null', 'null', 1, 44);
+INSERT INTO `argument` VALUES (819, 'origin_image', 'base64', 'null', 'null', 1, 45);
+INSERT INTO `argument` VALUES (820, 'origin_image', 'base64', 'null', 'null', 1, 46);
+INSERT INTO `argument` VALUES (821, 'origin_image', 'base64', 'null', 'null', 1, 47);
+INSERT INTO `argument` VALUES (822, 'origin_image', 'base64', 'null', 'null', 1, 48);
+INSERT INTO `argument` VALUES (823, 'origin_image', 'base64', 'null', 'null', 1, 49);
+INSERT INTO `argument` VALUES (824, 'origin_image', 'base64', 'null', 'null', 1, 51);
+INSERT INTO `argument` VALUES (825, 'origin_image', 'base64', 'null', 'null', 1, 50);
+INSERT INTO `argument` VALUES (826, 'origin_image', 'base64', 'null', 'null', 1, 52);
+INSERT INTO `argument` VALUES (827, 'origin_image', 'base64', 'null', 'null', 1, 53);
+INSERT INTO `argument` VALUES (828, 'origin_image', 'base64', 'null', 'null', 1, 54);
+INSERT INTO `argument` VALUES (829, 'origin_image', 'base64', 'null', 'null', 1, 55);
+INSERT INTO `argument` VALUES (830, 'origin_image', 'base64', 'null', 'null', 1, 56);
+INSERT INTO `argument` VALUES (831, 'origin_image', 'base64', 'null', 'null', 1, 57);
+INSERT INTO `argument` VALUES (832, 'origin_image', 'base64', 'null', 'null', 1, 59);
+INSERT INTO `argument` VALUES (833, 'origin_image', 'base64', 'null', 'null', 1, 58);
+INSERT INTO `argument` VALUES (834, 'origin_image', 'base64', 'null', 'null', 1, 60);
+INSERT INTO `argument` VALUES (835, 'origin_image', 'base64', 'null', 'null', 1, 61);
+INSERT INTO `argument` VALUES (836, 'origin_image', 'base64', 'null', 'null', 1, 62);
+INSERT INTO `argument` VALUES (837, 'origin_image', 'base64', 'null', 'null', 1, 63);
+INSERT INTO `argument` VALUES (838, 'origin_image', 'base64', 'null', 'null', 1, 64);
+INSERT INTO `argument` VALUES (839, 'origin_image', 'base64', 'null', 'null', 1, 65);
+INSERT INTO `argument` VALUES (840, 'origin_image', 'base64', 'null', 'null', 1, 67);
+INSERT INTO `argument` VALUES (841, 'origin_image', 'base64', 'null', 'null', 1, 66);
+INSERT INTO `argument` VALUES (842, 'origin_image', 'base64', 'null', 'null', 1, 68);
+INSERT INTO `argument` VALUES (843, 'origin_image', 'base64', 'null', 'null', 1, 69);
+INSERT INTO `argument` VALUES (844, 'origin_image', 'base64', 'null', 'null', 1, 70);
+INSERT INTO `argument` VALUES (845, 'origin_image', 'base64', 'null', 'null', 1, 71);
+INSERT INTO `argument` VALUES (846, 'origin_image', 'base64', 'null', 'null', 1, 72);
+INSERT INTO `argument` VALUES (847, 'origin_image', 'base64', 'null', 'null', 1, 73);
+INSERT INTO `argument` VALUES (848, 'origin_image', 'base64', 'null', 'null', 1, 74);
+INSERT INTO `argument` VALUES (849, 'origin_image', 'base64', 'null', 'null', 1, 75);
+INSERT INTO `argument` VALUES (850, 'origin_image', 'base64', 'null', 'null', 1, 76);
+INSERT INTO `argument` VALUES (851, 'origin_image', 'base64', 'null', 'null', 1, 77);
+INSERT INTO `argument` VALUES (852, 'origin_image', 'base64', 'null', 'null', 1, 78);
+INSERT INTO `argument` VALUES (853, 'origin_image', 'base64', 'null', 'null', 1, 79);
+INSERT INTO `argument` VALUES (854, 'origin_image', 'base64', 'null', 'null', 1, 80);
+INSERT INTO `argument` VALUES (855, 'origin_image', 'base64', 'null', 'null', 1, 81);
+INSERT INTO `argument` VALUES (856, 'origin_image', 'base64', 'null', 'null', 1, 82);
+INSERT INTO `argument` VALUES (857, 'origin_image', 'base64', 'null', 'null', 1, 83);
+INSERT INTO `argument` VALUES (858, 'origin_image', 'base64', 'null', 'null', 1, 84);
+INSERT INTO `argument` VALUES (859, 'origin_image', 'base64', 'null', 'null', 1, 85);
+INSERT INTO `argument` VALUES (860, 'origin_image', 'base64', 'null', 'null', 1, 86);
+INSERT INTO `argument` VALUES (861, 'origin_image', 'base64', 'null', 'null', 1, 87);
+INSERT INTO `argument` VALUES (862, 'origin_image', 'base64', 'null', 'null', 1, 88);
+INSERT INTO `argument` VALUES (863, 'origin_image', 'base64', 'null', 'null', 1, 89);
+INSERT INTO `argument` VALUES (864, 'origin_image', 'base64', 'null', 'null', 1, 90);
+INSERT INTO `argument` VALUES (865, 'origin_image', 'base64', 'null', 'null', 1, 92);
+INSERT INTO `argument` VALUES (866, 'origin_image', 'base64', 'null', 'null', 1, 91);
+INSERT INTO `argument` VALUES (867, 'origin_image', 'base64', 'null', 'null', 1, 93);
+INSERT INTO `argument` VALUES (868, 'origin_image', 'base64', 'null', 'null', 1, 94);
+INSERT INTO `argument` VALUES (869, 'origin_image', 'base64', 'null', 'null', 1, 95);
+INSERT INTO `argument` VALUES (870, 'origin_image', 'base64', 'null', 'null', 1, 96);
+INSERT INTO `argument` VALUES (871, 'origin_image', 'base64', 'null', 'null', 1, 97);
+INSERT INTO `argument` VALUES (872, 'origin_image', 'base64', 'null', 'null', 1, 98);
+INSERT INTO `argument` VALUES (873, 'origin_image', 'base64', 'null', 'null', 1, 99);
+INSERT INTO `argument` VALUES (874, 'origin_image', 'base64', 'null', 'null', 1, 100);
+INSERT INTO `argument` VALUES (875, 'origin_image', 'base64', 'null', 'null', 1, 102);
+INSERT INTO `argument` VALUES (876, 'origin_image', 'base64', 'null', 'null', 1, 101);
+INSERT INTO `argument` VALUES (877, 'origin_image', 'base64', 'null', 'null', 1, 103);
+INSERT INTO `argument` VALUES (878, 'origin_image', 'base64', 'null', 'null', 1, 104);
+INSERT INTO `argument` VALUES (879, 'origin_image', 'base64', 'null', 'null', 1, 105);
+INSERT INTO `argument` VALUES (880, 'origin_image', 'base64', 'null', 'null', 1, 106);
+INSERT INTO `argument` VALUES (881, 'origin_image', 'base64', 'null', 'null', 1, 108);
+INSERT INTO `argument` VALUES (882, 'origin_image', 'base64', 'null', 'null', 1, 107);
+INSERT INTO `argument` VALUES (883, 'origin_image', 'base64', 'null', 'null', 1, 109);
+INSERT INTO `argument` VALUES (884, 'origin_image', 'base64', 'null', 'null', 1, 111);
+INSERT INTO `argument` VALUES (885, 'origin_image', 'base64', 'null', 'null', 1, 110);
+INSERT INTO `argument` VALUES (886, 'origin_image', 'base64', 'null', 'null', 1, 112);
+INSERT INTO `argument` VALUES (887, 'origin_image', 'base64', 'null', 'null', 1, 114);
+INSERT INTO `argument` VALUES (888, 'origin_image', 'base64', 'null', 'null', 1, 113);
+INSERT INTO `argument` VALUES (889, 'origin_image', 'base64', 'null', 'null', 1, 116);
+INSERT INTO `argument` VALUES (890, 'origin_image', 'base64', 'null', 'null', 1, 115);
+INSERT INTO `argument` VALUES (891, 'origin_image', 'base64', 'null', 'null', 1, 117);
+INSERT INTO `argument` VALUES (892, 'origin_image', 'base64', 'null', 'null', 1, 118);
+INSERT INTO `argument` VALUES (893, 'origin_image', 'base64', 'null', 'null', 1, 119);
+INSERT INTO `argument` VALUES (894, 'origin_image', 'base64', 'null', 'null', 1, 120);
+INSERT INTO `argument` VALUES (895, 'origin_image', 'base64', 'null', 'null', 1, 121);
+INSERT INTO `argument` VALUES (896, 'origin_image', 'base64', 'null', 'null', 1, 122);
+INSERT INTO `argument` VALUES (897, 'origin_image', 'base64', 'null', 'null', 1, 123);
+INSERT INTO `argument` VALUES (898, 'origin_image', 'base64', 'null', 'null', 1, 124);
+INSERT INTO `argument` VALUES (899, 'origin_image', 'base64', 'null', 'null', 1, 125);
+INSERT INTO `argument` VALUES (900, 'origin_image', 'base64', 'null', 'null', 1, 126);
+INSERT INTO `argument` VALUES (901, 'origin_image', 'base64', 'null', 'null', 1, 127);
+INSERT INTO `argument` VALUES (902, 'origin_image', 'base64', 'null', 'null', 1, 128);
+INSERT INTO `argument` VALUES (903, 'origin_image', 'base64', 'null', 'null', 1, 129);
+INSERT INTO `argument` VALUES (904, 'origin_image', 'base64', 'null', 'null', 1, 130);
+INSERT INTO `argument` VALUES (905, 'origin_image', 'base64', 'null', 'null', 1, 131);
+INSERT INTO `argument` VALUES (906, 'origin_image', 'base64', 'null', 'null', 1, 132);
+INSERT INTO `argument` VALUES (907, 'origin_image', 'base64', 'null', 'null', 1, 133);
+INSERT INTO `argument` VALUES (908, 'origin_image', 'base64', 'null', 'null', 1, 134);
+INSERT INTO `argument` VALUES (909, 'origin_image', 'base64', 'null', 'null', 1, 135);
+INSERT INTO `argument` VALUES (910, 'origin_image', 'base64', 'null', 'null', 1, 136);
+INSERT INTO `argument` VALUES (911, 'origin_image', 'base64', 'null', 'null', 1, 138);
+INSERT INTO `argument` VALUES (912, 'origin_image', 'base64', 'null', 'null', 1, 137);
+INSERT INTO `argument` VALUES (913, 'origin_image', 'base64', 'null', 'null', 1, 139);
+INSERT INTO `argument` VALUES (914, 'origin_image', 'base64', 'null', 'null', 1, 140);
+INSERT INTO `argument` VALUES (915, 'origin_image', 'base64', 'null', 'null', 1, 141);
+INSERT INTO `argument` VALUES (916, 'origin_image', 'base64', 'null', 'null', 1, 142);
+INSERT INTO `argument` VALUES (917, 'read_mode', 'select', '\"batch\"', '{\"options\": [\"follow\", \"batch\"], \"multiple\": false, \"clearable\": false}', 0, 13);
+INSERT INTO `argument` VALUES (918, 'origin_image', 'base64', 'null', 'null', 1, 143);
+INSERT INTO `argument` VALUES (919, 'mask_image', 'base64', 'null', 'null', 1, 143);
+INSERT INTO `argument` VALUES (922, 'det_algorithm', 'select', '\"DB++\"', '{\"options\": [\"DB\", \"DB++\", \"EAST\", \"SAST\", \"PSE\", \"FCE\", \"CT\"], \"multiple\": false, \"clearable\": false}', 0, 26);
+INSERT INTO `argument` VALUES (923, 'det_algorithm', 'select', '\"DB++\"', '{\"options\": [\"DB\", \"DB++\", \"EAST\", \"SAST\", \"PSE\", \"FCE\", \"CT\"], \"multiple\": false, \"clearable\": false}', 0, 25);
+INSERT INTO `argument` VALUES (924, 'det_box_type', 'select', '\"quad\"', '{\"options\": [\"quad\", \"poly\"], \"multiple\": false, \"clearable\": false}', 0, 25);
+INSERT INTO `argument` VALUES (925, 'det_box_type', 'select', '\"quad\"', '{\"options\": [\"quad\", \"poly\"], \"multiple\": false, \"clearable\": false}', 0, 26);
+INSERT INTO `argument` VALUES (926, 'rec_algorithm', 'select', '\"SVTR_LCNet\"', '{\"options\": [\"SRN\", \"RARE\", \"NRTR\", \"SAR\", \"VisionLAN\", \"ViTSTR\", \"ABINet\", \"SPIN\", \"RobustScanner\", \"RFL\", \"SATRN\", \"PREN\", \"CAN\"], \"multiple\": false, \"clearable\": false}', 0, 25);
+INSERT INTO `argument` VALUES (927, 'rec_algorithm', 'select', '\"SVTR_LCNet\"', '{\"options\": [\"SRN\", \"RARE\", \"NRTR\", \"SAR\", \"VisionLAN\", \"ViTSTR\", \"ABINet\", \"SPIN\", \"RobustScanner\", \"RFL\", \"SATRN\", \"PREN\", \"CAN\"], \"multiple\": false, \"clearable\": false}', 0, 26);
+INSERT INTO `argument` VALUES (928, 'drop_score', 'number', '0.5', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 144);
+INSERT INTO `argument` VALUES (929, 'lang', 'select', '\"ch\"', '{\"options\": [\"ch\"], \"disabled\": true, \"multiple\": false, \"clearable\": false}', 0, 144);
+INSERT INTO `argument` VALUES (930, 'use_angle_cls', 'ratio', 'true', '{\"disabled\": false}', 0, 144);
+INSERT INTO `argument` VALUES (932, 'det_algorithm', 'select', '\"DB++\"', '{\"options\": [\"DB\", \"DB++\", \"EAST\", \"SAST\", \"PSE\", \"FCE\", \"CT\"], \"multiple\": false, \"clearable\": false}', 0, 144);
+INSERT INTO `argument` VALUES (933, 'det_box_type', 'select', '\"quad\"', '{\"options\": [\"quad\", \"poly\"], \"multiple\": false, \"clearable\": false}', 0, 144);
+INSERT INTO `argument` VALUES (934, 'rec_algorithm', 'select', '\"SVTR_LCNet\"', '{\"options\": [\"SRN\", \"RARE\", \"NRTR\", \"SAR\", \"VisionLAN\", \"ViTSTR\", \"ABINet\", \"SPIN\", \"RobustScanner\", \"RFL\", \"SATRN\", \"PREN\", \"CAN\"], \"multiple\": false, \"clearable\": false}', 0, 144);
+INSERT INTO `argument` VALUES (935, 'origin_image', 'base64', 'null', 'null', 1, 144);
+INSERT INTO `argument` VALUES (936, 'mask_enhance', 'ratio', 'false', '{\"disabled\": false}', 1, 144);
+INSERT INTO `argument` VALUES (938, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 145);
+INSERT INTO `argument` VALUES (939, 'origin_image', 'base64', 'null', 'null', 1, 145);
+INSERT INTO `argument` VALUES (940, 'confidence_threshold', 'number', '0.5', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 145);
 
 -- ----------------------------
 -- Table structure for captcha
@@ -837,7 +998,7 @@ CREATE TABLE `captcha`  (
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `is_used` tinyint(1) NULL DEFAULT NULL COMMENT '是否使用',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of captcha
@@ -860,7 +1021,7 @@ CREATE TABLE `dataset`  (
   `test_exist` tinyint(1) NOT NULL COMMENT '是否存在测试集',
   `test_num` int NULL DEFAULT NULL COMMENT '测试集数量',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of dataset
@@ -881,7 +1042,7 @@ CREATE TABLE `flow`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `task_id`(`task_id` ASC) USING BTREE,
   CONSTRAINT `flow_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 62 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 66 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flow
@@ -948,6 +1109,9 @@ INSERT INTO `flow` VALUES (59, 'yolov8_efficientvit_sam', 20);
 INSERT INTO `flow` VALUES (60, 'yolov5_sam', 20);
 INSERT INTO `flow` VALUES (61, 'yolov5_ram', 21);
 INSERT INTO `flow` VALUES (62, 'yolow_ram', 21);
+INSERT INTO `flow` VALUES (63, 'lama', 22);
+INSERT INTO `flow` VALUES (64, 'ppocr_v4_lama', 23);
+INSERT INTO `flow` VALUES (65, 'unidet', 2);
 
 -- ----------------------------
 -- Table structure for model
@@ -963,7 +1127,7 @@ CREATE TABLE `model`  (
   INDEX `release_weight_ibfk_2`(`weight_id` ASC) USING BTREE,
   CONSTRAINT `model_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `model_ibfk_2` FOREIGN KEY (`weight_id`) REFERENCES `weight` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 195 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of model
@@ -1154,6 +1318,14 @@ INSERT INTO `model` VALUES (183, 140, 40, 'tag_model_path');
 INSERT INTO `model` VALUES (184, 141, 155, 'model_path');
 INSERT INTO `model` VALUES (185, 142, 156, 'det_model_path');
 INSERT INTO `model` VALUES (186, 142, 157, 'pose_model_path');
+INSERT INTO `model` VALUES (187, 143, 158, 'model_path');
+INSERT INTO `model` VALUES (188, 144, 34, 'det_model_path');
+INSERT INTO `model` VALUES (189, 144, 35, 'rec_model_path');
+INSERT INTO `model` VALUES (190, 144, 36, 'cls_model_path');
+INSERT INTO `model` VALUES (191, 144, 158, 'model_path');
+INSERT INTO `model` VALUES (192, 143, 159, 'model_path');
+INSERT INTO `model` VALUES (193, 144, 159, 'model_path');
+INSERT INTO `model` VALUES (194, 145, 160, 'model_path');
 
 -- ----------------------------
 -- Table structure for release
@@ -1167,7 +1339,7 @@ CREATE TABLE `release`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_ibfk_1`(`flow_id` ASC) USING BTREE,
   CONSTRAINT `release_ibfk_1` FOREIGN KEY (`flow_id`) REFERENCES `flow` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 142 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 146 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of release
@@ -1314,6 +1486,9 @@ INSERT INTO `release` VALUES (139, 'yolov8x-worldv2-r20240529', 'YOLOv8x-worldv2
 INSERT INTO `release` VALUES (140, 'yolov8s_worldv2_ram_plus-r20240529', 'YOLOv8s-worldv2-RAM-plus', 62);
 INSERT INTO `release` VALUES (141, 'yolox_s-r20230520', 'YOLOX Megvii', 17);
 INSERT INTO `release` VALUES (142, 'yolox_l_dwpose_ucoco-r20230820', 'DWPose IDEA', 29);
+INSERT INTO `release` VALUES (143, 'lama_fp32', 'Lama_fp32', 63);
+INSERT INTO `release` VALUES (144, 'ch_ppocr_v4_lama_fp32', 'ch_PP-OCRv4_Lama_fp32 (PaddleOCR)', 64);
+INSERT INTO `release` VALUES (145, 'Unified_learned_OCIM_RS200_6x+2x', 'Unified_learned', 65);
 
 -- ----------------------------
 -- Table structure for result
@@ -1334,7 +1509,7 @@ CREATE TABLE `result`  (
   INDEX `release_id`(`release_id` ASC) USING BTREE,
   CONSTRAINT `result_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `result_ibfk_2` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of result
@@ -1349,7 +1524,7 @@ CREATE TABLE `role`  (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色名称',
   `desc` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '角色描述',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of role
@@ -1368,7 +1543,7 @@ CREATE TABLE `task`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `type_id`(`type_id` ASC) USING BTREE,
   CONSTRAINT `task_ibfk_1` FOREIGN KEY (`type_id`) REFERENCES `task_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of task
@@ -1394,6 +1569,8 @@ INSERT INTO `task` VALUES (18, 'semantic_segmentation', 2);
 INSERT INTO `task` VALUES (19, 'depth_estimation', 2);
 INSERT INTO `task` VALUES (20, 'detection_segmentation', 3);
 INSERT INTO `task` VALUES (21, 'classification_detection', 3);
+INSERT INTO `task` VALUES (22, 'inpainting', 2);
+INSERT INTO `task` VALUES (23, 'mark_remove', 3);
 
 -- ----------------------------
 -- Table structure for task_type
@@ -1403,7 +1580,7 @@ CREATE TABLE `task_type`  (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '任务类型ID',
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务类型名称',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of task_type
@@ -1428,7 +1605,7 @@ CREATE TABLE `user`  (
   UNIQUE INDEX `email`(`email` ASC) USING BTREE,
   INDEX `role_id`(`role_id` ASC) USING BTREE,
   CONSTRAINT `user_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2008 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2009 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user
@@ -1449,7 +1626,7 @@ CREATE TABLE `weight`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `dataset_id`(`dataset_id` ASC) USING BTREE,
   CONSTRAINT `weight_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 157 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 161 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of weight
@@ -1611,5 +1788,8 @@ INSERT INTO `weight` VALUES (154, 'yolov8x-worldv2.onnx', NULL, 'https://github.
 INSERT INTO `weight` VALUES (155, 'yolox_s.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.1.0/yolox_s.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (156, 'yolox_l.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.2.0/yolox_l.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (157, 'dw-ll_ucoco_384.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.2.0/dw-ll_ucoco_384.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (158, 'lama_fp32.onnx', 'E:/Models/yanglao/xanylabeling_data/flows/Lama_fp32/lama_fp32.onnx', 'https://cdn-lfs-us-1.hf.co/repos/06/fc/06fc14c8708b36310adf814a1dcd770c801afcd0a98e9b82dcc569cf82b7bf84/1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6?response-content-disposition=attachment%3B+filename*%3DUTF-8%27%27lama_fp32.onnx%3B+filename%3D%22lama_fp32.onnx%22%3B&Expires=1731315860&Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTczMTMxNTg2MH19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2RuLWxmcy11cy0xLmhmLmNvL3JlcG9zLzA2L2ZjLzA2ZmMxNGM4NzA4YjM2MzEwYWRmODE0YTFkY2Q3NzBjODAxYWZjZDBhOThlOWI4MmRjYzU2OWNmODJiN2JmODQvMWZhZWY1MzAxZDc4ZGI3ZGRhNTAyZmU1OTk2Njk1N2VjNGI3OWRkNjRlMTZmMDNlZDk2OTEzYzdhNGViNjhkNj9yZXNwb25zZS1jb250ZW50LWRpc3Bvc2l0aW9uPSoifV19&Signature=pJdSy99VKRPyjgGnurUKrUwkVoJSHj33oObnWcYG31SEkHqjTne1OVd6T7EZsZNmMPcm9uSJzbKkom9Mcb7oS7-ypYq4N8VrhjDnLAQ%7EGS1o3FkzkB5evkywGCfJUBLrBxIciTNPz6I8u9T%7EQdIJaJLCB1nAwiVa5cwYNcam7N0jZBk7QYzp7ni%7EIoMxNS5vrKU71Dwa3Uipj8NDS-SRBe01zg4lL3OtF6ZkhPsr3z6wpOZ8kOzw-7N0n5Kezi-nTUawWaGpxPc43fusEi3H3XOnHAj8R3d8AaJ%7E143nc7zS21uiebtZEO%7EStWVpmAy4A%7E0TokO3Goi9laYbTdVqdQ__&Key-Pair-Id=K24J24Z295AEI9', 1, NULL);
+INSERT INTO `weight` VALUES (159, 'big-lama.pt', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\Lama_fp32\\big-lama\\big-lama.pt', '', 1, NULL);
+INSERT INTO `weight` VALUES (160, 'Unified_learned_OCIM_RS200_6x+2x.pth', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\unidet\\Unified_learned_OCIM_RS200_6x+2x.pth', '', 1, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
