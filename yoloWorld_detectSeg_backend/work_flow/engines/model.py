@@ -45,7 +45,7 @@ class Model:
         "https://github.com/CVHub520/X-AnyLabeling/releases/tag"
     )
     # home_dir = os.path.expanduser("E:/models/yanglao")
-    home_dir = os.path.expanduser("/mnt/e/models/yanglao")
+    home_dir = os.path.expanduser("E:\models\yanglao")
     class Meta:
         required_config_names = []
         widgets = ["button_run"]
@@ -203,12 +203,15 @@ class Model:
         model_path = model_config[model_path_field_name]
         local = model_path.get("local", None)
         online = model_path.get("online", None)
+        # Continue with the rest of your function logic
+        migrate_flag = self.allow_migrate_data()
+        data_dir = "xanylabeling_data" if migrate_flag else "anylabeling_data"
+        model_path = os.path.abspath(os.path.join(self.home_dir, data_dir))
         # Model path is a local path
         if local is not None:
             # Relative path to executable or absolute path?
             # model_abs_path = os.path.abspath(local)
             model_abs_path = local
-            print(model_abs_path)
             if (os.path.exists(model_abs_path)
                 or self.check_model_shards(model_abs_path)
             ):
@@ -220,6 +223,7 @@ class Model:
                 ):
                     return model_abs_path
                 else:
+                    local_filename = os.path.basename(local)
                     local_model_abs_path = os.path.abspath(
                         os.path.join(
                             model_path,
@@ -258,12 +262,6 @@ class Model:
             filename = get_filename_from_url(online)
             download_url = online
 
-            # Continue with the rest of your function logic
-            migrate_flag = self.allow_migrate_data()
-            data_dir = "xanylabeling_data" if migrate_flag else "anylabeling_data"
-
-            # Create model folder
-            model_path = os.path.abspath(os.path.join(self.home_dir, data_dir))
             model_abs_path = os.path.abspath(
                 os.path.join(
                     model_path,
@@ -296,7 +294,7 @@ class Model:
                 ellipsis_download_url = (
                     download_url[:20] + "..." + download_url[-20:]
                 )
-            print(download_url)
+
             self.on_message(f"Downloading {ellipsis_download_url} to {model_abs_path}")
             try:
                 # Download and show progress

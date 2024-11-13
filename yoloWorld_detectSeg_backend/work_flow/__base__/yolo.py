@@ -55,10 +55,7 @@ class YOLO(Model):
         model_abs_path = self.get_model_abs_path(self.config, "model_path")
         if not model_abs_path or not os.path.isfile(model_abs_path):
             raise FileNotFoundError(
-                QCoreApplication.translate(
-                    "Model",
-                    f"Could not download or initialize {self.config['type']} model.",
-                )
+                f"Could not download or initialize {self.config['type']} model.",
             )
 
         self.engine = self.config.get("engine", "ort")
@@ -500,13 +497,12 @@ class YOLO(Model):
             score (Union[float, str]): The confidence score of the polygon.
             class_id (Union[int, str]): The class ID of the polygon.
             track_id (Union[int, str]): The track ID of the polygon.
-
         Returns:
             shape (Shape): A Shape object representing the polygon.
         """
         shape = Shape(flags={})
         for p in point:
-            shape.add_point(QtCore.QPointF(int(p[0]), int(p[1])))
+            shape.add_point(int(p[0]), int(p[1]))
         shape.shape_type = "polygon"
         shape.closed = True
         shape.label = str(self.classes[int(class_id)])
@@ -542,7 +538,7 @@ class YOLO(Model):
         """
         x, y = keypoint
         shape = Shape(flags={})
-        shape.add_point(QtCore.QPointF(int(x), int(y)))
+        shape.add_point(int(x), int(y))
         shape.shape_type = "point"
         shape.difficult = False
         if self.tracker and track_id:
@@ -582,10 +578,10 @@ class YOLO(Model):
         x3, y3 = poly[3]
         direction = self.calculate_rotation_theta(poly)
         shape = Shape(flags={})
-        shape.add_point((x0, y0))
-        shape.add_point((x1, y1))
-        shape.add_point((x2, y2))
-        shape.add_point((x3, y3))
+        shape.add_point(x0, y0)
+        shape.add_point(x1, y1)
+        shape.add_point(x2, y2)
+        shape.add_point(x3, y3)
         shape.shape_type = "rotation"
         shape.closed = True
         shape.direction = direction

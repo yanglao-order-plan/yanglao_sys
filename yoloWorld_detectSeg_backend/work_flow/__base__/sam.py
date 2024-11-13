@@ -1,21 +1,54 @@
+from copy import deepcopy
+import torch
+from torchvision.ops.boxes import batched_nms, box_area  # type: ignore
+from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
-import onnxruntime as ort
+import onnxruntime
+from torch.nn import functional as F
 
-from typing import Tuple
-from copy import deepcopy
-
+from work_flow.utils.segment_anything.amg import (
+    MaskData,
+    area_from_rle,
+    batch_iterator,
+    batched_mask_to_box,
+    box_xyxy_to_xywh,
+    build_all_layer_point_grids,
+    calculate_stability_score,
+    coco_encode_rle,
+    generate_crop_boxes,
+    is_box_near_crop_edge,
+    mask_to_rle_pytorch,
+    remove_small_regions,
+    rle_to_mask,
+    uncrop_boxes_xyxy,
+    uncrop_masks,
+    uncrop_points,
+)
 
 class SegmentAnythingONNX:
     """Segmentation model using SegmentAnything"""
-
+    mask_threshold: float = 0.0  # 暂时服务于auto
+    image_format: str = "RGB"
     def __init__(
-        self, encoder_session, decoder_session, target_size=1024, input_size=(684, 1024)
+        self, encoder_model_path, decoder_model_path, target_size=1024, input_size=(684, 1024)
     ) -> None:
         self.target_size = target_size
         self.input_size = input_size
-        self.encoder_session = encoder_session
-        self.decoder_session = decoder_session
+        # Load flows
+        providers = onnxruntime.get_available_providers()
+
+        # Pop TensorRT Runtime due to crashing issues
+        # TODO: Add back when TensorRT backend is stable
+        providers = [p for p in providers if p != "TensorrtExecutionProvider"]
+
+        self.encoder_session = onnxruntime.InferenceSession(
+            encoder_model_path, providers=providers
+        )
+        self.encoder_input_name = self.encoder_session.get_inputs()[0].name
+        self.decoder_session = onnxruntime.InferenceSession(
+            decoder_model_path, providers=providers
+        )
 
     def get_input_points(self, prompt):
         """Get input points"""
@@ -35,9 +68,10 @@ class SegmentAnythingONNX:
         points, labels = np.array(points), np.array(labels)
         return points, labels
 
-    def run_encoder(self, blob):
+    def run_encoder(self, encoder_inputs):
         """Run encoder"""
-        image_embedding = self.encoder_session.get_ort_inference(blob)
+        output = self.encoder_session.run(None, encoder_inputs)
+        image_embedding = output[0]
         return image_embedding
 
     @staticmethod
@@ -66,18 +100,9 @@ class SegmentAnythingONNX:
         return coords
 
     def run_decoder(
-        self,
-        image_embedding,
-        original_size,
-        transform_matrix,
-        prompt,
-        transform_prompt,
+        self, image_embedding, transform_matrix, input_points, input_labels
     ):
         """Run decoder"""
-        if transform_prompt:
-            input_points, input_labels = self.get_input_points(prompt)
-        else:
-            input_points, input_labels = prompt
 
         # Add a batch index, concatenate a padding point, and transform.
         onnx_coord = np.concatenate(
@@ -99,11 +124,13 @@ class SegmentAnythingONNX:
             axis=2,
         )
         onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
+        # 未考虑批次与深度
         onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
 
         # Create an empty mask input and an indicator for no mask.
         onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
         onnx_has_mask_input = np.zeros(1, dtype=np.float32)
+        print(image_embedding.shape)
         decoder_inputs = {
             "image_embeddings": image_embedding,
             "point_coords": onnx_coord,
@@ -112,17 +139,8 @@ class SegmentAnythingONNX:
             "has_mask_input": onnx_has_mask_input,
             "orig_im_size": np.array(self.input_size, dtype=np.float32),
         }
-        masks, _, _ = self.decoder_session.get_ort_inference(
-            None, decoder_inputs, False
-        )
-
-        # Transform the masks back to the original image size.
-        inv_transform_matrix = np.linalg.inv(transform_matrix)
-        transformed_masks = self.transform_masks(
-            masks, original_size, inv_transform_matrix
-        )
-
-        return transformed_masks
+        masks, iou_predictions, low_res_logits = self.decoder_session.run(None, decoder_inputs)
+        return masks, iou_predictions, low_res_logits
 
     def transform_masks(self, masks, original_size, transform_matrix):
         """Transform masks
@@ -167,306 +185,357 @@ class SegmentAnythingONNX:
             flags=cv2.INTER_LINEAR,
         )
 
-        image_embedding = self.run_encoder(cv_image.astype(np.float32))
+        encoder_inputs = {
+            self.encoder_input_name: cv_image.astype(np.float32),
+        }
+        image_embedding = self.run_encoder(encoder_inputs)
         return {
             "image_embedding": image_embedding,
             "original_size": original_size,
             "transform_matrix": transform_matrix,
         }
 
-    def predict_masks(self, embedding, prompt, transform_prompt=True):
+    def predict_masks(self, embedding, prompt=None, transform_prompt=True):
         """
         Predict masks for a single image.
         """
-        masks = self.run_decoder(
-            embedding["image_embedding"],
-            embedding["original_size"],
+        if transform_prompt:
+            input_points, input_labels = self.get_input_points(prompt)
+        else:
+            input_points, input_labels = prompt
+        masks, _, _ = self.run_decoder(
+            embedding["image_embeddings"],
             embedding["transform_matrix"],
-            prompt,
-            transform_prompt,
+            input_points,
+            input_labels,
         )
-
-        return masks
-
-    @staticmethod
-    def get_approx_contours(masks):
-        """
-        Post process masks
-        """
-        # Find contours
-        masks[masks > 0.0] = 255
-        masks[masks <= 0.0] = 0
-        masks = masks.astype(np.uint8)
-        contours, _ = cv2.findContours(
-            masks, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        # Transform the masks back to the original image size.
+        inv_transform_matrix = np.linalg.inv(embedding["transform_matrix"])
+        transformed_masks = self.transform_masks(
+            masks, embedding["original_size"], inv_transform_matrix
         )
+        return transformed_masks
 
-        # Refine contours
-        approx_contours = []
-        for contour in contours:
-            # Approximate contour
-            epsilon = 0.001 * cv2.arcLength(contour, True)
-            approx = cv2.approxPolyDP(contour, epsilon, True)
-            approx_contours.append(approx)
+    def select_masks(
+        self, masks: torch.Tensor, iou_preds: torch.Tensor, num_points: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        score_reweight = torch.tensor(
+            [[1000] + [0] * (self.model.mask_decoder.num_mask_tokens - 1)]
+        ).to(iou_preds.device)
+        score = iou_preds + (num_points - 2.5) * score_reweight
+        best_idx = torch.argmax(score, dim=1)
+        masks = masks[torch.arange(masks.shape[0]), best_idx, :, :].unsqueeze(1)
+        iou_preds = iou_preds[torch.arange(masks.shape[0]), best_idx].unsqueeze(1)
 
-        # Remove too big contours ( >90% of image size)
-        if len(approx_contours) > 1:
-            image_size = masks.shape[0] * masks.shape[1]
-            areas = [cv2.contourArea(contour) for contour in approx_contours]
-            filtered_approx_contours = [
-                contour
-                for contour, area in zip(approx_contours, areas)
-                if area < image_size * 0.9
-            ]
+        return masks, iou_preds
 
-        # Remove small contours (area < 20% of average area)
-        if len(approx_contours) > 1:
-            areas = [cv2.contourArea(contour) for contour in approx_contours]
-            avg_area = np.mean(areas)
-
-            filtered_approx_contours = [
-                contour
-                for contour, area in zip(approx_contours, areas)
-                if area > avg_area * 0.2
-            ]
-            approx_contours = filtered_approx_contours
-
-        return approx_contours
-
-
-class EdgeSAMONNX(object):
-    def __init__(
-        self, encoder_model_path, decoder_model_path, target_length
+class SamAutomaticMaskGenerator(SegmentAnythingONNX):
+    return_logits: bool = True
+    def __init__(self, # 普通sam的初始参数
+        encoder_model_path, decoder_model_path, target_size=1024, input_size=(684, 1024),
+        points_per_side: Optional[int] = 32,
+        points_per_batch: int = 64,
+        pred_iou_thresh: float = 0.88,
+        stability_score_thresh: float = 0.95,
+        stability_score_offset: float = 1.0,
+        box_nms_thresh: float = 0.7,
+        crop_n_layers: int = 0,
+        crop_nms_thresh: float = 0.7,
+        crop_overlap_ratio: float = 512 / 1500,
+        crop_n_points_downscale_factor: int = 1,
+        point_grids: Optional[List[np.ndarray]] = None,
+        min_mask_region_area: int = 0,
+        output_mode: str = "binary_mask",
     ) -> None:
-        # Load flows
-        providers = ort.get_available_providers()
+        super().__init__(encoder_model_path, decoder_model_path, target_size, input_size)
+        assert (points_per_side is None) != (
+            point_grids is None
+        ), "Exactly one of points_per_side or point_grid must be provided."
+        if points_per_side is not None:
+            self.point_grids = build_all_layer_point_grids(
+                points_per_side,
+                crop_n_layers,
+                crop_n_points_downscale_factor,
+            )
+        elif point_grids is not None:
+            self.point_grids = point_grids
+        else:
+            raise ValueError("Can't have both points_per_side and point_grid be None.")
 
-        # Pop TensorRT Runtime due to crashing issues
-        # TODO: Add back when TensorRT backend is stable
-        providers = [p for p in providers if p != "TensorrtExecutionProvider"]
+        assert output_mode in [
+            "binary_mask",
+            "uncompressed_rle",
+            "coco_rle",
+        ], f"Unknown output_mode {output_mode}."
+        if output_mode == "coco_rle":
+            from pycocotools import mask as mask_utils  # type: ignore # noqa: F401
 
-        self.encoder_session = ort.InferenceSession(
-            encoder_model_path, providers=providers
-        )
-        self.decoder_session = ort.InferenceSession(
-            decoder_model_path, providers=providers
-        )
+        if min_mask_region_area > 0:
+            import cv2  # type: ignore # noqa: F401
 
-        self.encoder_input_name = self.encoder_session.get_inputs()[0].name
-        self.target_length = target_length
+        self.points_per_batch = points_per_batch
+        self.pred_iou_thresh = pred_iou_thresh
+        self.stability_score_thresh = stability_score_thresh
+        self.stability_score_offset = stability_score_offset
+        self.box_nms_thresh = box_nms_thresh
+        self.crop_n_layers = crop_n_layers
+        self.crop_nms_thresh = crop_nms_thresh
+        self.crop_overlap_ratio = crop_overlap_ratio
+        self.crop_n_points_downscale_factor = crop_n_points_downscale_factor
+        self.min_mask_region_area = min_mask_region_area
+        self.output_mode = output_mode
 
-    def run_encoder(self, encoder_inputs):
-        """Run encoder"""
-        image_embeddings = self.encoder_session.run(None, encoder_inputs)
-        return image_embeddings[0]
+    @torch.no_grad()
+    def predict_masks(self, image: np.ndarray) -> List[Dict[str, Any]]:
 
-    @staticmethod
-    def get_preprocess_shape(
-        oldh: int, oldw: int, long_side_length: int
-    ) -> Tuple[int, int]:
-        """
-        Compute the output size given input size and target long side length.
-        """
-        scale = long_side_length * 1.0 / max(oldh, oldw)
-        newh, neww = oldh * scale, oldw * scale
-        neww = int(neww + 0.5)
-        newh = int(newh + 0.5)
-        return (newh, neww)
+        # Generate masks
+        mask_data = self._generate_masks(image)
 
-    def transform(self, input_image: np.ndarray) -> np.ndarray:
-        """image transform
+        # Filter small disconnected regions and holes in masks
+        if self.min_mask_region_area > 0:
+            mask_data = self.postprocess_small_regions(
+                mask_data,
+                self.min_mask_region_area,
+                max(self.box_nms_thresh, self.crop_nms_thresh),
+            )
 
-        This function can convert the input image to the required input format for vit.
+        # Encode masks
+        if self.output_mode == "coco_rle":
+            mask_data["segmentations"] = [coco_encode_rle(rle) for rle in mask_data["rles"]]
+        elif self.output_mode == "binary_mask":
+            mask_data["segmentations"] = [rle_to_mask(rle) for rle in mask_data["rles"]]
+        else:
+            mask_data["segmentations"] = mask_data["rles"]
 
-        Args:
-            input_image (np.ndarray): input image, the image type should be RGB.
+        # Write mask records
+        curr_anns = []
+        for idx in range(len(mask_data["segmentations"])):
+            ann = {
+                "segmentation": mask_data["segmentations"][idx],
+                "area": area_from_rle(mask_data["rles"][idx]),
+                "bbox": box_xyxy_to_xywh(mask_data["boxes"][idx]).tolist(),
+                "predicted_iou": mask_data["iou_preds"][idx].item(),
+                "point_coords": [mask_data["points"][idx].tolist()],
+                "stability_score": mask_data["stability_score"][idx].item(),
+                "crop_box": box_xyxy_to_xywh(mask_data["crop_boxes"][idx]).tolist(),
+            }
+            curr_anns.append(ann)
 
-        Returns:
-            np.ndarray: transformed image.
-        """
-        # Resize
-        h, w, _ = input_image.shape
-        target_size = self.get_preprocess_shape(h, w, self.target_length)
-        input_image = cv2.resize(input_image, target_size[::-1])
-
-        # HWC -> CHW
-        input_image = input_image.transpose((2, 0, 1))
-
-        # CHW -> NCHW
-        input_image = np.ascontiguousarray(input_image)
-        input_image = np.expand_dims(input_image, 0)
-
-        return input_image
-
-    def encode(self, cv_image):
-        """
-        Calculate embedding and metadata for a single image.
-        """
-        original_size = cv_image.shape[:2]
-        encoder_inputs = {
-            self.encoder_input_name: self.transform(cv_image),
-        }
-
-        image_embeddings = self.run_encoder(encoder_inputs)
-        return {
-            "image_embeddings": image_embeddings,
-            "original_size": original_size,
-        }
-
-    def get_input_points(self, prompt):
-        """Get input points"""
-        points = []
-        labels = []
-        for mark in prompt:
-            if mark["type"] == "point":
-                points.append(mark["data"])
-                labels.append(mark["label"])
-            elif mark["type"] == "rectangle":
-                points.append([mark["data"][0], mark["data"][1]])  # top left
-                points.append(
-                    [mark["data"][2], mark["data"][3]]
-                )  # bottom right
-                labels.append(2)
-                labels.append(3)
-        points, labels = np.array(points).astype(np.float32), np.array(
-            labels
-        ).astype(np.float32)
-        return points, labels
-
-    @staticmethod
-    def calculate_stability_score(
-        masks: np.ndarray, mask_threshold: float, threshold_offset: float
-    ) -> np.ndarray:
-        """
-        Computes the stability score for a batch of masks. The stability
-        score is the IoU between the binary masks obtained by thresholding
-        the predicted mask logits at high and low values.
-        """
-        high_threshold_mask = masks > (mask_threshold + threshold_offset)
-        low_threshold_mask = masks > (mask_threshold - threshold_offset)
-
-        intersections = np.sum(
-            high_threshold_mask & low_threshold_mask,
-            axis=(-1, -2),
-            dtype=np.int32,
-        )
-        unions = np.sum(
-            high_threshold_mask | low_threshold_mask,
-            axis=(-1, -2),
-            dtype=np.int32,
-        )
-
-        return intersections / unions
-
-    def apply_coords(
-        self, coords: np.ndarray, original_size: Tuple[int, ...]
-    ) -> np.ndarray:
-        """
-        Expects a numpy array of length 2 in the final dimension. Requires the
-        original image size in (H, W) format.
-        """
-        old_h, old_w = original_size
-        new_h, new_w = self.get_preprocess_shape(
-            original_size[0], original_size[1], self.target_length
-        )
-        coords = deepcopy(coords).astype(float)
-        coords[..., 0] = coords[..., 0] * (new_w / old_w)
-        coords[..., 1] = coords[..., 1] * (new_h / old_h)
-        return coords
-
-    def apply_boxes(self, boxes, original_size, new_size):
-        boxes = self.apply_coords(
-            boxes.reshape(-1, 2, 2), original_size, new_size
-        )
-        return boxes
+        return curr_anns
 
     def postprocess_masks(
         self,
-        mask: np.ndarray,
+        masks: torch.Tensor,
         input_size: Tuple[int, ...],
         original_size: Tuple[int, ...],
-    ) -> np.ndarray:
+    ) -> torch.Tensor:
         """
         Remove padding and upscale masks to the original image size.
 
         Arguments:
-        mask (np.ndarray): mask from the mask_decoder, in 1xHxW format.
-        input_size (tuple(int, int)): The size of the image input to the
+          masks (torch.Tensor): Batched masks from the mask_decoder,
+            in BxCxHxW format.
+          input_size (tuple(int, int)): The size of the image input to the
             model, in (H, W) format. Used to remove padding.
-        original_size (tuple(int, int)): The original size of the image
+          original_size (tuple(int, int)): The original size of the image
             before resizing for input to the model, in (H, W) format.
 
         Returns:
-        (np.ndarray): Mask in 1xHxW format, where (H, W)
+          (torch.Tensor): Batched masks in BxCxHxW format, where (H, W)
             is given by original_size.
         """
-        img_size = self.target_length
+        masks = F.interpolate(
+            masks,(self.target_size, self.target_size),
+            mode="bilinear",
+            align_corners=False,
+        )
+        masks = masks[..., : input_size[0], : input_size[1]]
+        masks = F.interpolate(masks, original_size, mode="bilinear", align_corners=False)
+        return masks
 
-        # Upscale masks to the intermediate size
-        mask = cv2.resize(mask, (img_size, img_size))
+    def _generate_masks(self, image: np.ndarray) -> MaskData:
+        orig_size = image.shape[:2]  # 产生全图的prompt
+        crop_boxes, layer_idxs = generate_crop_boxes(
+            orig_size, self.crop_n_layers, self.crop_overlap_ratio
+        )
 
-        # Remove padding
-        mask = mask[..., : input_size[0], : input_size[1]]
+        # Iterate over image crops
+        data = MaskData()
+        for crop_box, layer_idx in zip(crop_boxes, layer_idxs):
+            crop_data = self._process_crop(image, crop_box, layer_idx, orig_size)
+            data.cat(crop_data)
 
-        # Upscale masks to the original size
-        new_size = original_size[::-1]
-        mask = cv2.resize(mask, new_size)
-
-        return mask
-
-    def run_decoder(self, image_embeddings, original_size, prompt):
-        """Run decoder"""
-        point_coords, point_labels = self.get_input_points(prompt)
-
-        if point_coords is None or point_labels is None:
-            raise ValueError(
-                "Unable to segment, please input at least one box or point."
+        # Remove duplicate masks between crops
+        if len(crop_boxes) > 1:
+            # Prefer masks from smaller crops
+            scores = 1 / box_area(data["crop_boxes"])
+            scores = scores.to(data["boxes"].device)
+            keep_by_nms = batched_nms(
+                data["boxes"].float(),
+                scores,
+                torch.zeros_like(data["boxes"][:, 0]),  # categories
+                iou_threshold=self.crop_nms_thresh,
             )
+            data.filter(keep_by_nms)
 
-        if point_coords is not None:
-            if isinstance(point_coords, list):
-                point_coords = np.array(point_coords, dtype=np.float32)
-            if isinstance(point_labels, list):
-                point_labels = np.array(point_labels, dtype=np.float32)
+        data.to_numpy()
+        return data
 
-        if point_coords is not None:
-            point_coords = self.apply_coords(
-                point_coords, original_size
-            ).astype(np.float32)
-            point_coords = np.expand_dims(point_coords, axis=0)
-            point_labels = np.expand_dims(point_labels, axis=0)
+    def _process_crop(
+        self,
+        image: np.ndarray,
+        crop_box: List[int],
+        crop_layer_idx: int,
+        orig_size: Tuple[int, ...],
+    ) -> MaskData:
+        # Crop the image and calculate embeddings
+        x0, y0, x1, y1 = crop_box
+        cropped_im = image[y0:y1, x0:x1, :]
+        cropped_im_size = cropped_im.shape[:2]
+        print(cropped_im.shape)
+        self.cropped_im_embedding = self.encode(cropped_im)
 
-        assert point_coords.shape[0] == 1 and point_coords.shape[-1] == 2
-        assert point_labels.shape[0] == 1
+        # Get points for this crop
+        points_scale = np.array(cropped_im_size)[None, ::-1]
+        points_for_image = self.point_grids[crop_layer_idx] * points_scale
 
-        input_dict = {
-            "image_embeddings": image_embeddings,
-            "point_coords": point_coords,
-            "point_labels": point_labels,
-        }
-        scores, masks = self.decoder_session.run(None, input_dict)
-        mask_threshold = 0.0
-        stability_score_offset = 1.0
-        scores = self.calculate_stability_score(
-            masks[0], mask_threshold, stability_score_offset
+        # Generate masks for this crop in batches
+        data = MaskData()
+        for (points,) in batch_iterator(self.points_per_batch, points_for_image):
+            batch_data = self._process_batch(points, cropped_im_size, crop_box, orig_size)
+            data.cat(batch_data)
+            del batch_data
+        self.cropped_im_embedding = None
+
+        # Remove duplicates within this crop.
+        keep_by_nms = batched_nms(
+            data["boxes"].float(),
+            data["iou_preds"],
+            torch.zeros_like(data["boxes"][:, 0]),  # categories
+            iou_threshold=self.box_nms_thresh,
         )
-        max_score_index = np.argmax(scores)
-        masks = masks[0, max_score_index]
-        input_size = self.get_preprocess_shape(
-            *original_size, self.target_length
-        )
-        masks = self.postprocess_masks(masks, input_size, original_size)
-        masks = masks > 0.0
-        return masks
+        data.filter(keep_by_nms)
 
-    def predict_masks(self, embedding, prompt):
+        # Return to the original image frame
+        data["boxes"] = uncrop_boxes_xyxy(data["boxes"], crop_box)
+        data["points"] = uncrop_points(data["points"], crop_box)
+        data["crop_boxes"] = torch.tensor([crop_box for _ in range(len(data["rles"]))])
+
+        return data
+
+    def _process_batch(
+        self,
+        points: np.ndarray,
+        im_size: Tuple[int, ...],
+        crop_box: List[int],
+        orig_size: Tuple[int, ...],
+    ) -> MaskData:
+        orig_h, orig_w = orig_size
+        # Run model on this batch
+        transformed_points = self.apply_coords(points, im_size, self.target_size)
+        # 将 `transformed_points` 转换为 numpy 数组（如果已经是 numpy 数组，这一步可以省略）
+        in_points = np.array(transformed_points)
+        # 创建一个全为 1 的数组，长度为 `in_points` 的第一个维度，数据类型为整数
+        in_labels = np.ones(in_points.shape[0], dtype=int)
+        # ==prompt_encoder[input]points labels
+        masks, iou_preds, _ = self.run_decoder(
+            self.cropped_im_embedding["image_embedding"],
+            self.cropped_im_embedding["transform_matrix"],
+            in_points,
+            in_labels
+        )
+        masks = torch.tensor(masks)
+        # print(masks.shape)
+        iou_preds = torch.tensor(iou_preds)
+        # Upscale the masks to the original image resolution
+        masks = self.postprocess_masks(masks, self.input_size, self.cropped_im_embedding["original_size"])
+        # print(masks.shape)
+        if not self.return_logits:
+            masks = masks > self.mask_threshold
+        # Serialize predictions and store in MaskData
+        data = MaskData(
+            masks=masks.flatten(0, 1),
+            iou_preds=iou_preds.flatten(0, 1),
+            points=torch.as_tensor(points.repeat(masks.shape[1], axis=0)),
+        )
+        del masks
+
+        # Filter by predicted IoU
+        if self.pred_iou_thresh > 0.0:
+            keep_mask = data["iou_preds"] > self.pred_iou_thresh
+            data.filter(keep_mask)
+
+        # Calculate stability score
+        data["stability_score"] = calculate_stability_score(
+            data["masks"], self.mask_threshold, self.stability_score_offset
+        )
+        if self.stability_score_thresh > 0.0:
+            keep_mask = data["stability_score"] >= self.stability_score_thresh
+            data.filter(keep_mask)
+
+        # Threshold masks and calculate boxes
+        data["masks"] = data["masks"] > self.mask_threshold
+        data["boxes"] = batched_mask_to_box(data["masks"])
+
+        # Filter boxes that touch crop boundaries
+        keep_mask = ~is_box_near_crop_edge(data["boxes"], crop_box, [0, 0, orig_w, orig_h])
+        if not torch.all(keep_mask):
+            data.filter(keep_mask)
+
+        # Compress to RLE
+        data["masks"] = uncrop_masks(data["masks"], crop_box, orig_h, orig_w)
+        data["rles"] = mask_to_rle_pytorch(data["masks"])
+        del data["masks"]
+
+        return data
+
+    @staticmethod
+    def postprocess_small_regions(
+        mask_data: MaskData, min_area: int, nms_thresh: float
+    ) -> MaskData:
         """
-        Predict masks for a single image.
+        Removes small disconnected regions and holes in masks, then reruns
+        box NMS to remove any new duplicates.
+
+        Edits mask_data in place.
+
+        Requires open-cv as a dependency.
         """
-        masks = self.run_decoder(
-            embedding["image_embeddings"],
-            embedding["original_size"],
-            prompt,
+        if len(mask_data["rles"]) == 0:
+            return mask_data
+
+        # Filter small disconnected regions and holes
+        new_masks = []
+        scores = []
+        for rle in mask_data["rles"]:
+            mask = rle_to_mask(rle)
+
+            mask, changed = remove_small_regions(mask, min_area, mode="holes")
+            unchanged = not changed
+            mask, changed = remove_small_regions(mask, min_area, mode="islands")
+            unchanged = unchanged and not changed
+
+            new_masks.append(torch.as_tensor(mask).unsqueeze(0))
+            # Give score=0 to changed masks and score=1 to unchanged masks
+            # so NMS will prefer ones that didn't need postprocessing
+            scores.append(float(unchanged))
+
+        # Recalculate boxes and remove any new duplicates
+        masks = torch.cat(new_masks, dim=0)
+        boxes = batched_mask_to_box(masks)
+        keep_by_nms = batched_nms(
+            boxes.float(),
+            torch.as_tensor(scores),
+            torch.zeros_like(boxes[:, 0]),  # categories
+            iou_threshold=nms_thresh,
         )
 
-        return masks
+        # Only recalculate RLEs for masks that have changed
+        for i_mask in keep_by_nms:
+            if scores[i_mask] == 0.0:
+                mask_torch = masks[i_mask].unsqueeze(0)
+                mask_data["rles"][i_mask] = mask_to_rle_pytorch(mask_torch)[0]
+                mask_data["boxes"][i_mask] = boxes[i_mask]  # update res directly
+        mask_data.filter(keep_by_nms)
+
+        return mask_data

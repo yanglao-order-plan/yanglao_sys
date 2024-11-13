@@ -115,15 +115,9 @@ class YOLOv5SegmentAnything(YOLO):
         max_width = self.config["max_width"]
         self.target_size = self.config["target_size"]
         self.input_size = (max_height, max_width)
-        self.encoder_session = OnnxBaseModel(
-            encoder_model_abs_path, __preferred_device__
-        )
-        self.decoder_session = OnnxBaseModel(
-            decoder_model_abs_path, __preferred_device__
-        )
         self.model = SegmentAnythingONNX(
-            self.encoder_session,
-            self.decoder_session,
+            encoder_model_abs_path,
+            decoder_model_abs_path,
             self.target_size,
             self.input_size,
         )
@@ -257,5 +251,4 @@ class YOLOv5SegmentAnything(YOLO):
 
     def unload(self):
         del self.net
-        del self.encoder_session
-        del self.decoder_session
+        del self.model

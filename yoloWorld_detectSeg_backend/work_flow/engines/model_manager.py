@@ -95,8 +95,6 @@ class ModelManager:
                     self.set_auto_labeling_reset_tracker()
             elif key == 'output_mode':
                 self.set_output_mode(value)
-            elif key == 'inpainting_mask':
-                self.kwargs['mask'] = base64_img_to_rgb_cv_img(value)
             elif key == 'text_prompt':
                 self.kwargs['text_prompt'] = value
             elif key == 'run_tracker':

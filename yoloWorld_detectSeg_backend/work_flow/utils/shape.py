@@ -149,11 +149,6 @@ class Shape:
     ]
 
     # The following class variables influence the drawing of all shape objects.
-    _line_color = DEFAULT_LINE_COLOR
-    _fill_color = DEFAULT_FILL_COLOR
-    point_size = 4
-    scale = 1.0
-    line_width = 2
 
     def __init__(
         self,
@@ -190,6 +185,13 @@ class Shape:
         self.show_degrees = True
 
         self._closed = False
+
+        # Set default colors
+        self.line_color = DEFAULT_LINE_COLOR
+        self.fill_color = DEFAULT_FILL_COLOR
+        self.point_size = 4
+        self.scale = 1.0
+        self.line_width = 2
 
         if line_color is not None:
             # Override the class line_color attribute
@@ -489,6 +491,7 @@ class Shape:
         # Determine the color
         line_color = self.line_color
         fill_color = self.fill_color
+        print(line_color, fill_color)
         line_thickness = max(1, int(round(self.line_width)))
         # Convert points to integer tuples
         pts = [(int(p[0]), int(p[1])) for p in self.points]
@@ -529,15 +532,18 @@ class Shape:
 
     @staticmethod
     def wrap_color(color):
-        """确保颜色是一个 RGBA 四元组"""
+        """确保颜色是一个 RGBA 四元组，且每个元素为整数"""
         if isinstance(color, str) and color.startswith('#'):
             # 将十六进制颜色字符串转换为 (R, G, B, A)
             color = color.lstrip('#')
             r, g, b = int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16)
             return (r, g, b, 255)  # 设为不透明
-        elif isinstance(color, (tuple, list)) and len(color) == 4:
-            return tuple(color)
-        elif isinstance(color, (tuple, list)) and len(color) == 3:
-            return tuple(color) + (255,)  # 默认为不透明
+        elif isinstance(color, (tuple, list, np.ndarray)) and len(color) == 4:
+            # 确保每个元素为整数
+            return tuple(int(c) for c in np.asarray(color))
+        elif isinstance(color, (tuple, list, np.ndarray)) and len(color) == 3:
+            # RGB 转换为 RGBA，默认 Alpha 为 255
+            return tuple(int(c) for c in np.asarray(color)) + (255,)
         else:
-            raise ValueError("Unsupported color format. Please use a hex string or a tuple/list of RGB/RGBA values.")
+            raise ValueError(
+                "Unsupported color format. Please use a hex string, tuple/list, or numpy array of RGB/RGBA values.")

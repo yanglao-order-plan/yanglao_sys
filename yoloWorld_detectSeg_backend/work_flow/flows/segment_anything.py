@@ -5,8 +5,8 @@ import cv2
 import numpy as np
 import logging
 
-from . import __preferred_device__, Model,SegmentAnythingONNX, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult
-from ..engines import OnnxBaseModel
+from . import __preferred_device__, Model, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult
+from work_flow.__base__.sam import SegmentAnythingONNX, SamAutomaticMaskGenerator
 
 
 class SegmentAnything(Model):
@@ -62,17 +62,16 @@ class SegmentAnything(Model):
             raise FileNotFoundError(
                 "Could not download or initialize decoder of Segment Anything."
             )
-        # reload with onnx
-        self.encoder_session = OnnxBaseModel(
-            encoder_model_abs_path, __preferred_device__
-        )
-        self.decoder_session = OnnxBaseModel(
-            decoder_model_abs_path, __preferred_device__
-        )
-        # Load flows
-        self.model = SegmentAnythingONNX(
-            encoder_model_abs_path, decoder_model_abs_path
-        )
+        self.automatic = self.config["automatic"]
+        # Load sam flows
+        if self.automatic:
+            self.model = SamAutomaticMaskGenerator(
+                encoder_model_abs_path, decoder_model_abs_path
+            )
+        else:
+            self.model = SegmentAnythingONNX(
+                encoder_model_abs_path, decoder_model_abs_path
+            )
 
         # Mark for auto labeling
         # points, rectangles
@@ -219,7 +218,7 @@ class SegmentAnything(Model):
             shape.line_color = "#000000"
             shape.line_width = 1
             if self.clip_net is not None and self.classes:
-                img = image[y_min:y_max, x_min:x_max]
+                img = image[y_min:y_max, x_min:x_max] # 原始特征对比
                 out = self.clip_net(img, self.classes)
                 shape.cache_label = self.classes[int(np.argmax(out))]
             shape.label = "AUTOLABEL_OBJECT"
@@ -232,32 +231,35 @@ class SegmentAnything(Model):
         """
         Predict shapes from image
         """
-        if image is None or not self.marks:
+        if image is None or (not self.automatic and not self.marks):
             return AutoLabelingResult([], replace=False)
 
-        cv_image = image
         try:
-            # Use cached image embedding if possible
-            cached_data = self.image_embedding_cache.get(filename)
-            if cached_data is not None:
-                image_embedding = cached_data
+            if self.automatic:
+                data = self.model.predict_masks(image)
+                masks = [mask_data["segmentation"] for mask_data in data]
             else:
+                # Use cached image embedding if possible
+                cached_data = self.image_embedding_cache.get(filename)
+                if cached_data is not None:
+                    image_embedding = cached_data
+                else:
+                    if self.stop_inference:
+                        return AutoLabelingResult([], replace=False)
+                    image_embedding = self.model.encode(image)
+
+                    self.image_embedding_cache.put(
+                        filename,
+                        image_embedding,
+                    )
                 if self.stop_inference:
                     return AutoLabelingResult([], replace=False)
-                image_embedding = self.model.encode(cv_image)
-
-                self.image_embedding_cache.put(
-                    filename,
-                    image_embedding,
-                )
-            if self.stop_inference:
-                return AutoLabelingResult([], replace=False)
-            masks = self.model.predict_masks(image_embedding, self.marks)
+                masks = self.model.predict_masks(image_embedding, self.marks)
             if len(masks.shape) == 4:
                 masks = masks[0][0]
             else:
                 masks = masks[0]
-            shapes = self.post_process(masks, cv_image)
+            shapes = self.post_process(masks, image)
         except Exception as e:  # noqa
             logging.warning("Could not inference model")
             logging.error(e)

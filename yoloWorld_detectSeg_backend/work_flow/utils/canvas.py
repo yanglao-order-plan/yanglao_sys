@@ -75,8 +75,10 @@ class Canvas:
 
     def merge_cache_label(self):
         """Finish auto labeling object."""
-        for shape in self.shapes:
+        is_cache = []
+        for i, shape in enumerate(self.shapes):
             if shape.cache_label is not None and shape.label == AutoLabelingMode.OBJECT:
+                is_cache.append(i)
                 # Ask a label for the object
                 text = shape.cache_label
                 flags, group_id, description, difficult, kie_linking = (
@@ -95,8 +97,9 @@ class Canvas:
                 shape.description = description
                 shape.difficult = difficult
                 shape.kie_linking = kie_linking
-        for shape in self.shapes:
-            self._update_shape_color(shape)
+
+        for i in is_cache:
+            self._update_shape_color(self.shapes[i])
 
 
     def draw(self):
@@ -106,7 +109,7 @@ class Canvas:
         if self.image is None or not self.visible:
             logging.info("No image loaded.")
             return image
-        self.merge_cache_label()
+        # self.merge_cache_label()
 
         # 绘制形状
         for shape in self.shapes:

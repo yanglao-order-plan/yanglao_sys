@@ -5,7 +5,6 @@ from work_flow.engines.model import Model
 from work_flow.engines.types import AutoLabelingResult
 from work_flow.utils.shape import Shape
 from work_flow.engines.build_onnx_engine import OnnxBaseModel
-from work_flow.__base__.sam import EdgeSAMONNX
 from work_flow.__base__.clip import ChineseClipONNX
 from work_flow.__base__.yolo import YOLO
 from work_flow.utils.general import Args, is_possible_rectangle
@@ -17,7 +16,7 @@ from work_flow.utils.points_conversion import cxywh2xyxy, xywh2xyxy
 from work_flow.pose.rtmo_onnx import RTMO
 from work_flow.__base__.rtmdet import RTMDet
 from work_flow.flows.lru_cache import LRUCache
-from work_flow.flows.sam_onnx import SegmentAnythingONNX
+from work_flow.__base__.sam import SegmentAnythingONNX
 from work_flow.__base__.sam2 import build_sam2, build_sam2_camera_predictor
 from work_flow.__base__.sam2_image_predictor import SAM2ImagePredictor
 from work_flow.utils.general import letterbox

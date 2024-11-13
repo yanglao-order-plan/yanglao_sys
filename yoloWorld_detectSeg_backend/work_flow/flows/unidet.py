@@ -3,17 +3,11 @@ import sys
 import traceback
 import logging
 import argparse
-
 import cv2
-
-from . import __preferred_device__, Model,SegmentAnythingONNX, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult
-from ..engines import OnnxBaseModel
-from ..utils import is_possible_rectangle
-from UNIDET.detectron2.detectron2.config import get_cfg
-from UNIDET.unidet.config import add_unidet_config
-from UNIDET.unidet.predictor import UnifiedVisualizationDemo
-sys.path.append('.')
-sys.path.append('./UNIDET/detectron2')
+from . import __preferred_device__, Model, Shape, AutoLabelingResult
+from detectron2.config import get_cfg
+from work_flow.utils.unidet.config import add_unidet_config
+from work_flow.utils.unidet.predictor import UnifiedVisualizationDemo
 
 class UniDet(Model):
     """Segmentation model using SegmentAnything"""

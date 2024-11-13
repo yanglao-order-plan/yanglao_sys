@@ -27,10 +27,10 @@ class Detectron2DetectionModel(DetectionModel):
         check_requirements(["torch", "detectron2"])
 
     def load_model(self):
-        from detectron2.config import get_cfg
-        from detectron2.data import MetadataCatalog
-        from detectron2.engine import DefaultPredictor
-        from detectron2.model_zoo import model_zoo
+        from thirty_parts.detectron2 import get_cfg
+        from thirty_parts.detectron2 import MetadataCatalog
+        from thirty_parts.detectron2 import DefaultPredictor
+        from thirty_parts.detectron2.model_zoo import model_zoo
 
         cfg = get_cfg()
 

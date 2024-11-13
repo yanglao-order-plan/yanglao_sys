@@ -117,6 +117,7 @@ def get_current_flow():
         'flowName': flow.name,
         'releaseName': release.name,
     }
+    print(session['param'], session['weight'])
     return response(code=0, message='获取当前调用选中模型成功', data=data)
 
 
@@ -151,6 +152,7 @@ def switch_flow():
     }
     session['param'] = release.params
     session['weight'] = {key: wid_list[0] for key, wid_list in release.weights.items()}
+    print(session['param'], session['weight'])
     return response(code=0, message='切换模型成功', data=data)
 
 
@@ -171,6 +173,7 @@ def get_all_current_weights():
     for key, wid in session['weight'].items():
         weight = WeightModel.query.filter_by(id=wid).first()
         data.append({'weightKey': key, 'weightName': weight.name if weight is not None else None})
+    print(session['param'], session['weight'])
     return response(code=0, message='获取初始模型成功', data=data)
 
 # 暂时使用weights代替flows
@@ -225,6 +228,7 @@ def switch_param():
     if 'param' not in session:
         session['param'] = {}
     session['param'][paramName] = paramValue
+
     return response(code=0, message='配置修改成功')
 
 
@@ -286,7 +290,6 @@ def predict_model():
     # auto_labeling_result.check_shapes()
     resultImage = predict_drawer.draw()
     image = Image.fromarray(resultImage)
-    image.show()
     result_base64 = base64_encode_image(resultImage)
     data = {
         'resultBase64': result_base64,
@@ -294,7 +297,6 @@ def predict_model():
         'inferDescription': predict_drawer.description,
         'inferPeriod': (end_time - start_time).total_seconds()
     }
-    print(data['inferDescription'])
     return response(code=0, message='模型推断已完成', data=data)
 
 

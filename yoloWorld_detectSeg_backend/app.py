@@ -48,6 +48,7 @@ app.config.from_object(config)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = './flask_sessions'
 app.config['SESSION_PERMANENT'] = False  # 浏览器关闭时会话失效
+app.config['SESSION_USE_SIGNER'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 0  # 设置为0可以保证关闭浏览器立即失效
 
 # 初始化 Flask-Session
@@ -109,4 +110,4 @@ if __name__ == "__main__":
     test_database_connection()
     print_cyan('项目已启动')
 
-    app.run(host="127.0.0.1", port=args.port, debug=True)
+    app.run(host="127.0.0.1", port=args.port, debug=False)

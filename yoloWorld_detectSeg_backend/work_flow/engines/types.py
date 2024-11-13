@@ -54,6 +54,3 @@ class AutoLabelingMode:
             self.edit_mode == other.edit_mode
             and self.shape_type == other.shape_type
         )
-
-
-AutoLabelingMode.NONE = AutoLabelingMode(None, None)

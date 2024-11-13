@@ -13,7 +13,7 @@ from . import Shape
 from .lru_cache import LRUCache
 from work_flow.engines.model import Model
 from ..__base__.clip import ChineseClipONNX
-from ..__base__.sam import EdgeSAMONNX
+from ..__base__.edge_sam import EdgeSAMONNX
 
 
 class EdgeSAM(Model):

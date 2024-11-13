@@ -37,7 +37,7 @@ model_module_map = {
     "pulc_attribute": ("work_flow.flows.pulc_attribute", "PULC_Attribute"),
     "yolov5_sam": ("work_flow.flows.yolov5_sam", "YOLOv5SegmentAnything"),
     "yolov8_efficientvit_sam": ("work_flow.flows.yolov8_efficientvit_sam", "YOLOv8_EfficientViT_SAM"),
-    "grounding_sam": ("work_flow.flows.grounding_sam", "GroundingSAM"),
+    "grounding_sam_hq": ("work_flow.flows.grounding_sam", "GroundingSAM"),
     "grounding_sam2": ("work_flow.flows.grounding_sam2", "GroundingSAM2"),
     "open_vision": ("work_flow.flows.open_vision", "OpenVision"),
     "doclayout_yolo": ("work_flow.flows.doclayout_yolo", "DocLayoutYOLO"),
@@ -76,4 +76,6 @@ model_module_map = {
     "lama": ("work_flow.flows.lama", "Lama"),
     "ppocr_v4_lama": ("work_flow.flows.ppocr_v4_lama", "PPOCRv4LAMA"),
     "unidet": ("work_flow.flows.unidet", "UniDet"),
+    "setr_mla": ("work_flow.flows.setr_mla", "SETR_MLA"),
+    "clip": ("work_flow.flows.chinese_clip", "ChineseCLIP"),
 }
