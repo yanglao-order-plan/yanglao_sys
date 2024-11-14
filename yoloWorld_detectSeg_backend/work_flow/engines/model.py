@@ -69,10 +69,10 @@ class Model:
         else:
             self.on_message("Unknown config type: {type}".
                             format(type=type(model_config)))
-        self.check_missing_config(
-            config_names=self.Meta.required_config_names,
-            config=self.config,
-        )
+        # self.check_missing_config(
+        #     config_names=self.Meta.required_config_names,
+        #     config=self.config,
+        # )
         self.output_mode = self.Meta.default_output_mode
 
     def get_required_widgets(self):

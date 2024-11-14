@@ -985,7 +985,7 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getTabl
       width="30%"
     >
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="100px" label-position="left">
-        <el-form-item prop="flowId" label="工作流">
+        <el-form-item prop="flowId" label="工作流" >
           <el-cascader
               v-model="selectedFlowOptions"
               :options="flowOptions"

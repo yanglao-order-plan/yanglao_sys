@@ -57,7 +57,25 @@ const currentParamData = reactive<{ [key: string]: any }>({});
 const handledParamData = reactive<{ [key: string]: any }>({});
 const currentHyperData = reactive<{ [key: string]: any }>({});
 const handledHyperData = reactive<{ [key: string]: any }>({});
-// 清空方法
+// 当前显示的图片索引
+const currentIndex = ref(0);
+const currentImage = computed(() => inferImageData.resultImageUrl[currentIndex.value]);
+const previousImage = () => {
+  if (currentIndex.value > 0) {
+    currentIndex.value--;
+  } else {
+    currentIndex.value = inferImageData.resultImageUrl.length - 1; // 循环到最后一张
+  }
+};
+const nextImage = () => {
+  if (currentIndex.value < inferImageData.resultImageUrl.length - 1) {
+    currentIndex.value++;
+  } else {
+    currentIndex.value = 0; // 循环到第一张
+  }
+};
+
+
 const clearSelectedFlow = () => {
   selectedFlowData.flow = "";
   selectedFlowData.release = "";
@@ -93,13 +111,15 @@ const clearHelper = (keys: string[]) => {
 // 检测结果图片
 // base64解码
 const inferImageData: any = reactive({
-  resultBase64: "",
+  resultBase64: [],
   resultImageUrl: computed(() => {
-    if (inferImageData.resultBase64) {  // 同样的，根据base64字符串自动计算
-      const blob = dataURItoBlob(inferImageData.resultBase64)
-      return URL.createObjectURL(blob)
+    if (inferImageData.resultBase64.length > 0) {
+      return inferImageData.resultBase64.map((base64: string) => {
+        const blob = dataURItoBlob(base64);  // 将 base64 转换为 Blob
+        return URL.createObjectURL(blob);    // 生成 URL
+      });
     } else {
-      return ""
+      return [];  // 如果没有 base64 数据，返回空数组
     }
   }),
   inferResult: [],
@@ -186,17 +206,6 @@ const getCurrentWeight = (weigthKey: string|number) => {
     console.error("Error fetching weight data:", error);
   });
 };
-
-// const getAllCurrentWeights = () => {
-//   getAllCurrentWeightsApi().then((res) => {
-//     res.data.forEach((item: OWeightData) => {
-//       currentWeightData[item.weightKey] = item.weightName
-//       selectedWeightData[item.weightKey] = item.weightName
-//     })
-//   }).catch((error) => {
-//     console.error("Error fetching all weights data:", error);
-//   });
-// };
 const getCurrentParam = (paramName: string) => {
   getCurrentParamApi({currentParamName: paramName}).then((res) => {
     currentParamData[res.data.argName] = res.data.argValue;
@@ -712,10 +721,10 @@ getAllTasks()
         <el-col :span="10">
           <div class="grid-content ep-bg-purple">
             <el-image
-              v-if="inferImageData.resultBase64"
-              :src="inferImageData.resultImageUrl"
+              v-if="inferImageData.resultBase64.length>0"
+              :src="inferImageData.resultImageUrl[0]"
               :fit="'scale-down'"
-              :preview-src-list="[inferImageData.resultImageUrl]"
+              :preview-src-list="inferImageData.resultImageUrl"
             />
             <div v-else class="image-placeholder">检测结果图片</div>
           </div>
@@ -766,6 +775,16 @@ getAllTasks()
 </template>
 
 <style lang="scss" scoped>
+.el-carousel .el-carousel-item {
+  display: flex;
+  justify-content: center;  /* 水平居中 */
+  align-items: center;      /* 垂直居中 */
+  height: auto;             /* 让容器的高度根据图像自动调整 */
+}
+.el-image {
+  width: auto;              /* 保持图像的原始宽度 */
+  height: auto;             /* 保持图像的原始高度 */
+}
 .image-placeholder {
   display: flex;
   justify-content: center;

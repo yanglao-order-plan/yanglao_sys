@@ -7,7 +7,7 @@ import numpy as np
 import onnxruntime
 from torch.nn import functional as F
 
-from work_flow.utils.segment_anything.amg import (
+from work_flow.utils.segment_anything.utils.amg import (
     MaskData,
     area_from_rle,
     batch_iterator,

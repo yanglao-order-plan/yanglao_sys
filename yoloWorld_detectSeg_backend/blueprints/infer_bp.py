@@ -173,7 +173,7 @@ def get_all_current_weights():
     for key, wid in session['weight'].items():
         weight = WeightModel.query.filter_by(id=wid).first()
         data.append({'weightKey': key, 'weightName': weight.name if weight is not None else None})
-    print(session['param'], session['weight'])
+
     return response(code=0, message='获取初始模型成功', data=data)
 
 # 暂时使用weights代替flows
@@ -286,11 +286,14 @@ def predict_model():
     start_time = datetime.datetime.now()
     auto_labeling_result = model_manager.predict_shapes()
     end_time = datetime.datetime.now()
-    predict_drawer.load_results(auto_labeling_result)
-    # auto_labeling_result.check_shapes()
-    resultImage = predict_drawer.draw()
-    image = Image.fromarray(resultImage)
-    result_base64 = base64_encode_image(resultImage)
+    result_base64 = []
+    if type(auto_labeling_result) is not list:
+        auto_labeling_result = [auto_labeling_result,]
+    for result in auto_labeling_result:
+        predict_drawer.load_results(result)
+        resultImage = predict_drawer.draw()
+        result_base64.append(base64_encode_image(resultImage))
+        predict_drawer.remove_results()
     data = {
         'resultBase64': result_base64,
         'inferResult': predict_drawer.get_shape_dict(),

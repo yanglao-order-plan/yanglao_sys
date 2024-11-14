@@ -19,6 +19,7 @@ class Canvas:
         self.image = None  # 这是一个 NumPy 数组，表示加载的图像
         self.visible = True
         self._fill_drawing = False
+        self._binary_drawing = False
         self._hide_background = False
         self.show_groups = False
         self.show_texts = True
@@ -46,6 +47,15 @@ class Canvas:
         self.load_image(auto_labeling_result.image)
         self.description = auto_labeling_result.description
         self.visible = auto_labeling_result.visible
+        self.load_kwargs(**auto_labeling_result.kwargs)
+
+    def load_kwargs(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def remove_results(self):
+        self.shapes.clear()
+
 
     def get_results(self):
         return [shape.to_dict() for shape in self.shapes], self.description
@@ -109,7 +119,6 @@ class Canvas:
         if self.image is None or not self.visible:
             logging.info("No image loaded.")
             return image
-        # self.merge_cache_label()
 
         # 绘制形状
         for shape in self.shapes:

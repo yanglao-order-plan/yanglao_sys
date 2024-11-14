@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : XYZ
+ Source Server         : 本地
  Source Server Type    : MySQL
- Source Server Version : 80036
+ Source Server Version : 80040 (8.0.40)
  Source Host           : localhost:3306
  Source Schema         : yanglao_order_sys
 
  Target Server Type    : MySQL
- Target Server Version : 80036
+ Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 14/11/2024 14:40:14
+ Date: 14/11/2024 21:31:44
 */
 
 SET NAMES utf8mb4;
@@ -46,7 +46,7 @@ CREATE TABLE `argument`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_param_ibfk_1`(`release_id` ASC) USING BTREE,
   CONSTRAINT `argument_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 950 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 953 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of argument
@@ -993,6 +993,9 @@ INSERT INTO `argument` VALUES (946, 'classes', 'json', '[]', '{\"disabled\": fal
 INSERT INTO `argument` VALUES (947, 'origin_image', 'base64', 'null', 'null', 1, 147);
 INSERT INTO `argument` VALUES (948, 'automatic', 'ratio', 'false', '{\"disable\": false}', 0, 49);
 INSERT INTO `argument` VALUES (949, 'automatic', 'ratio', 'false', '{\"disable\": false}', 0, 48);
+INSERT INTO `argument` VALUES (950, 'model_type', 'select', '\"vit_b\"', '{\"disable\": true}', 0, 149);
+INSERT INTO `argument` VALUES (951, 'output_mode', 'select', '\"polygon\"', '{\"options\": [\"polygon\", \"rectangle\", \"rotation\"], \"multiple\": false, \"clearable\": false}', 1, 149);
+INSERT INTO `argument` VALUES (952, 'origin_image', 'base64', 'null', 'null', 1, 149);
 
 -- ----------------------------
 -- Table structure for captcha
@@ -1005,7 +1008,7 @@ CREATE TABLE `captcha`  (
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `is_used` tinyint(1) NULL DEFAULT NULL COMMENT '是否使用',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of captcha
@@ -1028,7 +1031,7 @@ CREATE TABLE `dataset`  (
   `test_exist` tinyint(1) NOT NULL COMMENT '是否存在测试集',
   `test_num` int NULL DEFAULT NULL COMMENT '测试集数量',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of dataset
@@ -1049,7 +1052,7 @@ CREATE TABLE `flow`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `task_id`(`task_id` ASC) USING BTREE,
   CONSTRAINT `flow_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 68 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 69 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flow
@@ -1121,6 +1124,7 @@ INSERT INTO `flow` VALUES (64, 'ppocr_v4_lama', 23);
 INSERT INTO `flow` VALUES (65, 'unidet', 2);
 INSERT INTO `flow` VALUES (66, 'setr_mla', 4);
 INSERT INTO `flow` VALUES (67, 'clip', 16);
+INSERT INTO `flow` VALUES (68, 'automatic_segment_anything', 18);
 
 -- ----------------------------
 -- Table structure for model
@@ -1136,7 +1140,7 @@ CREATE TABLE `model`  (
   INDEX `release_weight_ibfk_2`(`weight_id` ASC) USING BTREE,
   CONSTRAINT `model_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `model_ibfk_2` FOREIGN KEY (`weight_id`) REFERENCES `weight` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 200 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 201 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of model
@@ -1340,6 +1344,7 @@ INSERT INTO `model` VALUES (196, 147, 14, 'txt_model_path');
 INSERT INTO `model` VALUES (197, 147, 15, 'img_model_path');
 INSERT INTO `model` VALUES (198, 147, 16, 'txt_extra_path');
 INSERT INTO `model` VALUES (199, 147, 17, 'img_extra_path');
+INSERT INTO `model` VALUES (200, 149, 162, 'model_path');
 
 -- ----------------------------
 -- Table structure for release
@@ -1353,7 +1358,7 @@ CREATE TABLE `release`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_ibfk_1`(`flow_id` ASC) USING BTREE,
   CONSTRAINT `release_ibfk_1` FOREIGN KEY (`flow_id`) REFERENCES `flow` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 148 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 150 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of release
@@ -1505,6 +1510,7 @@ INSERT INTO `release` VALUES (144, 'ch_ppocr_v4_lama_fp32', 'ch_PP-OCRv4_Lama_fp
 INSERT INTO `release` VALUES (145, 'Unified_learned_OCIM_RS200_6x+2x', 'Unified_learned', 65);
 INSERT INTO `release` VALUES (146, 'SETR_MLA', 'SETR_VIT_with_MLA_CONV', 66);
 INSERT INTO `release` VALUES (147, 'chinese_clip', 'CLIP_with_Chinese', 67);
+INSERT INTO `release` VALUES (149, 'auto_sam_vit_b', 'AutomaticSAM_VIT_Base', 68);
 
 -- ----------------------------
 -- Table structure for result
@@ -1642,7 +1648,7 @@ CREATE TABLE `weight`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `dataset_id`(`dataset_id` ASC) USING BTREE,
   CONSTRAINT `weight_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 162 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 163 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of weight
@@ -1808,5 +1814,6 @@ INSERT INTO `weight` VALUES (158, 'lama_fp32.onnx', 'E:/Models/yanglao/xanylabel
 INSERT INTO `weight` VALUES (159, 'big-lama.pt', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\Lama_fp32\\big-lama\\big-lama.pt', '', 1, NULL);
 INSERT INTO `weight` VALUES (160, 'Unified_learned_OCIM_RS200_6x+2x.pth', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\unidet\\Unified_learned_OCIM_RS200_6x+2x.pth', '', 1, NULL);
 INSERT INTO `weight` VALUES (161, 'SETR_MLA.pth', 'E:\\models\\yanglao\\xanylabeling_data\\flows\\SETR_MLA\\iter_80000.pth', '', 1, NULL);
+INSERT INTO `weight` VALUES (162, 'sam_vit_b_01ec64.pth', 'E:\\Models\\samexporter\\sam\\origin\\sam_vit_b_01ec64.pth', '', 1, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

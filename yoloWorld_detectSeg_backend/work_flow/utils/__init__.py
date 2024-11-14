@@ -1,13 +1,12 @@
 import base64
 import os
+import sys
 from math import sqrt
-
-import numpy as np
-
 from .box import *
 from .general import *
 from .points_conversion import *
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 def distance_to_line(point, line):
     p1, p2 = line
     p1 = np.array([p1.x(), p1.y()])

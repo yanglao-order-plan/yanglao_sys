@@ -2,7 +2,7 @@ import logging
 
 
 class AutoLabelingResult:
-    def __init__(self, shapes, replace=True, description="", image=None, visible=True):
+    def __init__(self, shapes, replace=True, description="", image=None, visible=True, **kwargs):
         """Initialize AutoLabelingResult
 
         Args:
@@ -18,6 +18,8 @@ class AutoLabelingResult:
         self.description = description
         self.image = image
         self.visible = visible
+
+        self.kwargs = kwargs
 
     def check_shapes(self):
         for shape in self.shapes:

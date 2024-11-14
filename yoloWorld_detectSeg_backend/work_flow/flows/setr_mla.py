@@ -15,6 +15,7 @@ from mmengine import DictAction
 
 from . import __preferred_device__, Model, Shape, AutoLabelingResult
 from ..__base__.clip import ChineseClipONNX
+from ..utils.segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
 sys.path.append('.')
 sys.path.append('./UNIDET/detectron2')
@@ -74,12 +75,15 @@ class SETR_MLA(Model):
 
         # # sam enhance
         # self.sam = None
-        # self.enhance_mask = self.config.get("enhance_mask", False)
-        # if self.enhance_mask:
-        #     self.sam = SAM()
-        #     self.sam.load_state_dict(torch.load(self.config["sam_path"]))
-        #     self.sam.to(__preferred_device__)
-        # #     self.sam.eval()
+        self.enhance_mask = self.config.get("enhance_mask", False)
+        if self.enhance_mask:
+            model_type = self.config.get("model_type", None)
+            sam_model_abs_path = self.get_model_abs_path(
+                self.config, "sam_model_path"
+            )
+            sam = sam_model_registry[model_type](checkpoint=sam_model_abs_path)
+            self.sam = SamAutomaticMaskGenerator(sam, output_mode='binary_mask')
+
         # if args.mask_enhance:
         # color reader
         self.color_list = np.load(args.color_list_path)  # get id-color
@@ -233,7 +237,16 @@ class SETR_MLA(Model):
 
         return shapes
 
-
+    def enhance_masks(self, masks, image):
+        # auto sam推理
+        data = self.sam.generate(image)
+        for meta in data:
+            single_mask = sam_mask_data[i]
+            single_mask_labels = pred_mask_img[single_mask] # 像素计数
+            unique_values, counts = np.unique(single_mask_labels, return_counts=True, axis=0)
+            max_idx = np.argmax(counts) # 语义像素id+sam像素轮廓
+            single_mask_category_label = unique_values[max_idx]
+            count_ratio = counts[max_idx] / counts.sum() # 增强比例（当前最多像素，其数量的百分比）
 
     def predict_shapes(self, image, filename=None) -> AutoLabelingResult:
         """
@@ -256,6 +269,9 @@ class SETR_MLA(Model):
                     masks.append(mask)
                     classes.append(label)
                     colors.append(color)
+
+            if self.enhance_mask:
+                masks = self.enhance_masks(masks, image)
 
             shapes = self.post_process(masks, classes, colors, image)
         except Exception as e:  # noqa

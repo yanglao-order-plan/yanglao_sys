@@ -486,12 +486,11 @@ class Shape:
     def paint(self, image):
         """Paint shape onto the image using OpenCV"""
         if not self.visible or not self.points:
-            print(100)
             return
         # Determine the color
         line_color = self.line_color
         fill_color = self.fill_color
-        print(line_color, fill_color)
+
         line_thickness = max(1, int(round(self.line_width)))
         # Convert points to integer tuples
         pts = [(int(p[0]), int(p[1])) for p in self.points]
@@ -525,6 +524,13 @@ class Shape:
             if pts:
                 point_radius = max(1, int(round(self.point_size / 2)))
                 cv2.circle(image, pts[0], point_radius, line_color, -1)
+        elif self.shape_type == "binary":
+            if len(pts) == 2:
+                top_left = pts[0]
+                bottom_right = pts[1]
+                if self.fill:
+                    cv2.rectangle(image, top_left, bottom_right, fill_color, -1)
+                cv2.rectangle(image, top_left, bottom_right, line_color, line_thickness)
         else:  # Polygon or other shapes
             if self.fill:
                 cv2.fillPoly(image, [np.array(pts, dtype=np.int32)], fill_color)

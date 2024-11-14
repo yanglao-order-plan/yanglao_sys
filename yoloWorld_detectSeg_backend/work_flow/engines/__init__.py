@@ -78,4 +78,5 @@ model_module_map = {
     "unidet": ("work_flow.flows.unidet", "UniDet"),
     "setr_mla": ("work_flow.flows.setr_mla", "SETR_MLA"),
     "clip": ("work_flow.flows.chinese_clip", "ChineseCLIP"),
+    "automatic_segment_anything": ("work_flow.flows.auto_sam", "AutoSAM"),
 }

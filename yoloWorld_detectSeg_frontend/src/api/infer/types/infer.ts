@@ -34,7 +34,7 @@ export interface OArgData {
   argValue: any
 }
 export interface IResultData {
-  resultBase64: string
+  resultBase64: string[]
   inferResult: IInferData[]
   inferDescription: string,
   inferPeriod: number
