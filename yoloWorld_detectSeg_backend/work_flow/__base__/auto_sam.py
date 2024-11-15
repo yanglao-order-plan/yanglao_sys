@@ -1,6 +1,6 @@
 import os
-import threading
 import traceback
+
 import cv2
 import numpy as np
 import logging
@@ -9,7 +9,6 @@ from . import __preferred_device__
 from .clip import ChineseClipONNX
 from ..engines.model import Model
 from ..engines.types import AutoLabelingResult
-from ..flows import LRUCache
 from ..utils.segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 from ..utils.shape import Shape
 
@@ -86,8 +85,9 @@ class SegmentAnythingAutomatic(Model):
         Post process masks
         """
         # Find contours
-        approx_contours = []
+        approx_contours, avatars = [], []
         for ann in data:
+            avatars.append(ann["segmentation"] * 255)
             mask = ann['segmentation'] * 255
             mask = np.array(mask).astype(np.uint8)
             contours, _ = cv2.findContours(
@@ -172,7 +172,7 @@ class SegmentAnythingAutomatic(Model):
                 shape.label = f"AUTOLABEL_OBJECT: {i}"
                 shape.selected = False
                 shapes.append(shape)
-        return shapes
+        return shapes, avatars
 
     def predict_shapes(self, image, filename=None, binary_mask=False):
         """
@@ -184,17 +184,12 @@ class SegmentAnythingAutomatic(Model):
         try:
             self.model.predictor.model.to(__preferred_device__)
             data = self.model.generate(image)
-            shapes = self.post_process(data, image)
+            shapes, avatars = self.post_process(data, image)
         except Exception as e:  # noqa
             logging.warning("Could not inference model")
             logging.error(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 
-        result = []
-        if not binary_mask:
-            return [AutoLabelingResult(shapes, replace=False)]
-        for shape in shapes:
-            result.append(AutoLabelingResult([shape], replace=False,
-                                             _binary_drawing=True))
+        return AutoLabelingResult(shapes, replace=False, avatars=avatars, visible=False)
 

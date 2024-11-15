@@ -2,7 +2,7 @@ import logging
 
 
 class AutoLabelingResult:
-    def __init__(self, shapes, replace=True, description="", image=None, visible=True, **kwargs):
+    def __init__(self, shapes, replace=True, description="", image=None, visible=True, avatars=[], **kwargs):
         """Initialize AutoLabelingResult
 
         Args:
@@ -17,6 +17,7 @@ class AutoLabelingResult:
         self.replace = replace
         self.description = description
         self.image = image
+        self.avatars = avatars
         self.visible = visible
 
         self.kwargs = kwargs

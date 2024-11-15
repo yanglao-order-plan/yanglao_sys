@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import traceback
 import logging
@@ -20,9 +21,9 @@ from ..utils.segment_anything import sam_model_registry, SamAutomaticMaskGenerat
 sys.path.append('.')
 sys.path.append('./UNIDET/detectron2')
 
+
 class SETR_MLA(Model):
     """Segmentation model using SegmentAnything"""
-
     class Meta:
         required_config_names = [
             "type",
@@ -71,18 +72,6 @@ class SETR_MLA(Model):
         cfg.data.test.test_mode = True
         self.model = init_model(args.semantic_config, args.semantic_checkpoint)
         load_checkpoint(self.model, args.semantic_checkpoint, map_location=__preferred_device__)
-
-
-        # # sam enhance
-        # self.sam = None
-        self.enhance_mask = self.config.get("enhance_mask", False)
-        if self.enhance_mask:
-            model_type = self.config.get("model_type", None)
-            sam_model_abs_path = self.get_model_abs_path(
-                self.config, "sam_model_path"
-            )
-            sam = sam_model_registry[model_type](checkpoint=sam_model_abs_path)
-            self.sam = SamAutomaticMaskGenerator(sam, output_mode='binary_mask')
 
         # if args.mask_enhance:
         # color reader
@@ -134,12 +123,12 @@ class SETR_MLA(Model):
             '--options', nargs='+', action=DictAction, help='custom options')
         parser.add_argument('--color_list_path', type=str,
                             default="F:\Github\DetectSegPlatform\yoloWorld_detectSeg_backend\work_flow\configs\SER_MLA\color_list.npy")
-
         return parser.parse_args()
 
     def post_process(self, masks, classes, colors, image=None):
         """
         Post process masks
+        输入: 每个蒙版的范围、类别、颜色
         """
         # Find contours
         approx_contours = []
@@ -182,7 +171,6 @@ class SETR_MLA(Model):
                 if len(points) < 3:
                     continue
                 points.append(points[0])
-
                 # Create shape
                 shape = Shape(flags={})
                 for point in points:
@@ -194,7 +182,6 @@ class SETR_MLA(Model):
                 shape.fill_color = color
                 shape.line_color = color
                 shape.line_width = 1
-                shape.label = f"AUTOLABEL_OBJECT: {i}"
                 shape.selected = False
                 shapes.append(shape)
         elif self.output_mode in ["rectangle", "rotation"]:
@@ -231,22 +218,32 @@ class SETR_MLA(Model):
                     img = image[y_min:y_max, x_min:x_max]
                     out = self.clip_net(img, self.classes)
                     shape.cache_label = self.classes[int(np.argmax(out))]
-                shape.label = f"AUTOLABEL_OBJECT: {i}"
                 shape.selected = False
                 shapes.append(shape)
 
         return shapes
 
-    def enhance_masks(self, masks, image):
-        # auto sam推理
-        data = self.sam.generate(image)
-        for meta in data:
-            single_mask = sam_mask_data[i]
-            single_mask_labels = pred_mask_img[single_mask] # 像素计数
-            unique_values, counts = np.unique(single_mask_labels, return_counts=True, axis=0)
-            max_idx = np.argmax(counts) # 语义像素id+sam像素轮廓
-            single_mask_category_label = unique_values[max_idx]
-            count_ratio = counts[max_idx] / counts.sum() # 增强比例（当前最多像素，其数量的百分比）
+    def color_mask(self, img, seg):
+        masks, classes, colors = [], [], []
+        color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)
+        for label, color in enumerate(self.color_list):  # catagory之前外的label与color分配
+            color_seg[seg == label, :] = self.color_list[label]
+            mask = np.zeros((seg.shape[0], seg.shape[1]), dtype=np.uint8)
+            mask[seg == label] = 255
+            if np.any(mask == 255):
+                masks.append(mask)
+                classes.append(label)
+                colors.append(color)
+        # 蒙版分割效果
+        img = img * 0.5 + color_seg * 0.5
+        img = img.astype(np.uint8)
+
+        return masks, classes, colors, [img, seg]
+
+    def predict_raw(self, image):
+        result = inference_model(self.model, image)
+        seg = result.pred_sem_seg.data.cpu().numpy()[0]
+        return seg
 
     def predict_shapes(self, image, filename=None) -> AutoLabelingResult:
         """
@@ -256,29 +253,14 @@ class SETR_MLA(Model):
             return AutoLabelingResult([], replace=False)
 
         try:
-            result = inference_model(self.model, image)
-            seg = result.pred_sem_seg.data.cpu().numpy()[0]
-            masks, classes, colors = [], [], []
-            color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)
-
-            for label, color in enumerate(self.color_list):  # seg的第一维即是label的id
-                color_seg[seg == label, :] = self.color_list[label]
-                mask = np.zeros((seg.shape[0], seg.shape[1]), dtype=np.uint8)
-                mask[seg == label] = 255
-                if np.any(mask == 255):
-                    masks.append(mask)
-                    classes.append(label)
-                    colors.append(color)
-
-            if self.enhance_mask:
-                masks = self.enhance_masks(masks, image)
-
+            seg = self.predict_raw(image)
+            masks, classes, colors, avatars = self.color_mask(image.copy(), seg)
             shapes = self.post_process(masks, classes, colors, image)
         except Exception as e:  # noqa
             logging.warning("Could not inference model")
             logging.error(e)
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
-        
-        result = AutoLabelingResult(shapes, replace=False)
+
+        result = AutoLabelingResult(shapes, replace=False, avatars=avatars)
         return result

@@ -170,7 +170,8 @@ class Shape:
         self.description = description
         self.difficult = difficult
         self.kie_linking = kie_linking if kie_linking is not None else []
-        self.points = []
+        self.points = [] # 轮廓
+        # self.mask = None # 区域
         self.fill = False
         self.shape_type = shape_type or "polygon"
         self.flags = flags or {}

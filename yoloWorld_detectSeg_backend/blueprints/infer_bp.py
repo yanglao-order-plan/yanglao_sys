@@ -286,14 +286,9 @@ def predict_model():
     start_time = datetime.datetime.now()
     auto_labeling_result = model_manager.predict_shapes()
     end_time = datetime.datetime.now()
-    result_base64 = []
-    if type(auto_labeling_result) is not list:
-        auto_labeling_result = [auto_labeling_result,]
-    for result in auto_labeling_result:
-        predict_drawer.load_results(result)
-        resultImage = predict_drawer.draw()
-        result_base64.append(base64_encode_image(resultImage))
-        predict_drawer.remove_results()
+    predict_drawer.load_results(auto_labeling_result)
+    result_base64 = predict_drawer.get_result_img_base64()
+    predict_drawer.remove_results()
     data = {
         'resultBase64': result_base64,
         'inferResult': predict_drawer.get_shape_dict(),
@@ -301,19 +296,3 @@ def predict_model():
         'inferPeriod': (end_time - start_time).total_seconds()
     }
     return response(code=0, message='模型推断已完成', data=data)
-
-
-# base64编码推断后图片(图片最后的转换接口)
-def batch_base64_encode_image(results_images):
-    for im in results_images.imgs:
-        buffered = BytesIO()
-        im_base64 = Image.fromarray(im)
-        im_base64.save(buffered, format="JPEG")
-    return base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-def base64_encode_image(image) -> str:
-    buffered = BytesIO()
-    im_base64 = Image.fromarray(image)
-    im_base64.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-    return f"data:image/jpeg;base64,{img_str}"

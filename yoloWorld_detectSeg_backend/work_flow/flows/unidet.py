@@ -3,6 +3,8 @@ import sys
 import traceback
 import logging
 import argparse
+from typing import Tuple
+
 import cv2
 from . import __preferred_device__, Model, Shape, AutoLabelingResult
 from detectron2.config import get_cfg
@@ -27,13 +29,13 @@ class UniDet(Model):
         }
         default_output_mode = "rectangle"
 
-    def __init__(self, config_path, on_message) -> None:
+    def __init__(self, model_config, on_message) -> None:
         # Run the parent class's init method
-        super().__init__(config_path, on_message)
+        super().__init__(model_config, on_message)
 
         # Get encoder and decoder model paths
         model_abs_path = self.get_model_abs_path(
-            self.config, "model_path"
+            self.config, "det_model_path"
         )
         if not model_abs_path or not os.path.isfile(
             model_abs_path
@@ -85,7 +87,7 @@ class UniDet(Model):
         cfg.freeze()
         return cfg
 
-    def pack_results(self, predictions, new_metadata):
+    def pack_results(self, predictions, visualized_output, new_metadata):
         instances = predictions["instances"]
         boxes = instances.pred_boxes.tensor.tolist()
         scores = instances.scores.tolist()
@@ -107,20 +109,42 @@ class UniDet(Model):
             shape.add_point(x2, y2)
             shape.add_point(x1, y2)
             shapes.append(shape)
-        return AutoLabelingResult(shapes, replace=True)
+        return AutoLabelingResult(shapes, replace=True, avatars=[visualized_output.get_image()])
 
+    def pack_raw(self, predictions, visualized_output, new_metadata):
+        instances = predictions["instances"]
+        boxes = instances.pred_boxes.tensor.tolist()
+        scores = instances.scores.tolist()
+        classes = instances.pred_classes.tolist()
+        data = []
+        for box, score, cls_id in zip(boxes, scores, classes):
+            cls_name = new_metadata[cls_id]
+            box = [round(x, 2) for x in box]
+            score = round(score, 2)
 
-    def predict_shapes(self, image, filename=None) -> AutoLabelingResult:
+            item = {
+                "bounding_box": box,
+                "type": "UniDet",
+                "category_id": cls_id,
+                "category_name": cls_name,
+                "confidence": score
+            }
+            data.append(item)
+        return data, visualized_output.get_image()
+
+    def predict_shapes(self, image, filename=None, raw=False) -> AutoLabelingResult|Tuple:
         """
         Predict shapes from image
         """
         if image is None:
             return AutoLabelingResult([], replace=False)
-
         try:
             bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            predictions, _ = self.model.run_on_image(bgr_img)
-            return self.pack_results(predictions, self.model.metadata.thing_classes)
+            predictions, visualized_output = self.model.run_on_image(bgr_img)
+            if raw:
+                return self.pack_raw(predictions, visualized_output, self.model.metadata.thing_classes)
+            else:
+                return self.pack_results(predictions, visualized_output, self.model.metadata.thing_classes)
         except Exception as e:  # noqa
             logging.warning("Could not inference model")
             logging.error(e)

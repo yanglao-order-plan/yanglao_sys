@@ -5,6 +5,8 @@ import numpy as np
 import cv2
 from sqlalchemy.testing.plugin.plugin_base import logging
 import logging
+
+from .image import base64_encode_image
 from .shape import Shape  # 假设已调整为使用 OpenCV 的 Shape 类
 from ..engines.types import AutoLabelingMode, AutoLabelingResult
 
@@ -19,7 +21,6 @@ class Canvas:
         self.image = None  # 这是一个 NumPy 数组，表示加载的图像
         self.visible = True
         self._fill_drawing = False
-        self._binary_drawing = False
         self._hide_background = False
         self.show_groups = False
         self.show_texts = True
@@ -30,6 +31,7 @@ class Canvas:
         self.auto_color = True
         self.description = ''
         self.his_labels = []
+        self.avatars = []
         self.shift_auto_shape_color = 0
         # 其他必要的属性
 
@@ -111,6 +113,11 @@ class Canvas:
         for i in is_cache:
             self._update_shape_color(self.shapes[i])
 
+    def get_result_img_base64(self):
+        results = self.avatars
+        results.append(self.draw())
+        results.extend(self.avatars)
+        return [base64_encode_image(result) for result in results]
 
     def draw(self):
         """在图像上绘制形状并返回绘制结果。"""

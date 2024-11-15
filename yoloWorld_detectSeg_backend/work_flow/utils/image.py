@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 import base64
@@ -11,8 +12,20 @@ import PIL.Image
 import PIL.ImageOps
 from PIL import Image
 
-from utils.backend_utils.colorprinter import print_red
 
+def batch_base64_encode_image(results_images):
+    for im in results_images.imgs:
+        buffered = io.BytesIO()
+        im_base64 = Image.fromarray(im)
+        im_base64.save(buffered, format="JPEG")
+    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+def base64_encode_image(image) -> str:
+    buffered = io.BytesIO()
+    im_base64 = Image.fromarray(image)
+    im_base64.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return f"data:image/jpeg;base64,{img_str}"
 
 def img_data_to_pil(img_data):
     f = io.BytesIO()
@@ -79,18 +92,6 @@ def numpy_to_pil(np_image: np.ndarray) -> Image.Image:
         raise ValueError(f"不支持的图像形状: {np_image.shape}")
 
 
-def pil_to_qimage(img):
-    """Convert PIL Image to QImage."""
-    img = img.convert("RGBA")  # Ensure image is in RGBA format
-    data = np.array(img)
-    height, width, channel = data.shape
-    bytes_per_line = 4 * width
-    qimage = QtGui.QImage(
-        data, width, height, bytes_per_line, QtGui.QImage.Format_RGBA8888
-    )
-    return qimage
-
-
 def img_arr_to_b64(img_arr):
     img_pil = PIL.Image.fromarray(img_arr)
     f = io.BytesIO()
@@ -144,7 +145,7 @@ def process_image_exif(filename):
                 backup_filename = osp.join(backup_dir, osp.basename(filename))
                 shutil.copy2(filename, backup_filename)
                 img.save(filename)
-                print_red(
+                logging.error(
                     f"Rotated {filename} by {rotation}, saving backup to {backup_filename}"
                 )
                 break
