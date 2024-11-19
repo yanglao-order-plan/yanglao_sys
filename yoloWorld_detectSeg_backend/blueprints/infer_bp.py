@@ -1,26 +1,13 @@
-import copy
-import math
-import os
-from pprint import pprint
-from typing import List, Tuple
 
-import cv2
 import imgviz
-import numpy as np
 from flask import Blueprint, request, render_template, g, redirect, session
-from PIL import Image, ImageDraw, ImageFont
 import datetime
-import base64
-from io import BytesIO
 from flask_jwt_extended import jwt_required
 from database_models import (WeightModel, TaskTypeModel, TaskModel, FlowModel, ReleaseModel,
                              WeightModel, ModelModel, ResultModel)
-from utils.backend_utils.dir_utils import *
 from utils.backend_utils.response_utils import response
 from utils.backend_utils.colorprinter import *
 from work_flow.engines.model_manager import ModelManager
-from work_flow.engines.types import AutoLabelingMode
-from work_flow.utils import base64_img_to_rgb_cv_img
 
 from work_flow.utils.canvas import Canvas
 
@@ -282,17 +269,18 @@ def switch_hyper():
 
 @bp.route('/model/predict', methods=['GET'])
 def predict_model():
+    predict_drawer.remove_results()
     model_manager.set_model_hyper(session['hyper'])
     start_time = datetime.datetime.now()
     auto_labeling_result = model_manager.predict_shapes()
     end_time = datetime.datetime.now()
     predict_drawer.load_results(auto_labeling_result)
     result_base64 = predict_drawer.get_result_img_base64()
-    predict_drawer.remove_results()
     data = {
         'resultBase64': result_base64,
         'inferResult': predict_drawer.get_shape_dict(),
         'inferDescription': predict_drawer.description,
         'inferPeriod': (end_time - start_time).total_seconds()
     }
+    print(data['inferResult'])
     return response(code=0, message='模型推断已完成', data=data)

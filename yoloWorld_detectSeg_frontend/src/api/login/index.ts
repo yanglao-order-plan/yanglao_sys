@@ -6,7 +6,6 @@ import { getToken } from "@/utils/cache/cookies"
 export function getLoginCodeApi() {
   return request<Login.LoginCodeResponseData>({
     url: "auth/login/captcha",
-    // url: "login/code",
     method: "get"
   })
 }
@@ -15,7 +14,6 @@ export function getLoginCodeApi() {
 export function loginApi(data: Login.ILoginRequestData) {
   return request<Login.LoginResponseData>({
     url: "auth/user/login",
-    // url: "users/login",
     method: "post",
     data
   })
@@ -25,7 +23,6 @@ export function loginApi(data: Login.ILoginRequestData) {
 export function getUserInfoApi() {
   return request<Login.UserInfoResponseData>({
     url: "auth/user/info",
-    // url: "users/info",
     method: "get"
   })
 }

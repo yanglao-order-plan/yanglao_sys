@@ -6,6 +6,8 @@ import argparse
 from typing import Tuple
 
 import cv2
+import torch
+
 from . import __preferred_device__, Model, Shape, AutoLabelingResult
 from detectron2.config import get_cfg
 from work_flow.utils.unidet.config import add_unidet_config
@@ -47,6 +49,7 @@ class UniDet(Model):
         args.confidence_threshold = self.config.get("confidence_threshold", 0.25)
         cfg = self.setup_cfg(args)
         self.model = UnifiedVisualizationDemo(cfg)
+        # self.model.cpu_device = torch.device(__preferred_device__)
 
     @staticmethod
     def parse_args(model_abs_path):
@@ -139,8 +142,7 @@ class UniDet(Model):
         if image is None:
             return AutoLabelingResult([], replace=False)
         try:
-            bgr_img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            predictions, visualized_output = self.model.run_on_image(bgr_img)
+            predictions, visualized_output = self.model.run_on_image(image)
             if raw:
                 return self.pack_raw(predictions, visualized_output, self.model.metadata.thing_classes)
             else:

@@ -44,8 +44,9 @@ class Grounding_DINO(Model):
             raise FileNotFoundError(
                 f"Could not download or initialize {model_type} model."
             )
+        # TODO 目前无法使用gpu推理 Expand_33526: left operand cannot broadcast on dim 2 LeftShape: {1,900,4}, RightShape: {1,900,256}
+        self.net = OnnxBaseModel(model_abs_path, 'CPU')
 
-        self.net = OnnxBaseModel(model_abs_path, __preferred_device__)
         self.model_configs = self.get_configs(self.config["model_type"])
         self.net.max_text_len = self.model_configs.max_text_len
         self.net.tokenizer = self.get_tokenlizer(
@@ -183,7 +184,6 @@ class Grounding_DINO(Model):
 
         if image is None:
             return []
-
         blob, inputs, caption = self.preprocess(image, text_prompt)
         outputs = self.net.get_ort_inference(
             blob, inputs=inputs, extract=False
@@ -335,7 +335,6 @@ class Grounding_DINO(Model):
     @staticmethod
     def get_tokenlizer(text_encoder_type):
         import importlib.resources
-        import work_flow.configs
         cfg_name = text_encoder_type.replace("-", "_") + "_tokenizer.json"
         try:
             with importlib.resources.path(configs.bert, cfg_name) as p:

@@ -6,7 +6,7 @@ import cv2
 from sqlalchemy.testing.plugin.plugin_base import logging
 import logging
 
-from .image import base64_encode_image
+from .image import base64_encode_image, crop_polygon_object
 from .shape import Shape  # 假设已调整为使用 OpenCV 的 Shape 类
 from ..engines.types import AutoLabelingMode, AutoLabelingResult
 
@@ -29,6 +29,7 @@ class Canvas:
         self.show_degrees = False
         self.show_linking = True
         self.auto_color = True
+        self.is_cropped = False
         self.description = ''
         self.his_labels = []
         self.avatars = []
@@ -47,6 +48,7 @@ class Canvas:
     def load_results(self, auto_labeling_result: AutoLabelingResult):
         self.load_shapes(auto_labeling_result.shapes)
         self.load_image(auto_labeling_result.image)
+        self.avatars.extend(auto_labeling_result.avatars)
         self.description = auto_labeling_result.description
         self.visible = auto_labeling_result.visible
         self.load_kwargs(**auto_labeling_result.kwargs)
@@ -56,6 +58,8 @@ class Canvas:
             setattr(self, key, value)
 
     def remove_results(self):
+        self.image = None
+        self.avatars.clear()
         self.shapes.clear()
 
 
@@ -114,7 +118,7 @@ class Canvas:
             self._update_shape_color(self.shapes[i])
 
     def get_result_img_base64(self):
-        results = self.avatars
+        results = []
         results.append(self.draw())
         results.extend(self.avatars)
         return [base64_encode_image(result) for result in results]
@@ -122,7 +126,6 @@ class Canvas:
     def draw(self):
         """在图像上绘制形状并返回绘制结果。"""
         image = self.image.copy()
-
         if self.image is None or not self.visible:
             logging.info("No image loaded.")
             return image
@@ -130,6 +133,8 @@ class Canvas:
         # 绘制形状
         for shape in self.shapes:
             shape.fill = self._fill_drawing
+            if self.is_cropped:
+                shape.cropper = base64_encode_image(crop_polygon_object(self.image, shape.points))
             shape.paint(image)  # visuable 属性在 Shape 类中实现
 
         # 绘制组

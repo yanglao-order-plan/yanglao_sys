@@ -171,7 +171,7 @@ class YOLOv6Face(YOLO):
                     label=kpt_names[j // 2],
                     shape_type="point",
                     group_id=int(i),
-                )
+                ) # 关键点（三个）
                 point_shape.add_point(x, y)
                 shapes.append(point_shape)
         result = AutoLabelingResult(shapes, replace=True)

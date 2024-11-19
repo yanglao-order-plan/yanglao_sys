@@ -1,4 +1,7 @@
+import logging
+
 import sqlalchemy
+from flask_cors import CORS
 from flask_session import Session
 
 import config
@@ -10,7 +13,6 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 
 from extensions import *
-from utils.backend_utils.colorprinter import *
 
 from database_models import *
 from blueprints.auth_bp import bp as auth_bp
@@ -74,6 +76,7 @@ app.register_blueprint(weight_manage_bp, url_prefix='/weight-manage')
 app.register_blueprint(release_manage_bp, url_prefix='/release-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
 app.register_blueprint(infer_local_bp, url_prefix='/infer_local')
+CORS(app, supports_credentials=True)
 
 @app.before_request
 def cleanup_expired_sessions():
@@ -93,21 +96,18 @@ def test_database_connection():
         with db.engine.connect() as conn:
             res = conn.execute(sqlalchemy.text('select 1'))
             if res.fetchone()[0] == 1:
-                print_green('Database connection successful')
+                logging.info('Database connection successful')
             else:
-                print_red('Database connection failed')
+                logging.error('Database connection failed')
 
 
 if __name__ == "__main__":
-    # weights_path = 'weights/yolov5-7.0/COCO_yolov5s6.pt'
-    # weights_path = 'weights/yolov5-6.2/Sample_yolov5s6_300_epochs.pt'
 
     parser = argparse.ArgumentParser(description="Flask app exposing yolov5 models")
-    parser.add_argument("--port", default=5000, type=int, help="port number")
+    parser.add_argument("--port", default=5555, type=int, help="port number")
     args = parser.parse_args()
 
     # webapp启动后加载默认调用权重
     test_database_connection()
-    print_cyan('项目已启动')
-
+    logging.info('项目已启动')
     app.run(host="127.0.0.1", port=args.port, debug=False)

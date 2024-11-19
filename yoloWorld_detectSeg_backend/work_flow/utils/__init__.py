@@ -139,15 +139,6 @@ def base64_img_to_rgb_cv_img(base64_img, img_path=None):
         if cv_image.shape[2] == 1:
             # Single-channel image, treat as grayscale
             cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2RGB)
-        elif cv_image.shape[2] == 3:
-            # BGR image
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-        elif cv_image.shape[2] == 4:
-            # BGRA image
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGB)
-        else:
-            raise ValueError("Unsupported image format with 3 channels")
     else:
         raise ValueError("Unsupported image format")
-
     return cv_image

@@ -43,6 +43,7 @@ export interface IInferData {
   label: string;
   score: number;
   points: number[];  // 假设 points 是一个数组
+  cropper: string;
   groupId: number;   // group_id 映射到 groupId
   predictDescription: string;  // description 映射到 predictDescription
   difficult: boolean;

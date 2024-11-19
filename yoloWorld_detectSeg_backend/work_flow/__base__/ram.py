@@ -33,7 +33,8 @@ class RecognizeAnything(Model):
             raise FileNotFoundError(
                 f"Could not download or initialize {model_name} model."
             )
-        self.net = OnnxBaseModel(model_abs_path, __preferred_device__)
+        # TODO 目前无法使用gpu推理 -1073740791 (0xC0000409)
+        self.net = OnnxBaseModel(model_abs_path, 'CPU')
         self.input_shape = self.net.get_input_shape()[-2:]
         self.tag_mode = self.config.get("tag_mode", "")  # ['en', 'cn']
 
@@ -126,6 +127,16 @@ class RecognizeAnything(Model):
         elif self.tag_mode == "zh":
             return zh_tag[0]
         return image_description
+
+    def get_labels(self, tags):
+        en_tags, zh_tag = tags
+        if self.tag_mode == "en":
+            return en_tags[0].split(' | ')
+        elif self.tag_mode == "zh":
+            return zh_tag[0].split(' | ')
+        else:
+            raise ValueError("Unknown tag mode")
+
 
     def unload(self):
         del self.net

@@ -19,6 +19,24 @@ def box_iou(box1, box2):
     iou = inter / (area1[:, np.newaxis] + area2 - inter)
     return iou  # NxM
 
+def get_IoU(bbox_red, bbox_green):
+    ix_min = max(bbox_red[0], bbox_green[0])
+    iy_min = max(bbox_red[1], bbox_green[1])
+    ix_max = min(bbox_red[2], bbox_green[2])
+    iy_max = min(bbox_red[3], bbox_green[3])
+
+    iw = max(ix_max - ix_min, 0.0)
+    ih = max(iy_max - iy_min, 0.0)
+
+    inters = iw * ih
+
+    red_area = (bbox_red[2] - bbox_red[0]) * (bbox_red[3] - bbox_red[1])
+    green_area = (bbox_green[2] - bbox_green[0]) * (bbox_green[3] - bbox_green[1])
+
+    uni = red_area + green_area - inters
+
+    iou = inters / uni
+    return iou
 
 def numpy_nms(boxes, scores, iou_threshold):
     idxs = scores.argsort()

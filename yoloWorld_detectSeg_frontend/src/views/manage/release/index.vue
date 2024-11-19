@@ -50,8 +50,6 @@ const selectedFlowOptions = ref<number[]>([])
 const formData = reactive({
   name: "",
   showName: "",
-  models: [],
-  arguments: [],
   flowId: 0,
 })
 const formModelData = reactive({
@@ -120,8 +118,6 @@ const handleCreate = () => {
         createReleaseDataApi({
           name: formData.name,
           showName: formData.showName,
-          models: formData.models,
-          arguments: formData.arguments,
           flowId: formData.flowId,
         }).then((res) => {
           if (res.code === 0) {
@@ -137,8 +133,6 @@ const handleCreate = () => {
           id: currentUpdateId.value,
           name: formData.name,
           showName: formData.showName,
-          models: formData.models,
-          arguments: formData.arguments,
           flowId: formData.flowId,
         }).then(() => {
           ElMessage.success("修改成功")
@@ -255,8 +249,6 @@ const resetForm = () => {
   currentUpdateId.value = undefined
   formData.name = ""
   formData.showName = "",
-  formData.models = [],
-  formData.arguments = [],
   formData.flowId = 0
 }
 const resetModelForm = () => {

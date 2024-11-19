@@ -477,6 +477,7 @@ const handleParamSwitch = (paramName: string) => {
     })
     return
   }
+  console.log(paramName, handledParamValue)
   switchParamApi({
     switchParamName: paramName,
     switchParamValue: handledParamValue,

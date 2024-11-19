@@ -20,11 +20,16 @@ class AutoLabelingResult:
         self.avatars = avatars
         self.visible = visible
 
+        # 通知canvas
         self.kwargs = kwargs
 
     def check_shapes(self):
         for shape in self.shapes:
             logging.info(shape.to_dict())
+
+    def load_kwargs(self, **kwargs):
+        self.kwargs.update(kwargs)
+
 
 class AutoLabelingMode:
     OBJECT = "AUTOLABEL_OBJECT"

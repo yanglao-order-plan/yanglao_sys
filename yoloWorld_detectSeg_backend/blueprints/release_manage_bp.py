@@ -97,7 +97,7 @@ def add_release():
 
 @bp.route('/delete/<int:release_id>', methods=['DELETE'])
 @jwt_required(refresh=True)
-def delete_flow(release_id):
+def delete_release(release_id):
     release = ReleaseModel.query.get(release_id)
     if release is None:
         return response(code=1, message='删除失败，版本不存在')
@@ -108,15 +108,18 @@ def delete_flow(release_id):
 
 @bp.route('/update', methods=['PUT'])
 @jwt_required(refresh=True)
-def update_flow():
+def update_release():
     id = int(request.json.get('id', ''))
     name = request.json.get('name', '').strip()
-    taskId = int(request.json.get('taskId', 0))
-    if not id or not name or not taskId:
+    show_name = request.json.get('showName', '').strip()
+    flowId = int(request.json.get('flowId', 0))
+    print(id, name, show_name, flowId)
+    if not id or not name or not name or not flowId:
         return response(code=1, message='修改失败，缺少必要参数')
-    flow = FlowModel.query.get(id)
-    flow.name = name
-    flow.task_id = taskId
+    release = ReleaseModel.query.get(id)
+    release.name = name
+    release.show_name = show_name
+    release.flow_id = flowId
     db.session.commit()
     return response(code=0, message='修改工作流成功')
 
@@ -174,13 +177,14 @@ def update_model():
     id = int(request.json.get('id', ''))
     name = request.json.get('name', '').strip()
     weightId = int(request.json.get('weightId', 0))
-    releaseId = int(request.json.get('releaseId', 0))
-    if not id or not name or not weightId or not releaseId:
+    # releaseId = int(request.json.get('releaseId', 0))
+    # print(id, name, weightId, releaseId)
+    if not id or not name or not weightId:
         return response(code=1, message='修改失败，缺少必要参数')
     model = ModelModel.query.get(id)
     model.name = name
     model.weight_id = weightId
-    model.release_id = releaseId
+    # model.release_id = releaseId
     db.session.commit()
     return response(code=0, message='修改模型成功')
 
@@ -198,6 +202,7 @@ def get_arguments():
         'list': [argument.to_dict() for argument in arguments],  # 将当前页的所有任务类型数据转换为字典形式，并存储在列表中
         'total': total,  # 总数据量
     }
+    print(data['list'])
     return response(code=0, data=data, message='获取版本参数配置成功')
 
 
@@ -245,6 +250,7 @@ def update_argument():
     default = request.json.get('default', None)
     config = request.json.get('config', None)
     dynamic = int(request.json.get('dynamic', -1))
+    print(name, default)
     if not name or not type or dynamic == -1:
         return response(code=1, message='修改失败，缺少必要参数')
 

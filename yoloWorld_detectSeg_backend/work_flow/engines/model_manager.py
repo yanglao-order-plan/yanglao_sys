@@ -6,6 +6,9 @@ import time
 import traceback
 from idlelib.configdialog import tracers
 from importlib.resources import files
+
+import cv2
+import mmcv
 import yaml
 
 from threading import Lock
@@ -44,6 +47,7 @@ class ModelManager:
         self.model_execution_thread = None
         self.model_execution_thread_lock = Lock()
         self.kwargs = {}
+        self.post_kwargs = {}
 
     def load_model_configs(self, releases):
         """Load model configs"""
@@ -84,9 +88,7 @@ class ModelManager:
                 self.set_auto_labeling_marks(value)
             elif key == "conf_threshold":
                 self.set_auto_labeling_conf(value)
-            elif key == 'iou_threshold':
-                self.set_auto_labeling_iou(value)
-            elif key == 'box_threshold':
+            elif key in ['iou_threshold', 'box_threshold']:
                 self.set_auto_labeling_iou(value)
             elif key == 'toggle_preserve_existing_annotations':
                 self.set_auto_labeling_preserve_existing_annotations_state(value)
@@ -101,8 +103,10 @@ class ModelManager:
                 self.kwargs['run_tracker'] = value
             elif key == 'mask_enhance':
                 self.kwargs['mask_enhance'] = value
+            elif key == 'prompt_mode':
+                self.kwargs['prompt_mode'] = value
             else:
-                raise ValueError(f"Unknown param: {key}")
+                self.post_kwargs[key] = value
 
     def set_output_mode(self, mode):
         """Set output mode"""
@@ -325,6 +329,8 @@ class ModelManager:
             self.new_model_status.emit(f"Error in loading model: {error_message}")
             logging.error(f"Error in model prediction: {e}\n{stack_trace}. Please check the model.")
             raise
+
+        results.load_kwargs(**self.post_kwargs)
         return results
 
     def on_next_files_changed(self, next_files):

@@ -1,3 +1,5 @@
+import torch
+
 from .build_onnx_engine import OnnxBaseModel
 from .build_dnn_engine import DnnBaseModel
 
@@ -12,6 +14,11 @@ def load_model_class(model_type):
     module = importlib.import_module(module_path)
     model_class = getattr(module, class_name)
     return model_class
+
+def clear_gpu_memory():
+    torch.cuda.empty_cache()
+    torch.cuda.synchronize()
+    print("GPU memory cleared.")
 
 # 模型类型到模块路径和类名的完整映射
 model_module_map = {
@@ -79,4 +86,6 @@ model_module_map = {
     "setr_mla": ("work_flow.flows.setr_mla", "SETR_MLA"),
     "clip": ("work_flow.flows.chinese_clip", "ChineseCLIP"),
     "automatic_segment_anything": ("work_flow.flows.auto_sam", "AutoSAM"),
+    "sam_panoptic": ("work_flow.flows.sam_panoptic", "SAM_Panoptic"),
+    "ram_grounding_dino": ("work_flow.flows.ram_grounding_dino", "RAM_Grounding_DINO"),
 }

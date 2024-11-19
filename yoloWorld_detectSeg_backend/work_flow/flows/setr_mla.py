@@ -5,6 +5,7 @@ import traceback
 import logging
 import argparse
 
+import mmcv
 import numpy as np
 from mmengine.runner import load_checkpoint
 
@@ -47,13 +48,14 @@ class SETR_MLA(Model):
 
         # Get encoder and decoder model paths
         model_abs_path = self.get_model_abs_path(
-            self.config, "model_path"
+            self.config, "seg_model_path"
         )
+        print(model_abs_path)
         if not model_abs_path or not os.path.isfile(
             model_abs_path
         ):
             raise FileNotFoundError(
-                "Could not download or initialize encoder of Unidet."
+                "Could not download or initialize encoder of setr_mla."
             )
         args = self.parse_args(model_abs_path)
         cfg = mmengine.Config.fromfile(args.semantic_config)
@@ -105,7 +107,7 @@ class SETR_MLA(Model):
     def parse_args(model_abs_path):
         parser = argparse.ArgumentParser()
         parser.add_argument('--semantic_config',
-                            default="F:\Github\DetectSegPlatform\yoloWorld_detectSeg_backend\work_flow\configs\SER_MLA\SETR_MLA_768x768_80k_base.py",
+                            default="work_flow/configs/SER_MLA/SETR_MLA_768x768_80k_base.py",
                             help='test config file path of mmseg')
         parser.add_argument('--semantic_checkpoint',
                             default=model_abs_path,
@@ -122,7 +124,7 @@ class SETR_MLA(Model):
         parser.add_argument(
             '--options', nargs='+', action=DictAction, help='custom options')
         parser.add_argument('--color_list_path', type=str,
-                            default="F:\Github\DetectSegPlatform\yoloWorld_detectSeg_backend\work_flow\configs\SER_MLA\color_list.npy")
+                            default="work_flow/configs/SER_MLA/color_list.npy")
         return parser.parse_args()
 
     def post_process(self, masks, classes, colors, image=None):
@@ -161,8 +163,8 @@ class SETR_MLA(Model):
             colors = filtered_colors
         # Contours to shapes
         shapes = []
-        if self.output_mode == "polygon":
-            for i, (approx, cls, color) in enumerate(zip(approx_contours, classes, colors)):
+        for i, (approx, cls, color) in enumerate(zip(approx_contours, classes, colors)):
+            if self.output_mode == "polygon":
                 # Scale points
                 points = approx.reshape(-1, 2)
                 points[:, 0] = points[:, 0]
@@ -178,14 +180,7 @@ class SETR_MLA(Model):
                     point[1] = int(point[1])
                     shape.add_point(point[0], point[1])
                 shape.shape_type = "polygon"
-                shape.closed = True
-                shape.fill_color = color
-                shape.line_color = color
-                shape.line_width = 1
-                shape.selected = False
-                shapes.append(shape)
-        elif self.output_mode in ["rectangle", "rotation"]:
-            for i, (approx, cls, color) in enumerate(zip(approx_contours, classes, colors)):
+            elif self.output_mode in ["rectangle", "rotation"]:
                 x_min = 100000000
                 y_min = 100000000
                 x_max = 0
@@ -210,16 +205,18 @@ class SETR_MLA(Model):
                 shape.shape_type = (
                     "rectangle" if self.output_mode == "rectangle" else "rotation"
                 )
-                shape.closed = True
-                shape.fill_color = color
-                shape.line_color = color
-                shape.line_width = 1
                 if self.clip_net is not None and self.classes:
                     img = image[y_min:y_max, x_min:x_max]
                     out = self.clip_net(img, self.classes)
                     shape.cache_label = self.classes[int(np.argmax(out))]
-                shape.selected = False
-                shapes.append(shape)
+            else:
+                raise ValueError(f"Invalid output mode: {self.output_mode}")
+            shape.closed = True
+            shape.fill_color = color
+            shape.line_color = color
+            shape.line_width = 1
+            shape.selected = False
+            shapes.append(shape)
 
         return shapes
 
@@ -237,11 +234,15 @@ class SETR_MLA(Model):
         # 蒙版分割效果
         img = img * 0.5 + color_seg * 0.5
         img = img.astype(np.uint8)
-
-        return masks, classes, colors, [img, seg]
+        cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # mmcv.imwrite(img, "output/pred_vis.png")
+        # mmcv.imwrite(seg, "output/pred_mask.png")
+        return masks, classes, colors, img
 
     def predict_raw(self, image):
+        self.model.to(__preferred_device__)
         result = inference_model(self.model, image)
+        self.model.to('cpu')
         seg = result.pred_sem_seg.data.cpu().numpy()[0]
         return seg
 
@@ -254,7 +255,7 @@ class SETR_MLA(Model):
 
         try:
             seg = self.predict_raw(image)
-            masks, classes, colors, avatars = self.color_mask(image.copy(), seg)
+            masks, classes, colors, pred_vis = self.color_mask(image.copy(), seg)
             shapes = self.post_process(masks, classes, colors, image)
         except Exception as e:  # noqa
             logging.warning("Could not inference model")
@@ -262,5 +263,5 @@ class SETR_MLA(Model):
             traceback.print_exc()
             return AutoLabelingResult([], replace=False)
 
-        result = AutoLabelingResult(shapes, replace=False, avatars=avatars)
+        result = AutoLabelingResult(shapes, replace=False, avatars=[pred_vis])
         return result

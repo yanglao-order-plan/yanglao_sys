@@ -10,6 +10,7 @@ import PIL.Image
 import PIL.ImageDraw
 from utils.backend_utils.colorprinter import print_red
 from work_flow.utils import point_in_polygon, point_near_line
+from work_flow.utils.image import crop_polygon_object, base64_encode_image
 
 # Default colors in BGR format (since OpenCV uses BGR)
 DEFAULT_LINE_COLOR = (0, 255, 0)        # Green
@@ -171,6 +172,7 @@ class Shape:
         self.difficult = difficult
         self.kie_linking = kie_linking if kie_linking is not None else []
         self.points = [] # 轮廓
+        self.cropper = None # 裁剪区域子图像
         # self.mask = None # 区域
         self.fill = False
         self.shape_type = shape_type or "polygon"
@@ -257,7 +259,6 @@ class Shape:
         # 使用 wrap_color 方法来处理颜色
         self._fill_color = self.wrap_color(value)
 
-
     @staticmethod
     def get_supported_shape():
         return [
@@ -322,7 +323,28 @@ class Shape:
 
     @property
     def normalize_points(self):
-        return [(float(p[0]), float(p[1])) for p in self.points]
+        """
+        Calculate the four corner points of the bounding rectangle for the given points.
+        Returns:
+            list: A list of four points representing the top-left, top-right,
+                  bottom-left, and bottom-right corners of the bounding rectangle.
+        """
+        if not self.points or len(self.points) <= 4:
+            return [(float(p[0]), float(p[1])) for p in self.points]
+        # 转换为 NumPy 数组
+        points_array = np.array(self.points, dtype=np.float32)
+
+        # 计算外接矩形
+        x, y, w, h = cv2.boundingRect(points_array)
+
+        # 构造矩形四个顶点
+        top_left = (x, y)
+        top_right = (x + w, y)
+        bottom_left = (x, y + h)
+        bottom_right = (x + w, y + h)
+
+        # 返回结果
+        return [top_left, top_right, bottom_left, bottom_right]
 
     def to_dict(self):
         """Serialize the shape to a dictionary"""
@@ -330,6 +352,7 @@ class Shape:
             "label": self.label,
             "score": self.score,
             "points": self.normalize_points,
+            "cropper": self.cropper,
             "group_id": self.group_id,
             "description": self.description,
             "difficult": self.difficult,

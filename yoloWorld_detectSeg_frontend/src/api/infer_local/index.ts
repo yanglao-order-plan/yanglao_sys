@@ -32,7 +32,6 @@ export function switchHyperApi(data: Infer.ISwitchHyperRequestData) {
   })
 }
 export function getAllFlowsApi() {
-  console.log(1)
   return request<Infer.GetAllFlowsResponseData>({
     url: "infer_local/flow/all",
     method: "get"

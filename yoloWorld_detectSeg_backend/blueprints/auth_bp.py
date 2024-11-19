@@ -59,11 +59,6 @@ def get_register_captcha():
     if user is None:
         if email != '' and email is not None:
             # 4/6位 随机数字、字母、数字字母组合
-            # string.digits*4:0123456789012345678901234567890123456789
-            # source = string.digits*4
-            # captcha = random.sample(source, 4)
-            # captcha = ''.join(captcha)
-            # captcha = random.randint(10000, 99999)
             captcha = ''.join(random.sample(string.ascii_letters + string.digits, 5))
             # I/O操作 耗费时间长 实际开发使用队列任务
             message = Message(subject='基于YOLO-World的目标检测及其分割管理平台验证码',

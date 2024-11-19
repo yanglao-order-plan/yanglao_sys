@@ -4,8 +4,10 @@ import os.path as osp
 import base64
 import io
 import shutil
+from typing import List
 
 import cv2
+import mmcv
 import numpy as np
 import PIL.ExifTags
 import PIL.Image
@@ -22,6 +24,13 @@ def batch_base64_encode_image(results_images):
 
 def base64_encode_image(image) -> str:
     buffered = io.BytesIO()
+    dim = image.ndim
+    if dim == 2:  # 这种一般都是单个张量，未添加mat签名
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    elif dim == 3:
+        cv2.cvtColor(image, cv2.COLOR_RGB2BGR, image)
+    elif dim == 4:
+        cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA, image)
     im_base64 = Image.fromarray(image)
     im_base64.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -90,6 +99,52 @@ def numpy_to_pil(np_image: np.ndarray) -> Image.Image:
             raise ValueError(f"不支持的通道数: {channels}")
     else:
         raise ValueError(f"不支持的图像形状: {np_image.shape}")
+
+def crop_polygon_object(image, polygon_points, background_color=(0, 0, 0)):
+    """
+    根据给定的多边形顶点裁剪图像，仅保留多边形内部的区域。
+    新图像为裁剪对象的最小外接矩形，多边形外部区域用指定的背景颜色填充。
+
+    Args:
+        image (np.ndarray): 原始图像，BGR 或 RGB 格式。
+        polygon_points (list or np.ndarray): 多边形顶点列表，例如 [(x1, y1), (x2, y2), ...]。
+        background_color (tuple): 背景颜色，默认为黑色，格式为 (B, G, R)。
+
+    Returns:
+        np.ndarray: 裁剪后的图像，三通道。
+    """
+    # 确保多边形点为 numpy 数组并为整数类型
+    if isinstance(polygon_points, list):
+        polygon_points = np.array(polygon_points, dtype=np.int32)
+    elif isinstance(polygon_points, np.ndarray):
+        polygon_points = polygon_points.astype(np.int32)
+    else:
+        raise ValueError("polygon_points 应为列表或 numpy 数组")
+
+    # 创建与图像尺寸相同的掩码
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+
+    # 在掩码上绘制并填充多边形
+    cv2.fillPoly(mask, [polygon_points], 255)
+
+    # 计算多边形的最小外接矩形
+    x, y, w, h = cv2.boundingRect(polygon_points)
+
+    # 裁剪掩码和图像到最小外接矩形
+    mask_cropped = mask[y:y+h, x:x+w]
+    image_cropped = image[y:y+h, x:x+w]
+
+    # 创建与裁剪后图像相同大小的背景图像
+    background = np.full(image_cropped.shape, background_color, dtype=np.uint8)
+
+    # 使用掩码将多边形区域从原图像复制到背景图像上
+    mask_inv = cv2.bitwise_not(mask_cropped)
+    fg = cv2.bitwise_and(image_cropped, image_cropped, mask=mask_cropped)
+    bg = cv2.bitwise_and(background, background, mask=mask_inv)
+    result = cv2.add(fg, bg)
+
+    return result
+
 
 
 def img_arr_to_b64(img_arr):

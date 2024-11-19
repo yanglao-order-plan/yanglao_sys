@@ -26,6 +26,7 @@ from work_flow.utils.segment_anything.utils.amg import (
     uncrop_points,
 )
 
+
 class SegmentAnythingONNX:
     """Segmentation model using SegmentAnything"""
     mask_threshold: float = 0.0  # 暂时服务于auto

@@ -3,6 +3,7 @@ import threading
 import traceback
 import cv2
 import numpy as np
+
 import logging
 
 from . import __preferred_device__, Model, LRUCache, Shape, ChineseClipONNX, AutoLabelingResult

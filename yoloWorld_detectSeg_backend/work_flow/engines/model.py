@@ -208,9 +208,7 @@ class Model:
         data_dir = "xanylabeling_data" if migrate_flag else "anylabeling_data"
         model_path = os.path.abspath(os.path.join(self.home_dir, data_dir))
         # Model path is a local path
-        if local is not None:
-            # Relative path to executable or absolute path?
-            # model_abs_path = os.path.abspath(local)
+        if local is not None and local.strip() != "":
             model_abs_path = local
             if (os.path.exists(model_abs_path)
                 or self.check_model_shards(model_abs_path)
@@ -233,6 +231,7 @@ class Model:
                         )
                     )
                     if os.path.exists(local_model_abs_path):
+                        print(local_model_abs_path)
                         if local_model_abs_path.lower().endswith(".onnx"):
                             try:
                                 onnx.checker.check_model(local_model_abs_path)
@@ -258,7 +257,7 @@ class Model:
             a = urlparse(url)
             return os.path.basename(a.path)
 
-        if online is not None:
+        if online is not None and online.strip() != "":
             filename = get_filename_from_url(online)
             download_url = online
 

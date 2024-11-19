@@ -1,4 +1,5 @@
 import os
+import re
 import traceback
 
 import cv2
@@ -54,8 +55,13 @@ class SegmentAnythingAutomatic(Model):
             raise FileNotFoundError(
                 "Could not download or initialize encoder of Segment Anything."
             )
-        model_type = self.config.get("model_type", None)
-        sam = sam_model_registry[model_type](checkpoint=model_abs_path)
+        model_name = os.path.basename(model_abs_path).split('.')[0]
+        match = re.search(r'vit_[blh]', model_name)
+        if match:
+            vit_type = match.group(0)
+        else:
+            raise ValueError("Model type not found in the URL")
+        sam = sam_model_registry[vit_type](checkpoint=model_abs_path)
         self.model = SamAutomaticMaskGenerator(sam, output_mode='binary_mask')
         # CLIP flows
         self.clip_net = None
@@ -87,9 +93,9 @@ class SegmentAnythingAutomatic(Model):
         # Find contours
         approx_contours, avatars = [], []
         for ann in data:
-            avatars.append(ann["segmentation"] * 255)
             mask = ann['segmentation'] * 255
-            mask = np.array(mask).astype(np.uint8)
+            mask = mask.astype(np.uint8)
+            avatars.append(mask)
             contours, _ = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
             )
@@ -110,8 +116,8 @@ class SegmentAnythingAutomatic(Model):
             approx_contours = filtered_approx_contours
         # Contours to shapes
         shapes = []
-        if self.output_mode == "polygon":
-            for i, approx in enumerate(approx_contours):
+        for i, approx in enumerate(approx_contours):
+            if self.output_mode == "polygon":
                 # Scale points
                 points = approx.reshape(-1, 2)
                 points[:, 0] = points[:, 0]
@@ -120,7 +126,6 @@ class SegmentAnythingAutomatic(Model):
                 if len(points) < 3:
                     continue
                 points.append(points[0])
-
                 # Create shape
                 shape = Shape(flags={})
                 for point in points:
@@ -128,15 +133,7 @@ class SegmentAnythingAutomatic(Model):
                     point[1] = int(point[1])
                     shape.add_point(point[0], point[1])
                 shape.shape_type = "polygon"
-                shape.closed = True
-                shape.fill_color = "#000000"
-                shape.line_color = "#000000"
-                shape.line_width = 1
-                shape.label = f"AUTOLABEL_OBJECT: {i}"
-                shape.selected = False
-                shapes.append(shape)
-        elif self.output_mode in ["rectangle", "rotation"]:
-            for i, approx in enumerate(approx_contours):
+            elif self.output_mode in ["rectangle", "rotation"]:
                 x_min = 100000000
                 y_min = 100000000
                 x_max = 0
@@ -161,17 +158,20 @@ class SegmentAnythingAutomatic(Model):
                 shape.shape_type = (
                     "rectangle" if self.output_mode == "rectangle" else "rotation"
                 )
-                shape.closed = True
-                shape.fill_color = "#000000"
-                shape.line_color = "#000000"
-                shape.line_width = 1
                 if self.clip_net is not None and self.classes:
                     img = image[y_min:y_max, x_min:x_max]
                     out = self.clip_net(img, self.classes)
                     shape.cache_label = self.classes[int(np.argmax(out))]
-                shape.label = f"AUTOLABEL_OBJECT: {i}"
-                shape.selected = False
-                shapes.append(shape)
+            else:
+                raise ValueError(f"Unknown output mode: {self.output_mode}")
+            shape.closed = True
+            shape.fill_color = "#000000"
+            shape.line_color = "#000000"
+            shape.line_width = 1
+            shape.label = f"AUTOLABEL_OBJECT: {i}"
+            shape.selected = False
+            shapes.append(shape)
+
         return shapes, avatars
 
     def predict_shapes(self, image, filename=None, binary_mask=False):

@@ -16,6 +16,7 @@ from work_flow.utils.points_conversion import cxywh2xyxy, xywh2xyxy
 from work_flow.pose.rtmo_onnx import RTMO
 from work_flow.__base__.rtmdet import RTMDet
 from work_flow.flows.lru_cache import LRUCache
+from work_flow.flows.grounding_dino import Grounding_DINO
 from work_flow.__base__.sam import SegmentAnythingONNX
 from work_flow.__base__.auto_sam import SegmentAnythingAutomatic
 from work_flow.__base__.sam2 import build_sam2, build_sam2_camera_predictor

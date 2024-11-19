@@ -19,11 +19,11 @@ class Lama(Model):
         model_abs_path = self.get_model_abs_path(
             self.config, "model_path"
         )
-        print(model_abs_path)
+        self.device = 'cuda' if __preferred_device__ == 'GPU' else 'cpu'
         base = os.path.basename(model_abs_path)
         if base.split('.')[1] == "onnx":
             providers = ["CPUExecutionProvider"]
-            if __preferred_device__.lower() == "cuda":
+            if __preferred_device__.lower() == "gpu":
                 providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
             sess_opts = ort.SessionOptions()
             sess_opts.log_severity_level = 3
@@ -35,9 +35,9 @@ class Lama(Model):
             self.use_onnx = True
             self.ort_session = ort.InferenceSession(model_abs_path, providers=providers, sess_options=sess_options)
         elif base.split('.')[1] == "pt":
-            self.model = torch.jit.load(model_abs_path, map_location=__preferred_device__)  # 加载 TorchScript 模型
+            self.model = torch.jit.load(model_abs_path, map_location=self.device)  # 加载 TorchScript 模型
             self.model.eval()  # 设置为评估模式
-            self.model.to(__preferred_device__)  # 将模型移到指定设备
+            self.model.to(self.device)  # 将模型移到指定设备
             self.use_onnx = False
         else:
             raise ValueError(f"Model file {base} is not supported!")
@@ -94,7 +94,7 @@ class Lama(Model):
                 orig_height, orig_width = image.shape[:2]
             else:
                 orig_height, orig_width = np.array(image).shape[:2]
-            image, mask = prepare_img_and_mask(image, mask, __preferred_device__)
+            image, mask = prepare_img_and_mask(image, mask, self.device)
             with torch.inference_mode():
                 print(image.shape, mask.shape)
                 inpainted = self.model(image, mask)

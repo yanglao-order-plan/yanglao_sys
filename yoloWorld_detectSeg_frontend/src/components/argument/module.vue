@@ -42,7 +42,7 @@
         <div v-else-if="props.argType === 'json'">
             <JsonEditorVue
                 class="json-editor" 
-                v-model="argValue" 
+                :modelValue="argValue" 
                 :currentMode="props.argConfig?.disabled? 'view':'code'"
             />
             <el-button type="primary" @click="argChange">完成配置</el-button>

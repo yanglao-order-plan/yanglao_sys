@@ -43,7 +43,7 @@ class YOLOW_RAM(YOLO, RecognizeAnything):
 
         if image is None:
             return []
-
+        # 完全没看懂，不应该是ram->yoloworld
         blob = YOLO.preprocess(self, image, upsample_mode="letterbox")
         outs = YOLO.inference(self, blob=blob)
         boxes, class_ids, _, _, _ = YOLO.postprocess(self, outs)
@@ -59,7 +59,7 @@ class YOLOW_RAM(YOLO, RecognizeAnything):
             outs = self.ram_net.get_ort_inference(blob, extract=False)
             tags = RecognizeAnything.postprocess(self, outs)
             description = RecognizeAnything.get_results(self, tags)
-            shape = Shape(
+            shape = Shape(  # 简直就是标签增强，相当于打text2tag标签
                 label=label,
                 description=description,
                 shape_type="rectangle",

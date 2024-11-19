@@ -3,12 +3,13 @@ import random
 import sys
 import traceback
 import logging
+from typing import List, Dict, Any
 
+import mmcv
 import numpy as np
 import cv2
-from torch.nn.functional import threshold_
 
-from work_flow.utils.box import box_iou
+from work_flow.utils.box import box_iou, get_IoU
 from . import __preferred_device__, Model, Shape, AutoLabelingResult
 from .setr_mla import SETR_MLA
 from .unidet import UniDet
@@ -57,17 +58,6 @@ class SAM_Panoptic(Model):
         # Run the parent class's init method
         super().__init__(config_path, on_message)
 
-        # Get encoder and decoder model paths
-        model_abs_path = self.get_model_abs_path(
-            self.config, "model_path"
-        )
-        if not model_abs_path or not os.path.isfile(
-                model_abs_path
-        ):
-            raise FileNotFoundError(
-                "Could not download or initialize encoder of Unidet."
-            )
-
         with open(self.category_txt, 'r') as f:
             category_lines = f.readlines()
             self.category_list = [' '.join(line_data.split('\t')[1:]).strip() for line_data in category_lines]
@@ -95,13 +85,15 @@ class SAM_Panoptic(Model):
         输入: 每个蒙版的范围、类别、颜色
         """
         # Find contours
-        approx_contours, masks, cls_names, colors = [], [], [], []
+        approx_contours, masks, cls_names, colors, scores = [], [], [], [], []
         for info in category_info:
             mask = info[5]["segmentation"]
             cls_names.append(info[2])
             colors.append(info[5]['color'])
+            scores.append(info[3])
             masks.append(mask)
-            mask *= 255 # binary mask
+            mask = mask.astype(np.uint8)  # 将布尔类型转换为 uint8 (0 和 1)
+            mask *= 255  # 转换为 0 和 255
             mask = mask.astype(np.uint8)
             contours, _ = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -117,21 +109,23 @@ class SAM_Panoptic(Model):
             image_size = shape[0] * shape[1]
             areas = [cv2.contourArea(contour) for contour in approx_contours]
             avg_area = np.mean(areas)
-            filtered_approx_contours, filtered_classes, filtered_colors = [], [], []
-            for contour, area, cls_name, color in zip(approx_contours, areas, cls_names, colors):
+            filtered_approx_contours, filtered_classes, filtered_colors, filtered_scores = [], [], [], []
+            for contour, area, cls_name, color, score in zip(approx_contours, areas, cls_names, colors, scores):
                 if area < image_size * 0.9 or area > avg_area * 0.2:
                     filtered_approx_contours.append(contour)
                     filtered_classes.append(cls_name)
                     filtered_colors.append(color)
+                    filtered_scores.append(score)
 
             approx_contours = filtered_approx_contours
-            classes = filtered_classes
+            cls_names = filtered_classes
             colors = filtered_colors
+            scores = filtered_scores
         # Contours to shapes
         shapes = []
-        if self.output_mode == "polygon":
-            for i, (approx, cls_name, color) in enumerate(zip(approx_contours, cls_names, colors)):
+        for i, (approx, cls_name, color, score) in enumerate(zip(approx_contours, cls_names, colors, scores)):
                 # Scale points
+            if self.output_mode == "polygon":
                 points = approx.reshape(-1, 2)
                 points[:, 0] = points[:, 0]
                 points[:, 1] = points[:, 1]
@@ -146,15 +140,7 @@ class SAM_Panoptic(Model):
                     point[1] = int(point[1])
                     shape.add_point(point[0], point[1])
                 shape.shape_type = "polygon"
-                shape.closed = True
-                shape.fill_color = color
-                shape.line_color = color
-                shape.line_width = 1
-                shape.label = cls_name
-                shape.selected = False
-                shapes.append(shape)
-        elif self.output_mode in ["rectangle", "rotation"]:
-            for i, (approx, cls_name, color) in enumerate(zip(approx_contours, cls_names, colors)):
+            elif self.output_mode in ["rectangle", "rotation"]:
                 x_min = 100000000
                 y_min = 100000000
                 x_max = 0
@@ -179,34 +165,72 @@ class SAM_Panoptic(Model):
                 shape.shape_type = (
                     "rectangle" if self.output_mode == "rectangle" else "rotation"
                 )
-                shape.closed = True
-                shape.fill_color = color
-                shape.line_color = color
-                shape.line_width = 1
-                shape.label = cls_name
-                shape.selected = False
-                shapes.append(shape)
+            else:
+                raise ValueError(f"Invalid output mode: {self.output_mode}")
+            shape.closed = True
+            shape.fill_color = color
+            shape.line_color = color
+            shape.line_width = 1
+            shape.label = cls_name
+            shape.score = float(score)
+            shape.selected = False
+            shapes.append(shape)
 
         return shapes
 
+    @staticmethod
+    def write_masks_to_folder(masks: List[Dict[str, Any]]) -> None:
+        path = 'output'
+        header = "id,area,bbox_x0,bbox_y0,bbox_w,bbox_h,point_input_x,point_input_y,predicted_iou,stability_score,crop_box_x0,crop_box_y0,crop_box_w,crop_box_h"  # noqa
+        metadata = [header]
+        os.makedirs(os.path.join(path, "sam_mask"), exist_ok=True)
+        masks_array = []
+        for i, mask_data in enumerate(masks):
+            mask = mask_data["segmentation"]
+            masks_array.append(mask.copy())
+            filename = f"{i}.png"
+            cv2.imwrite(os.path.join(path, "sam_mask", filename), mask * 255)
+            mask_metadata = [
+                str(i),
+                str(mask_data["area"]),
+                *[str(x) for x in mask_data["bbox"]],
+                *[str(x) for x in mask_data["point_coords"][0]],
+                str(mask_data["predicted_iou"]),
+                str(mask_data["stability_score"]),
+                *[str(x) for x in mask_data["crop_box"]],
+            ]
+            row = ",".join(mask_metadata)
+            metadata.append(row)
+
+        masks_array = np.stack(masks_array, axis=0)
+        np.save(os.path.join(path, "sam_mask", "masks.npy"), masks_array)
+        metadata_path = os.path.join(path, "sam_metadata.csv")
+        with open(metadata_path, "w") as f:
+            f.write("\n".join(metadata))
+        return
+
     # 语义增强
     def enhance_masks(self, seg, image):
-        data = self.sam.generate(image)
-        pred_mask_img = seg[:, :, -1]  # red channel
-        enhanced_mask = seg[:, :, 2]  # full channel
-        shape_size = pred_mask_img.shape[0] * pred_mask_img.shape[1]
+        self.sam.predictor.model.to(__preferred_device__)  # 必须通道转换
+        data = self.sam.generate(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        # self.write_masks_to_folder(data)
+        self.sam.predictor.model.to('cpu')
+
+        enhanced_mask = seg.copy()  # full channel
+        shape_size = enhanced_mask.shape[0] * enhanced_mask.shape[1]
         category_info = []
         for idx, meta in enumerate(data):  # 针对语义分割mask，利用sam mask的聚类结果统一局部像素
             sam_mask = meta["segmentation"]
-            single_mask_labels = pred_mask_img[sam_mask]  # 像素计数
+            single_mask_labels = enhanced_mask[sam_mask]  # 像素计数
             unique_values, counts = np.unique(single_mask_labels, return_counts=True, axis=0)
             max_idx = np.argmax(counts)  # 语义像素id+sam像素轮廓
             cls_idx = unique_values[max_idx]
             count_ratio = counts[max_idx] / counts.sum()  # 增强比例（当前最多像素，其数量的百分比）
             cls_name = self.category_list[cls_idx]  # 已经增强语义了啊
             shape_per = counts.sum() / shape_size
-            category_info.append((idx, cls_idx, cls_name, count_ratio, shape_per, meta))
-        category_info = sorted(category_info, key=lambda x: float(x.split(',')[4]), reverse=True)
+            category_info.append([idx, cls_idx, cls_name, count_ratio, shape_per, meta])
+            # 单独mask的类别置信度为[3] mask在整体的iou可信度为[4]
+        category_info = sorted(category_info, key=lambda x: float(x[4]), reverse=True)
         category_info = category_info[:self.top_k]
 
         _category_info = category_info.copy()
@@ -234,25 +258,23 @@ class SAM_Panoptic(Model):
             idx, label, count_ratio, area, meta = info[0], int(info[1]), float(
                 info[3]), float(info[4]), info[5]
             sam_mask = meta["segmentation"].astype(bool)
-            if label == 0:  # 过滤2-无效类别
+            if label == 0:  # 过滤2-背景过滤
                 _category_info.remove(info)
                 continue
             elif label < self.num_class:  # 控制mask颜色，区分实例
-                color = random_color()  # 这里只记录颜色，没必要做纯色图像
+                color = random_color()  # 随机颜色
             else:
                 color = color_list[label]
             enhanced_mask[sam_mask] = color
             info[5]['color'] = color
-            name = info[2]
             boxes.append(meta["bbox"])
-            info.append((label, name))
 
-        boxes_np = np.array(boxes)
         font = cv2.FONT_HERSHEY_SIMPLEX
         enhanced_mask = enhanced_mask.astype(np.uint8)
-        for id, coord in enumerate(boxes_np):
-            x0, y0, w, h = coord[:4]
-            label = info[id][0]
+        for info in _category_info:
+            idx, label, category_name, count_ratio, area, meta = (info[0], int(info[1]), str(info[2]),
+                                                                  float(info[3]), float(info[4]), info[5])
+            x0, y0, w, h = meta["bbox"]
             pt1 = (int(x0), int(y0))
             pt2 = (int(x0 + w), int(y0 + h))
             color = color_list[int(label)].tolist()
@@ -260,33 +282,49 @@ class SAM_Panoptic(Model):
                 color = color_list2[int(label)].tolist()
             cv2.rectangle(enhanced_mask, pt1, pt2, color, 2)
             x, y = pt1
-            category_name = info[id][1]
             cv2.putText(enhanced_mask, category_name, (x + 3, y + 10), font, 0.35, color, 1)
 
         return enhanced_mask, _category_info
 
     # 全景增强
     def enhance_panoramic(self, category_info, det_info, shape):
-        for threshold in self.thresholds:
-            for info in category_info[threshold]:  #
-                if info['category_name'] == 'background':
-                    meta_data = info[5]
-                    best_iou = 0.0
-                    index = -1  # xywh -> xyxy
-                    box = [float(meta_data['bbox_x0']), float(meta_data['bbox_y0']),
-                           float(meta_data['bbox_x0']) + float(meta_data['bbox_w']),
-                           float(meta_data['bbox_y0']) + float(meta_data['bbox_h'])]
-                    for i, item in enumerate(det_info):  # 分析重合度
-                        temp = box_iou(box, item['bounding_box'])
-                        if temp >= best_iou:
-                            index = i
-                            best_iou = temp
-                    if best_iou >= threshold: # 遍历时修改
-                        info['category_name'] = det_info[index]['category_name']
-                        info['category_id'] = str(int(det_info[index]['category_id']) + 104)
+        # for threshold in self.thresholds:
+        for info in category_info:  #
+            if info[2] == 'background':
+                meta_data = info[5]
+                best_iou = 0.0
+                index = -1  # xywh -> xyxy
+                bbox_x0, bbox_y0, bbox_w, bbox_h = meta_data["bbox"]
+                box = [float(bbox_x0), float(bbox_y0),
+                       float(bbox_x0) + float(bbox_w),
+                       float(bbox_y0) + float(bbox_h)]
+                for i, item in enumerate(det_info):  # 分析重合度
+                    temp = get_IoU(box, item['bounding_box'])
+                    if temp >= best_iou:
+                        index = i
+                        best_iou = temp
+                if best_iou >= self.thresholds[0]: # 遍历时修改
+                    info[2] = det_info[index]['category_name']  # 绘图应该避免label==0
+                    info[1] = str(int(det_info[index]['category_id']) + 104)
         # 全景增强后，直接获取实例分割结果
-        return self.enhance_instance(category_info[self.thresholds[-1]], shape)
+        return self.enhance_instance(category_info, shape)
 
+    def color_mask(self, image, mask):
+        values = set(mask.flatten().tolist())
+        final_masks = []
+        for v in values:  # 拆分标签
+            final_masks.append((mask[:, :] == v, v))
+        np.random.seed(42)
+        if len(final_masks) == 0:
+            return
+        h, w = final_masks[0][0].shape[:2]
+        result = np.zeros((h, w, 3), dtype=np.uint8)
+        for m, label in final_masks:
+            result[m, :] = self.setr_mla.color_list[label]
+        vis = cv2.addWeighted(image, 0.5, result, 0.5, 0)
+        # mmcv.imwrite(mask, 'output/enhance_mask.png')
+        # mmcv.imwrite(vis, 'output/enhance_vis.png')
+        return vis
 
     def predict_shapes(self, image, filename=None) -> AutoLabelingResult:
         """
@@ -296,15 +334,17 @@ class SAM_Panoptic(Model):
             return AutoLabelingResult([], replace=False)
         try:
             avatars = []
-            seg = self.setr_mla.predict_raw(image)
-            _, _, _, seg_avatars = self.setr_mla.color_mask(image, seg)
-            enhance_semantic, category_info = self.enhance_masks(seg, image)
-            mask_shape = enhance_semantic.shape[:2]
-            enhance_instance, category_info = self.enhance_instance(category_info, mask_shape)
-            det_data, enhance_det = self.unidet.predict_shapes(image, raw=True)
-            enhance_panoptic, category_info = self.enhance_panoramic(category_info, det_data, mask_shape)
-            avatars.extend(seg_avatars)
-            avatars.extend([enhance_semantic, enhance_det, enhance_instance, enhance_panoptic])
+            pred_mask = self.setr_mla.predict_raw(image)
+            _, _, _, pred_vis = self.setr_mla.color_mask(image, pred_mask)
+            enhance_mask, category_info = self.enhance_masks(pred_mask, image)
+            enhance_vis = self.color_mask(image, enhance_mask)
+            mask_shape = enhance_mask.shape[:2]
+            instance_vis, _ = self.enhance_instance(category_info, mask_shape)
+            det_data, detection_vis = self.unidet.predict_shapes(image, raw=True)
+            # mmcv.imwrite(detection_vis, 'output/detection_vis.png')
+            panoramic_vis, category_info = self.enhance_panoramic(category_info, det_data, mask_shape)
+            # mmcv.imwrite(panoramic_vis, 'output/panoramic_vis.png')
+            avatars.extend([pred_mask, pred_vis, enhance_mask, enhance_vis, detection_vis, instance_vis, panoramic_vis])
             shapes = self.post_process(category_info, mask_shape)
 
         except Exception as e:  # noqa

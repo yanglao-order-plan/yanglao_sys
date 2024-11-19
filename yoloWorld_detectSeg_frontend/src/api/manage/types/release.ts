@@ -2,8 +2,6 @@
 export interface ICreateReleaseRequestData {
   name: string
   showName: string
-  models: ICreateModelRequestData[]
-  arguments: ICreateArgumentRequestData[]
   flowId: number
 }
 export interface ICreateModelRequestData {
@@ -31,8 +29,6 @@ export interface IUpdateReleaseRequestData {
   id: number
   name: string
   showName: string
-  models: IUpdateModelRequestData[]
-  arguments: IUpdateModelRequestData[]
   flowId: number
 }
 export interface IUpdateModelRequestData {  // 兼update

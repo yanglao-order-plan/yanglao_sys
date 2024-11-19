@@ -18,7 +18,6 @@ class OnnxBaseModel:
         if device_type.lower() == "gpu":
             # 如果设备是 GPU，则优先使用 TensorRT 提供器加速
             self.providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
-
         self.ort_session = ort.InferenceSession(
             model_path,
             providers=self.providers,
