@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as F
 from typing import List, Optional
-import utils.misc as misc
+import misc as misc
 from scipy.ndimage.morphology import distance_transform_edt
 import os
 

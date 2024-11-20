@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, reactive, ref } from "vue"
+import { onMounted, watch, nextTick, computed, reactive, ref } from "vue"
 import { type ITaskData, IFlowData, IWeightData, IArgData, OWeightData } from "@/api/infer/types/infer"
 import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
@@ -7,6 +7,7 @@ import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightA
   switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi, getAllCurrentWeightsApi} from "@/api/infer"
 import { ElMessage } from "element-plus"
 import type { CascaderValue } from 'element-plus'
+import * as echarts from "echarts"
 // 将模式与参数的加载分开
 
 defineOptions({
@@ -17,7 +18,6 @@ const choosen = ref<boolean>(false)
 const loading = ref<boolean>(false)
 const loaded = ref<boolean>(false)
 const predicting = ref<boolean>(false)
-const predicted = ref<boolean>(false)
 const tasksData = ref<ITaskData[]>([])
 const flowsData = ref<IFlowData[]>([])
 const weightsData = ref<IWeightData[]>([])
@@ -26,7 +26,6 @@ const hypersData = ref<IArgData[]>([])
 // 结构容器
 const selectedTaskOptions = ref([])
 const selectedFlowOptions = ref([])
-const selectedWeightOptions = ref({})
 const taskOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const flowOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const weightOptions = ref<{ [key: string]: { value: string; label: string; disabled: boolean }[]}>({})
@@ -58,23 +57,6 @@ const handledParamData = reactive<{ [key: string]: any }>({});
 const currentHyperData = reactive<{ [key: string]: any }>({});
 const handledHyperData = reactive<{ [key: string]: any }>({});
 // 当前显示的图片索引
-const currentIndex = ref(0);
-const currentImage = computed(() => inferImageData.resultImageUrl[currentIndex.value]);
-const previousImage = () => {
-  if (currentIndex.value > 0) {
-    currentIndex.value--;
-  } else {
-    currentIndex.value = inferImageData.resultImageUrl.length - 1; // 循环到最后一张
-  }
-};
-const nextImage = () => {
-  if (currentIndex.value < inferImageData.resultImageUrl.length - 1) {
-    currentIndex.value++;
-  } else {
-    currentIndex.value = 0; // 循环到第一张
-  }
-};
-
 
 const clearSelectedFlow = () => {
   selectedFlowData.flow = "";
@@ -119,10 +101,27 @@ const inferImageData: any = reactive({
         return URL.createObjectURL(blob);    // 生成 URL
       });
     } else {
-      return [];  // 如果没有 base64 数据，返回空数组
+      return [];  // 如果没有 base64 数据，返回空组
     }
   }),
   inferResult: [],
+  inferCroppers: computed(() => {
+  if (inferImageData.inferResult.length > 0) {
+    const res = inferImageData.inferResult.map((item: any) => {
+      if (item.cropper){
+        const base64 = item.cropper;
+        const blob = dataURItoBlob(base64);
+        return URL.createObjectURL(blob);
+      } else {
+        return null
+      }
+    });
+    console.log(res)
+    return res
+  } else {
+    return [];
+  }
+}),
   inferDescription: "",
   inferPeriod: ""
 })
@@ -136,6 +135,7 @@ const originImageUrl = computed(() => {
   }
   return null
 })
+
 // 图片base64解码
 const dataURItoBlob = (dataURI: any) => {
   const byteString = atob(dataURI.split(",")[1])
@@ -477,7 +477,6 @@ const handleParamSwitch = (paramName: string) => {
     })
     return
   }
-  console.log(paramName, handledParamValue)
   switchParamApi({
     switchParamName: paramName,
     switchParamValue: handledParamValue,
@@ -580,7 +579,68 @@ const resetResult = () => {
       type: "success"
     })
 }
-// getCurrentTask()
+
+// 新增：引用 ECharts 容器
+const chartRef = ref<HTMLDivElement | null>(null)
+let chartInstance: echarts.ECharts
+
+// 新增：更新图表的函数
+const updateChart = () => {
+  if (!chartInstance || !chartRef.value) return
+  
+  // 统计每个类的数量
+  const categoryCounts = inferImageData.inferResult.reduce((acc: Record<string, number>, item: any) => {
+    acc[item.label] = (acc[item.label] || 0) + 1
+    return acc
+  }, {})
+
+  const categories = Object.keys(categoryCounts)
+  const counts = Object.values(categoryCounts)
+
+  const option = {
+    title: {
+      text: '检测类别统计'
+    },
+    tooltip: {},
+    xAxis: {
+      type: 'category',
+      data: categories
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [{
+      name: '数量',
+      data: counts,
+      type: 'bar'
+    }]
+  }
+
+  chartInstance.setOption(option)
+}
+
+// 新增：在组件挂载时初始化 ECharts 实例
+onMounted(() => {
+  if (chartRef.value) {
+    chartInstance = echarts.init(chartRef.value)
+    updateChart()
+  }
+})
+
+// 新增：监听 inferResult 的变化并更新图表
+watch(() => inferImageData.inferResult, () => {
+  updateChart()
+}, { deep: true })
+
+const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
+  if (rowIndex % 2 === 0) {
+    return 'even-row'
+  }
+  return 'odd-row'
+}
+
+const activeCollapse = ref(['1']) // 控制折叠面板的状态
+
 getAllTasks()
 </script>
 
@@ -731,19 +791,51 @@ getAllTasks()
           </div>
         </el-col>
         <el-col :span="10">
-          <div class="grid-content ep-bg-purple">
-            <el-table
-              :data="inferImageData.inferResult"
-              v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0"
-            >
-              <el-table-column prop="label" label="检测类别" />
-              <el-table-column prop="score" label="置信度" />
-              <el-table-column prop="points" label="锚点集" />
-              <el-table-column prop="group_id" label="分组" />
-              <el-table-column prop="description" label="描述" />
-            </el-table>
-            <div v-else class="image-placeholder">暂无结果</div>
+          <div v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0" 
+            class="grid-content ep-bg-purple">
+            <el-collapse v-model="activeCollapse">
+              <el-collapse-item title="检测结果" name="1">
+                <el-table 
+                  :data="inferImageData.inferResult"
+                  :row-class-name="tableRowClassName"
+                  style="width: 100%"
+                  :default-expand-all="false">
+                  <el-table-column type="expand">
+                    <template #default="props">
+                      <el-form label-position="left" inline class="demo-table-expand">
+                        <el-form-item label="裁剪对象" v-if="inferImageData.inferCroppers.length>0 
+                                                            && inferImageData.inferCroppers[props.$index]">
+                          <el-image
+                            v-if="inferImageData.inferCroppers[props.$index]"
+                            :src="inferImageData.inferCroppers[props.$index]"
+                            :fit="'scale-down'"
+                            :preview-src-list="[inferImageData.inferCroppers[props.$index]]"
+                          />
+                        </el-form-item>
+                        <el-form-item label="锚点集">
+                          <span>{{ props.row.points }}</span>
+                        </el-form-item>
+                        <el-form-item label="分组">
+                          <span>{{ props.row.group_id }}</span>
+                        </el-form-item>
+                        <el-form-item label="描述">
+                          <span>{{ props.row.description }}</span>
+                        </el-form-item>
+                      </el-form>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="label" label="检测类别" />
+                  <el-table-column prop="score" label="置信度">
+                    <template #default="scope">
+                      {{ Number(scope.row.score).toFixed(4) }}
+                    </template>
+                  </el-table-column>
+                  <!-- <el-table-column prop="score" label="置信度"> -->
+                </el-table>
+              </el-collapse-item>
+            </el-collapse>
           </div>
+          <div v-else class="image-placeholder">暂无结果</div>
         </el-col>
       </el-row>
       <el-row :gutter="20">
@@ -771,6 +863,10 @@ getAllTasks()
           <div v-else class="image-placeholder">推理时长信息不可用</div>
         </el-col>
       </el-row>
+    </el-card>
+    <!-- 新增：ECharts 图表容器 -->
+    <el-card v-loading="loading" shadow="never" class="search-wrapper">
+      <div ref="chartRef" style="width: 100%; height: 400px;"></div>
     </el-card>
   </div>
 </template>
@@ -834,5 +930,60 @@ getAllTasks()
 .pager-wrapper {
   display: flex;
   justify-content: flex-end;
+}
+.demo-table-expand {
+  font-size: 0;
+  
+  .el-form-item {
+    margin-right: 0;
+    margin-bottom: 0;
+    width: 100%;
+    
+    &__label {
+      width: 90px;
+      color: #99a9bf;
+    }
+    
+    &__content {
+      width: calc(100% - 90px);
+    }
+  }
+}
+
+.even-row {
+  background: #fafafa;
+}
+
+.odd-row {
+  background: #ffffff;
+}
+
+// 确保展开行内容有足够的padding
+:deep(.el-table__expanded-cell) {
+  padding: 20px !important;
+}
+
+// 美化展开图标
+:deep(.el-table__expand-icon) {
+  &:hover {
+    .el-icon {
+      color: var(--el-color-primary);
+    }
+  }
+}
+
+:deep(.el-collapse) {
+  border-top: none;
+  border-bottom: none;
+}
+
+:deep(.el-collapse-item__header) {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--el-color-primary);
+}
+
+:deep(.el-collapse-item__content) {
+  padding-bottom: 0;
 }
 </style>

@@ -58,7 +58,7 @@ class Canvas:
             setattr(self, key, value)
 
     def remove_results(self):
-        self.image = None
+        # self.image = None
         self.avatars.clear()
         self.shapes.clear()
 

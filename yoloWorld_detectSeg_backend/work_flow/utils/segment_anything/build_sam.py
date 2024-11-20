@@ -2,26 +2,15 @@
 # All rights reserved.
 import re
 
-<<<<<<< Updated upstream
-=======
-import numpy as np
->>>>>>> Stashed changes
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
 import torch
 
 from functools import partial
-<<<<<<< Updated upstream
-from segment_anything.modeling.mask_decoder_pa import MaskDecoderPA
-from segment_anything.predictor import SamPredictor
-from segment_anything.modeling import ImageEncoderViT, MaskDecoder, PromptEncoder, Sam, TwoWayTransformer
-=======
-from sam.segment_anything.automatic_mask_generator import SamAutomaticMaskGenerator
-from sam.segment_anything.modeling.mask_decoder_pa import MaskDecoderPA
-from sam.segment_anything.predictor import SamPredictor
-from sam.segment_anything.modeling import ImageEncoderViT, MaskDecoder, PromptEncoder, Sam, TwoWayTransformer
->>>>>>> Stashed changes
+from .modeling.mask_decoder_pa import MaskDecoderPA
+from .predictor import SamPredictor
+from .modeling import ImageEncoderViT, MaskDecoder, PromptEncoder, Sam, TwoWayTransformer
 
 
 def build_sam_vit_h(checkpoint=None):
@@ -115,11 +104,7 @@ def _build_sam(
     sam.eval()
     if checkpoint is not None:
         with open(checkpoint, "rb") as f:
-<<<<<<< Updated upstream
             state_dict = torch.load(f, weights_only=True)
-=======
-            state_dict = torch.load(f)
->>>>>>> Stashed changes
         sam.load_state_dict(state_dict)
     return sam
 

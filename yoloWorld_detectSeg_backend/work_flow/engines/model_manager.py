@@ -84,10 +84,14 @@ class ModelManager:
                 self.kwargs['image'] = base64_img_to_rgb_cv_img(value)
             elif key == 'mask_image':
                 self.kwargs['mask'] = base64_img_to_rgb_cv_img(value)
+            elif key == 'minor_image':
+                self.kwargs['minor'] = base64_img_to_rgb_cv_img(value)
             elif key == 'shapes_prompt':
                 self.set_auto_labeling_marks(value)
             elif key == "conf_threshold":
                 self.set_auto_labeling_conf(value)
+            elif key == 'sim_threshold':
+                self.kwargs['sim_threshold'] = value
             elif key in ['iou_threshold', 'box_threshold']:
                 self.set_auto_labeling_iou(value)
             elif key == 'toggle_preserve_existing_annotations':

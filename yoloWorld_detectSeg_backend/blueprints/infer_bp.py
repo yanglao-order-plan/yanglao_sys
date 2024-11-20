@@ -104,7 +104,6 @@ def get_current_flow():
         'flowName': flow.name,
         'releaseName': release.name,
     }
-    print(session['param'], session['weight'])
     return response(code=0, message='获取当前调用选中模型成功', data=data)
 
 
@@ -139,7 +138,6 @@ def switch_flow():
     }
     session['param'] = release.params
     session['weight'] = {key: wid_list[0] for key, wid_list in release.weights.items()}
-    print(session['param'], session['weight'])
     return response(code=0, message='切换模型成功', data=data)
 
 
@@ -282,5 +280,4 @@ def predict_model():
         'inferDescription': predict_drawer.description,
         'inferPeriod': (end_time - start_time).total_seconds()
     }
-    print(data['inferResult'])
     return response(code=0, message='模型推断已完成', data=data)

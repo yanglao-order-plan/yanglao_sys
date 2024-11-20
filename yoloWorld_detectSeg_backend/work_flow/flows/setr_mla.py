@@ -45,12 +45,11 @@ class SETR_MLA(Model):
     def __init__(self, config_path, on_message) -> None:
         # Run the parent class's init method
         super().__init__(config_path, on_message)
-
+        self.device = 'cuda' if __preferred_device__ == 'GPU' else 'cpu'
         # Get encoder and decoder model paths
         model_abs_path = self.get_model_abs_path(
             self.config, "seg_model_path"
         )
-        print(model_abs_path)
         if not model_abs_path or not os.path.isfile(
             model_abs_path
         ):
@@ -73,7 +72,7 @@ class SETR_MLA(Model):
         cfg.model.pretrained = None
         cfg.data.test.test_mode = True
         self.model = init_model(args.semantic_config, args.semantic_checkpoint)
-        load_checkpoint(self.model, args.semantic_checkpoint, map_location=__preferred_device__)
+        load_checkpoint(self.model, args.semantic_checkpoint, map_location=self.device)
 
         # if args.mask_enhance:
         # color reader
@@ -240,7 +239,7 @@ class SETR_MLA(Model):
         return masks, classes, colors, img
 
     def predict_raw(self, image):
-        self.model.to(__preferred_device__)
+        self.model.to(self.device)
         result = inference_model(self.model, image)
         self.model.to('cpu')
         seg = result.pred_sem_seg.data.cpu().numpy()[0]

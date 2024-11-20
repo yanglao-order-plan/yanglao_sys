@@ -25,12 +25,15 @@ def batch_base64_encode_image(results_images):
 def base64_encode_image(image) -> str:
     buffered = io.BytesIO()
     dim = image.ndim
+    if image.dtype not in [np.uint8, np.float32]:
+        image = image.astype('uint8')  # 转换为 uint8
     if dim == 2:  # 这种一般都是单个张量，未添加mat签名
+        print(image.shape)
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     elif dim == 3:
-        cv2.cvtColor(image, cv2.COLOR_RGB2BGR, image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     elif dim == 4:
-        cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA, image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
     im_base64 = Image.fromarray(image)
     im_base64.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')

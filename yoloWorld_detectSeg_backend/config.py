@@ -9,17 +9,12 @@ JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=60)
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
 # 数据库配置
-<<<<<<< Updated upstream
 HOSTNAME = '127.0.0.1'
-=======
-HOSTNAME = '10.16.3.192'
->>>>>>> Stashed changes
 PORT = 3306
 USERNAME = 'root'
 PASSWORD = '020627'
 DATABASE = 'yanglao_order_sys'
 DB_URI = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(USERNAME, PASSWORD, HOSTNAME, PORT, DATABASE)
-# DB_URI = f'mysql+pymysql://{USERNAME}:{PASSWORD}@{HOSTNAME}:{PORT}/{DATABASE}?charset=utf8mb4'
 SQLALCHEMY_DATABASE_URI = DB_URI
 
 # 邮箱配置

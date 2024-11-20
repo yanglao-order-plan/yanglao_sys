@@ -10,15 +10,9 @@ from torchvision.ops.boxes import batched_nms, box_area  # type: ignore
 
 from typing import Any, Dict, List, Optional, Tuple
 
-<<<<<<< Updated upstream
 from segment_anything.modeling import Sam
 from segment_anything.predictor import SamPredictor
 from segment_anything.utils.amg import (
-=======
-from sam.segment_anything.modeling import Sam
-from sam.segment_anything.predictor import SamPredictor
-from sam.segment_anything.utils.amg import (
->>>>>>> Stashed changes
     MaskData,
     area_from_rle,
     batch_iterator,

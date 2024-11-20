@@ -109,9 +109,7 @@ def base64_img_to_rgb_cv_img(base64_img, img_path=None):
     """
     # print(base64_img)
     if img_path is not None and os.path.exists(img_path):
-        # Load image from path directly
         # Note: Potential issue - unable to handle the flipped image.
-        # Temporary workaround: cv_image = cv2.imread(img_path)
         cv_image = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
         if cv_image is None:
             raise ValueError(f"Could not read image from path: {img_path}")

@@ -2,7 +2,6 @@ import os
 import torch
 from torch import Tensor, nn
 import torch.nn.functional as F
-<<<<<<< Updated upstream
 import numpy as np
 from typing import List, Tuple
 
@@ -11,18 +10,6 @@ from segment_anything.modeling.mask_decoder import MLP
 from segment_anything.modeling.transformer import Attention
 from segment_anything.modeling.common import LayerNorm2d
 import segment_anything.utils.misc as misc
-=======
-import math
-import random
-import numpy as np
-from typing import Dict, List, Tuple, Type
-
-from sam.segment_anything.modeling import TwoWayTransformer, MaskDecoder
-from sam.segment_anything.modeling.mask_decoder import MLP
-from sam.segment_anything.modeling.transformer import Attention
-from sam.segment_anything.modeling.common import LayerNorm2d, MLPBlock
-import sam.segment_anything.utils.misc as misc
->>>>>>> Stashed changes
 
 class PromptAdapater(nn.Module):
     """
@@ -256,11 +243,7 @@ class MaskDecoderPA(MaskDecoder):
         box_preds = []
         for i_batch in range(batch_len):
             # generate guiding embedding
-<<<<<<< Updated upstream
             image_grad = misc.generalized_image_grad(input_images[i_batch]).unsqueeze(0) / 255
-=======
-            image_grad = misc.generalized_image_grad(input_images[i_batch]).unsqueeze(0)/255
->>>>>>> Stashed changes
             image_with_grad = torch.cat((input_images[i_batch], image_grad), dim=0)
             guiding_embedding = self.guiding_conv(image_with_grad.unsqueeze(0))
 

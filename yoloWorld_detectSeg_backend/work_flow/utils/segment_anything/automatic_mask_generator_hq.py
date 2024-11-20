@@ -8,8 +8,8 @@ import numpy as np
 
 from typing import List, Optional
 
-from segment_anything import SamAutomaticMaskGenerator
-from segment_anything.utils.amg import build_all_layer_point_grids
+from .automatic_mask_generator import SamAutomaticMaskGenerator
+from .utils.amg import build_all_layer_point_grids
 from .predictor_hq import SamPredictorHQ
 
 

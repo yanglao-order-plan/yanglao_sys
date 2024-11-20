@@ -3,7 +3,7 @@ import cv2
 import random
 import torch
 import torch.nn.functional as F
-import utils.misc as misc
+import misc as misc
 import numpy as np
 
 def show_heatmap_ax(ax, heatmap, filename):

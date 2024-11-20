@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import sys
 import traceback
 import logging
@@ -57,19 +58,23 @@ class SAM_Panoptic(Model):
     def __init__(self, config_path, on_message) -> None:
         # Run the parent class's init method
         super().__init__(config_path, on_message)
-
+        self.device = 'cuda' if __preferred_device__ == 'GPU' else 'cpu'
         with open(self.category_txt, 'r') as f:
             category_lines = f.readlines()
             self.category_list = [' '.join(line_data.split('\t')[1:]).strip() for line_data in category_lines]
             f.close()
 
         # sam enhance
-        self.enhance_mask = self.config.get("enhance_mask", None)
-        model_type = self.config.get("model_type", None)
         sam_model_abs_path = self.get_model_abs_path(
             self.config, "sam_model_path"
         )
-        sam = sam_model_registry[model_type](checkpoint=sam_model_abs_path)
+        model_name = os.path.basename(sam_model_abs_path).split('.')[0]
+        match = re.search(r'vit_[blh]', model_name)
+        if match:
+            vit_type = match.group(0)
+        else:
+            raise ValueError("Model type not found in the URL")
+        sam = sam_model_registry[vit_type](checkpoint=sam_model_abs_path)
         self.sam = SamAutomaticMaskGenerator(sam, output_mode='binary_mask')
 
         # unidet background
@@ -211,7 +216,7 @@ class SAM_Panoptic(Model):
 
     # 语义增强
     def enhance_masks(self, seg, image):
-        self.sam.predictor.model.to(__preferred_device__)  # 必须通道转换
+        self.sam.predictor.model.to(self.device)  # 必须通道转换
         data = self.sam.generate(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         # self.write_masks_to_folder(data)
         self.sam.predictor.model.to('cpu')

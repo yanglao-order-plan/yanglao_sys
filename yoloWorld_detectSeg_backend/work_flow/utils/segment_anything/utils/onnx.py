@@ -10,11 +10,7 @@ from torch.nn import functional as F
 
 from typing import Tuple
 
-<<<<<<< Updated upstream
-from segment_anything.modeling import Sam
-=======
-from sam.segment_anything.modeling import Sam
->>>>>>> Stashed changes
+from ..modeling import Sam
 from amg import calculate_stability_score
 
 

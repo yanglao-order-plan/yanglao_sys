@@ -88,4 +88,5 @@ model_module_map = {
     "automatic_segment_anything": ("work_flow.flows.auto_sam", "AutoSAM"),
     "sam_panoptic": ("work_flow.flows.sam_panoptic", "SAM_Panoptic"),
     "ram_grounding_dino": ("work_flow.flows.ram_grounding_dino", "RAM_Grounding_DINO"),
+    "arcface": ("work_flow.flows.arcface", "Arc_Face"),
 }
