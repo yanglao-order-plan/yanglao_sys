@@ -1,11 +1,14 @@
 from platform import release
 
+from sqlalchemy import inspect
+
 from extensions import db
 from datetime import datetime
 
 
 class UserModel(db.Model):
     __tablename__ = 'user'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='用户id')
     username = db.Column(db.String(100), nullable=False, comment='用户名')
     password = db.Column(db.String(500), nullable=False, comment='密码')
@@ -30,6 +33,7 @@ class UserModel(db.Model):
 
 class RoleModel(db.Model):
     __tablename__ = 'role'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='角色id')
     name = db.Column(db.String(100), nullable=False, comment='角色名称')
     desc = db.Column(db.String(100), nullable=False, comment='角色描述')
@@ -37,6 +41,7 @@ class RoleModel(db.Model):
 
 class CaptchaModel(db.Model):
     __tablename__ = 'captcha'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(100), nullable=True, comment='验证邮箱')
     captcha = db.Column(db.String(100), nullable=False, comment='验证码')
@@ -46,6 +51,7 @@ class CaptchaModel(db.Model):
 
 class DatasetModel(db.Model):
     __tablename__ = 'dataset'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='数据集id')
     name = db.Column(db.String(100), nullable=False, comment='数据集名称')
     class_num = db.Column(db.Integer, nullable=False, comment='类别数量')
@@ -59,6 +65,7 @@ class DatasetModel(db.Model):
 # TaskType Model
 class TaskTypeModel(db.Model):
     __tablename__ = 'task_type'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务类型ID')
     name = db.Column(db.String(100), nullable=False, comment='任务类型名称')
     tasks = db.relationship('TaskModel', backref='task_type', lazy=True)
@@ -73,6 +80,7 @@ class TaskTypeModel(db.Model):
 # Task Model
 class TaskModel(db.Model):
     __tablename__ = 'task'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='任务ID')
     name = db.Column(db.String(50), nullable=False, comment='任务名称')
     type_id = db.Column(db.Integer, db.ForeignKey('task_type.id'), nullable=True, comment='任务类型ID')
@@ -90,6 +98,7 @@ class TaskModel(db.Model):
 # Flow Model
 class FlowModel(db.Model):
     __tablename__ = 'flow'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='流程ID')
     name = db.Column(db.String(100), nullable=False, comment='流程名称')
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=False, comment='任务ID')
@@ -108,6 +117,7 @@ class FlowModel(db.Model):
 # Release Model
 class ReleaseModel(db.Model):
     __tablename__ = 'release'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本ID')
     name = db.Column(db.String(100), nullable=False, comment='版本名称')
     show_name = db.Column(db.String(100), nullable=False, comment='显示名称')
@@ -217,6 +227,7 @@ class ReleaseModel(db.Model):
 
 class WeightModel(db.Model):
     __tablename__ = 'weight'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='权重id')
     name = db.Column(db.String(100), nullable=False, comment='权重名称')
     local_path = db.Column(db.Text, nullable=True, comment='本地保存路径')
@@ -252,6 +263,7 @@ class WeightModel(db.Model):
 # ReleaseWeight Model (Junction table for release and weight)
 class ModelModel(db.Model):
     __tablename__ = 'model'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联权重ID')
     release_id = db.Column(db.Integer, db.ForeignKey('release.id'), nullable=False,
                            comment='版本ID')
@@ -288,6 +300,7 @@ class ModelModel(db.Model):
 
 class ArgumentModel(db.Model):
     __tablename__ = 'argument'
+    __bind_key__ = 'local'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='版本关联参数ID')
     name = db.Column(db.String(100), nullable=False, comment='参数名称')
     type = db.Column(db.String(100), nullable=True, comment='参数类型')
@@ -331,17 +344,90 @@ class ArgumentModel(db.Model):
             'dynamic': self.dynamic,
         }
 
+class ServiceModel(db.Model):
+    __tablename__ = 'service'
+    __bind_key__ = 'remote'
+    id = db.Column(db.Integer, primary_key=True, name='service_id')
+    name = db.Column(db.String(100), nullable=False, name='service_name')
+    unit = db.Column(db.String(100), nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.Integer, nullable=False, name='service_status')
+    # 服务相关工单的元数据要求
+    start_img_min = db.Column(db.Integer, nullable=False)
+    start_img_max = db.Column(db.Integer, nullable=False)
+    service_img_min = db.Column(db.Integer, nullable=False)
+    service_img_max = db.Column(db.Integer, nullable=False)
+    end_img_min = db.Column(db.Integer, nullable=False)
+    end_img_max = db.Column(db.Integer, nullable=False)
 
-class ResultModel(db.Model):
-    __tablename__ = 'result'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='推理结果id')
-    img_path = db.Column(db.String(100), nullable=False, comment='原始图片名称')
-    data = db.Column(db.Text, nullable=False, comment='结果数据')
-    plot_path = db.Column(db.String(100), nullable=False, comment='结果图片名称')
-    start_time = db.Column(db.DateTime, default=datetime.now, comment='开始时间')
-    end_time = db.Column(db.DateTime, default=datetime.now, comment='结束时间')
-    hyper = db.Column(db.JSON, nullable=True, comment='动态超参数')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    release_id = db.Column(db.Integer, db.ForeignKey('release.id'))
-    user = db.relationship('UserModel', backref=db.backref('result'))
-    release = db.relationship('ReleaseModel', backref=db.backref('result'))
+    def to_dict(self):
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+
+class WorkOrderModel(db.Model):
+    __tablename__ = 'work_order'
+    __bind_key__ = 'remote'
+    id = db.Column(db.Integer, primary_key=True, name='order_id')
+    no = db.Column(db.String(100), name='cext1')
+    status = db.Column(db.Integer, name='order_status')
+    service_object = db.Column(db.String(100))
+    # handler = db.Column(db.Integer)
+    project_type = db.Column(db.String(100))
+    # 工单时间
+    start_time = db.Column(db.String(100))
+    create_time = db.Column(db.String(100))
+    handle_time = db.Column(db.String(100))
+    pay_time = db.Column(db.String(100))
+    # 服务主客体信息
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    member_id = db.Column(db.Integer, db.ForeignKey('member.id'))
+
+    def to_dict(self):
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+
+class MemberModel(db.Model):
+    __tablename__ = 'member'
+    __bind_key__ = 'remote'
+    id = db.Column(db.Integer, primary_key=True, name='member_id')
+    name = db.Column(db.String(100), name='real_name')
+    gender = db.Column(db.Integer)
+    member_type = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+    emp_id = db.Column(db.Integer)
+    status = db.Column(db.Integer)
+    member_tag = db.Column(db.String(100))
+    is_disabled = db.Column(db.String(100), name='is_disabl')
+
+    def to_dict(self):
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+
+class ServiceLogModel(db.Model):
+    __tablename__ = 'service_log'
+    __bind_key__ = 'remote'
+    id = db.Column(db.Integer, primary_key=True, name='cid')
+    # 开始信息
+    start_content = db.Column(db.String(100))
+    start_img = db.Column(db.String(1000))
+    start_location = db.Column(db.String(1000))
+    start_time = db.Column(db.String(100))
+    # 中间信息
+    service_content = db.Column(db.String(100))
+    img_url = db.Column(db.String(1000))
+    location = db.Column(db.String(1000))
+    create_time = db.Column(db.String(100))
+    # 结束信息
+    end_content = db.Column(db.String(100))
+    end_img = db.Column(db.String(1000))
+    end_location = db.Column(db.String(1000))
+    end_time = db.Column(db.String(100))
+    # 服务主客体信息
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+
+    def to_dict(self):
+        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+
+class ExecuteModel(db.Model):
+    __tablename__ = 'execute'
+    id=db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('order.service_id'), nullable=False)
+    image_stage = db.Column(db.String(255))
+    flow_id = db.Column(db.Integer,nullable=False)

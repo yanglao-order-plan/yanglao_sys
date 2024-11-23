@@ -32,7 +32,7 @@ class PPOCRv4(Model):
 
     def load_model(self, model_name):
         model_abs_path = self.get_model_abs_path(self.config, model_name)
-        print(model_abs_path)
+
         model_task = os.path.splitext(
             model_abs_path
         )[0]

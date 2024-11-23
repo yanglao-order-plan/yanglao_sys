@@ -4,7 +4,7 @@ from flask import Blueprint, request, render_template, g, redirect, session
 import datetime
 from flask_jwt_extended import jwt_required
 from database_models import (WeightModel, TaskTypeModel, TaskModel, FlowModel, ReleaseModel,
-                             WeightModel, ModelModel, ResultModel)
+                             WeightModel, ModelModel)
 from utils.backend_utils.response_utils import response
 from utils.backend_utils.colorprinter import *
 from work_flow.engines.model_manager import ModelManager

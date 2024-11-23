@@ -19,7 +19,6 @@ from blueprints.auth_bp import bp as auth_bp
 from blueprints.server_bp import bp as server_bp
 from blueprints.user_manage_bp import bp as user_manage_bp
 from blueprints.infer_bp import bp as infer_bp
-from blueprints.infer_local_bp import bp as infer_local_bp
 from blueprints.task_type_manage_bp import bp as task_type_manage_bp
 from blueprints.task_manage_bp import bp as task_manage_bp
 from blueprints.flow_manage_bp import bp as flow_manage_bp
@@ -52,7 +51,10 @@ app.config['SESSION_FILE_DIR'] = './flask_sessions'
 app.config['SESSION_PERMANENT'] = False  # 浏览器关闭时会话失效
 app.config['SESSION_USE_SIGNER'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 0  # 设置为0可以保证关闭浏览器立即失效
-
+# 配置 Flask 的日志级别
+app.logger.setLevel(logging.INFO)
+# 配置 Werkzeug 的日志级别
+logging.getLogger('werkzeug').setLevel(logging.INFO)
 # 初始化 Flask-Session
 Session(app)
 
@@ -75,7 +77,6 @@ app.register_blueprint(flow_manage_bp, url_prefix='/flow-manage')
 app.register_blueprint(weight_manage_bp, url_prefix='/weight-manage')
 app.register_blueprint(release_manage_bp, url_prefix='/release-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
-app.register_blueprint(infer_local_bp, url_prefix='/infer_local')
 CORS(app, supports_credentials=True)
 
 @app.before_request
@@ -93,12 +94,18 @@ def cleanup_expired_sessions():
 
 def test_database_connection():
     with app.app_context():
-        with db.engine.connect() as conn:
-            res = conn.execute(sqlalchemy.text('select 1'))
-            if res.fetchone()[0] == 1:
-                logging.info('Database connection successful')
-            else:
-                logging.error('Database connection failed')
+        for bind_key, engine in db.engines.items():
+            try:
+                with engine.connect() as conn:
+                    res = conn.execute(sqlalchemy.text("SELECT VERSION()"))
+                    row = res.fetchone()
+                    if row:
+                        print(f"Database connection successful, version: {row[0]}")
+                    else:
+                        print("Database connection failed")
+
+            except Exception as e:
+                logging.error(f"Error connecting to {bind_key.capitalize()} database: {e}")
 
 
 if __name__ == "__main__":
