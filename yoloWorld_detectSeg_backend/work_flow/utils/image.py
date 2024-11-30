@@ -103,7 +103,7 @@ def numpy_to_pil(np_image: np.ndarray) -> Image.Image:
     else:
         raise ValueError(f"不支持的图像形状: {np_image.shape}")
 
-def crop_polygon_object(image, polygon_points, background_color=(0, 0, 0)):
+def crop_polygon_object(image, polygon_points, background_color=(255, 255, 255)):
     """
     根据给定的多边形顶点裁剪图像，仅保留多边形内部的区域。
     新图像为裁剪对象的最小外接矩形，多边形外部区域用指定的背景颜色填充。

@@ -89,4 +89,6 @@ model_module_map = {
     "sam_panoptic": ("work_flow.flows.sam_panoptic", "SAM_Panoptic"),
     "ram_grounding_dino": ("work_flow.flows.ram_grounding_dino", "RAM_Grounding_DINO"),
     "arcface": ("work_flow.flows.arcface", "Arc_Face"),
+    "cbiaformer_cls": ("work_flow.flows.cbiaformer_cls", "CBIAFORMER_CLS"),
+    "grounding_sam_cls": ("work_flow.flows.grounding_sam_cls", "GroundingSAM_CLS"),
 }

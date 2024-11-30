@@ -109,6 +109,8 @@ class ModelManager:
                 self.kwargs['mask_enhance'] = value
             elif key == 'prompt_mode':
                 self.kwargs['prompt_mode'] = value
+            elif key == 'scale':
+                self.kwargs['scale'] = value
             else:
                 self.post_kwargs[key] = value
 
@@ -333,7 +335,7 @@ class ModelManager:
             self.new_model_status.emit(f"Error in loading model: {error_message}")
             logging.error(f"Error in model prediction: {e}\n{stack_trace}. Please check the model.")
             raise
-
+        print(results)
         results.load_kwargs(**self.post_kwargs)
         return results
 
