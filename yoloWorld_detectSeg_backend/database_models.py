@@ -389,10 +389,10 @@ class WorkOrderModel(db.Model):
     order_area_code = db.Column(db.String(100))
     order_area_name = db.Column(db.String(1000))
     # 服务主客体信息
-    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
-    member_id = db.Column(db.Integer, db.ForeignKey('member.id'))
-    handler = db.Column(db.Integer, db.ForeignKey('employee.id'))
-    to_user = db.Column(db.Integer, db.ForeignKey('employee.id'))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.service_id'))
+    member_id = db.Column(db.Integer, db.ForeignKey('member.member_id'))
+    handler = db.Column(db.Integer, db.ForeignKey('employee.emp_id'))
+    to_user = db.Column(db.Integer, db.ForeignKey('employee.emp_id'))
 
     def to_dict(self, keys=None):
         kwargs = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
