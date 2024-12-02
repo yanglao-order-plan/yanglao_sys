@@ -68,7 +68,11 @@ class GroundingSAM_CLS(Model):
             )
         self.net = GroundingSAM(self.config, logging)
         self.config['model_path'] = self.config['cls_path']
-        self.cbiaformer = CBIAFORMER_CLS(self.config, logging)
+        object_type = self.config["object_type"]
+        if object_type == "food":
+            self.model = CBIAFORMER_CLS(self.config, logging)
+        elif object_type == 'ingredient':
+            self.model = CBIAFORMER_CLS(self.config, logging)
 
 
     def predict_shapes(self, image, image_path=None, text_prompt=None):
@@ -81,7 +85,7 @@ class GroundingSAM_CLS(Model):
             sam_results = self.net.predict_shapes(image, text_prompt=text_prompt)
             for shape in sam_results.shapes:
                 cropped_img = crop_polygon_object(image.copy(), shape.points)
-                results = self.cbiaformer.predict_shapes(cropped_img)
+                results = self.model.predict_shapes(cropped_img)
                 shape.description = results.description
             return sam_results
 

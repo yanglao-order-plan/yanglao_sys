@@ -68,6 +68,37 @@ class ArcFace(Model):
         return img
 
     @torch.no_grad()
+    def get_embedding(self, image):
+        self.net.to(self.device)
+        cv_img = self.preprocess(image)
+        return self.net(cv_img).numpy()[0]
+
+    @torch.no_grad()
+    def predict_embeddings(self, feat1, feat2, sim_threshold=0.5):
+        try:
+            self.net.to(self.device)
+            sum: float = 0
+            len1: float = 0
+            len2: float = 0
+            for i in range(512):
+                n1 = feat1[i]
+                n2 = feat2[i]
+                sum += n1 * n2
+                len1 += n1 * n1
+                len2 += n2 * n2
+            len1 = math.sqrt(len1)
+            len2 = math.sqrt(len2)
+            div = sum / len1 / len2
+            flag = div > sim_threshold
+            description = f"Face Similarity: {div}\n Is the Same: {flag}"
+        except Exception as e:  # noqa
+            logging.warning("Could not inference model")
+            logging.error(e)
+            traceback.print_exc()
+            return AutoLabelingResult([], replace=False)
+
+        return AutoLabelingResult([], description=description, replace=False)
+    @torch.no_grad()
     def predict_shapes(self, image, minor=None, sim_threshold=0.5):
         """
         Predict shapes from image
@@ -77,10 +108,8 @@ class ArcFace(Model):
 
         try:
             self.net.to(self.device)
-            cv_img1 = self.preprocess(image)
-            cv_img2 = self.preprocess(minor)
-            feat1 = self.net(cv_img1).numpy()[0]
-            feat2 = self.net(cv_img2).numpy()[0]
+            feat1 = self.predict_shapes(image)
+            feat2 = self.predict_shapes(minor)
             sum: float = 0
             len1: float = 0
             len2: float = 0

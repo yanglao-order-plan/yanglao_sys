@@ -27,7 +27,6 @@ def split_images(field: str)->List:
 
     return images
 
-
 class BaseHandler:
     avatar_keys = ['document_photo', 'front_card', 'reverse_card', 'me_photo']
     img_keys = ['start_img', 'middle_img', 'end_img']
@@ -42,15 +41,15 @@ class BaseHandler:
         'member': ['id', 'name', 'type', 'emp_id'],
         'employee': ['id', 'name'],
     }
-    def __init__(self, order_id, configs, **kwargs):
+    def __init__(self, configs, **kwargs):
         self.flows = configs
         self.fields = {}
-        self.operators = {flow: {} for flow in configs}
+        self.log = {}
+        self.operators = {stage: [] for stage in self.img_keys}
         load_type = getattr(kwargs, 'load_type', 'follow')
         if load_type == 'once':
             for key, value in configs.items():
                 self.register_flow(key)
-        self.field_processing(order_id)
 
     def register_flow(self, flow_name):
         self.flows[flow_name] = load_model_class(flow_name)(self.flows[flow_name])
@@ -63,6 +62,7 @@ class BaseHandler:
         return self.flows[flow_name]
 
     def field_processing(self, order_id):
+        self.log['field'] = []
         # 获取orm对象
         order = WorkOrderModel.query.get(order_id)
         employee_id = order.handler if order.handler == order.to_user else order.to_user
@@ -80,16 +80,25 @@ class BaseHandler:
         if self.fields['member']['emp_id'] is not None: # 若服务对象同时也是系统中的注册服务者
             self.fields['member']['avatars'] = []
             member_emp = EmployeeModel.query.get(member.emp_id)
-            for key in avatar_keys:
+            for key in self.avatar_keys:
                 self.fields['member']['avatars'].extend(split_images(getattr(member_emp, key)))
-        for key in avatar_keys:
+        for key in self.avatar_keys:
             self.fields['employee']['avatars'].extend(split_images(getattr(employee, key)))
         # 获取服务阶段图像
-        for key in img_keys:
+        for key in self.img_keys:
             self.fields['service_log'][key] = split_images(self.fields['service_log'][key])
+            self.operators[key].append({})
 
     def opt_processing(self):
+        self.log['opterator'] = []
         pass
 
     def post_processing(self):
+        self.log['estimate'] = []
         pass
+
+    def run(self, order_id, **kwargs):
+        self.field_processing(order_id)
+        self.opt_processing()
+        self.post_processing()
+        return self.fields

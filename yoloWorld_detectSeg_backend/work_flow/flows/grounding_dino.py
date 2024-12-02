@@ -177,7 +177,7 @@ class Grounding_DINO(Model):
             raise NotImplementedError
         return boxes_filt, pred_phrases
 
-    def predict_shapes(self, image, image_path=None, text_prompt=None):
+    def predict_shapes(self, image, image_path=None, text_prompt=None, clear_cache=False):
         """
         Predict shapes from image
         """
@@ -206,7 +206,15 @@ class Grounding_DINO(Model):
             shapes.append(shape)
 
         result = AutoLabelingResult(shapes, replace=self.replace)
+        if clear_cache:
+            self.reset_cache()
         return result
+
+    def reset_cache(self):
+        del self.net.tokenizer
+        self.net.tokenizer = self.get_tokenlizer(
+            self.model_configs.text_encoder_type
+        )
 
     @staticmethod
     def sig(x):
