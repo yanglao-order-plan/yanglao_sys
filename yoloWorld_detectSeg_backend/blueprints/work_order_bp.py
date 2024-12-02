@@ -1,11 +1,10 @@
 import base64
 import time
-
 import cv2
 from flask import Blueprint,request,session
 import requests
 from flask_jwt_extended import jwt_required
-from database_models import (OrderModel, ReleaseModel, ExecuteModel, WeightModel, )
+from database_models import (WorkOrderModel, ReleaseModel, ExecuteModel, WeightModel, ServiceModel, ServiceLogModel, )
 from utils.backend_utils.response_utils import response
 from work_flow.engines.model_manager import ModelManager
 from utils.backend_utils.colorprinter import *
@@ -16,6 +15,7 @@ from io import BytesIO
 import json
 import datetime
 import numpy
+from work_flow.flows.ppocr_v4_lama import PPOCRv4LAMA
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -36,79 +36,51 @@ predict_drawer = Canvas()
 
 model_manager = ModelManager()
 
-@bp.route('/list/all')
+@bp.route('/list', methods=['GET'])
 @jwt_required(refresh=True)
 def get_all_order_id():
-    orders = OrderModel.query.all()
-    data = []
+    page = int(request.args.get('currentPage', 1))  # 获取页码，默认为第一页
+    per_page = int(request.args.get('size', 10))  # 获取每页显示的数据量，默认为 10 条
+    pagination  = WorkOrderModel.query.paginate(page=page, per_page=per_page, error_out=False)  # 使用 paginate() 方法进行分页查询，不抛出异常
+    orders = pagination.items
+    total = pagination.total  # 获取总数据量
+    #orders=WorkOrderModel.query.filter_by(id=4882).all()
+    data = {"list": [],"total":[] }
     for order in orders:
-        order_data = {
-            "orderId": order.order_id,
-            "serviceId": order.service_id,
-            "orderContent": order.order_content,
-        }
-        data.append(order_data)
+        service = get_work_orderByid(order.id, order.service_id)
+        if service is not None:
+            order_data = {
+                "orderId": order.id,
+                "no": order.no,
+                "serviceId": order.service_id,
+                "projectType": order.project_type,
+            }
+            data['list'].append(order_data)
+        else:
+            total-=1
+    data['total'] = total
     return response(code=1, message='查找work_order成功', data=data)
 
-@bp.route('/list/one', methods=['GET'])
-@jwt_required(refresh=True)
-def get_work_orderByid():
-    # 从订单表中获取订单信息
-    order_id = request.args.get('order_id', None).strip()
-    print_red(order_id)
-    order = OrderModel.query.filter_by(order_id=order_id).first()
-    if not order:
-        return response(code=0,message='未找到工单信息')
-    # 获取每个订单的详细信息和相关图片
-    # 直接通过order对象访问关联的图片
-    image_sets = [image.image_set for image in order.image_sets]
-    # 拼接最终返回的JSON数据
-    data = {
-        "orderId": order.order_id,
-        "serviceId": order.service_id,
-        "orderContent": order.order_content,
-        "handle": order.handle,
-        "startTime": order.start_time,
-        "endTime": order.end_time,
-        "imageSet": image_sets  # 返回对应的图片信息（多个图片的JSON数据）
-    }
-    print_red(data)
-    return response(code=1,message='查找work_order成功',data=data)
 
 @bp.route('/infer/<int:order_id>',  methods=['GET'])
 @jwt_required(refresh=True)
 def infer(order_id):
     # 从订单表中获取订单信息
-    order = OrderModel.query.filter_by(order_id=order_id).first()
-    if not order:
-        return response(code=1, message='查找信息失败')
-    # 获取与订单相关的图片信息
-    image_sets = [image.image_set for image in order.images]  # 通过关系直接获取图片数据
-    #print(image_sets)
-    data= {
-        "orderId": order.order_id,
-        "serviceId": order.service_id,
-        "orderContent": order.order_content,
-        "handle": order.handle,
-        "startTime": order.start_time,
-        "endTime": order.end_time,
-        "imageSet": image_sets  # 返回对应的图片信息（多个图片的JSON数据）
-    }
-    # 解析 'imageSet' 字符串
-    image_set_json = data['imageSet'][0]  # 取出列表中的 JSON 字符串
-    image_set = json.loads(image_set_json)  # 将 JSON 字符串解析为 Python 字典
-    #将所有图片 URL 合并为一个列表
-    images = image_set["pre"] + image_set["in"] + image_set["after"]
-    # orderId=data['orderId']
+    service_id=WorkOrderModel.query.filter_by(id=order_id).first().service_id
+    data = get_work_orderByid(order_id,service_id)
     serviceId = data['serviceId']
-    flow = ExecuteModel.query.filter_by(service_id=serviceId).first()
+    #flow = ExecuteModel.query.filter_by(service_id=serviceId).first()
+    flow=64
+    # if flow is None:
+    #     return response(code=0, message='未配置该服务类型执行的flow')
     # release
-    release = ReleaseModel.query.filter_by(flow_id=flow.flow_id).first()
+    release = ReleaseModel.query.filter_by(flow_id=flow).first()
     config = release.to_config  # 用于装载模型
-    session['flow'] = flow.flow_id
+    #session['flow'] = flow.flow_id
+    session['flow'] =flow
     session['release'] = release.id  # 装载该模型的配置
-    print(session)
-    model_manager.load_model_config(release)
+    #print(session)
+    #model_manager.load_model_config(release)
     session['param'] = release.params
     session['weight'] = {key: wid_list[0] for key, wid_list in release.weights.items()}
     for key in release.weights:
@@ -117,37 +89,27 @@ def infer(order_id):
     if release.params is not None and release.params:
         config.update(session['param'])
     release_id = session['release']
-    model_manager.load_model(release_id, config)
-    session['hyper'] = release.hypers
+    #model_manager.load_model(release_id, config)
+    #session['hyper'] = release.hypers
+    model=PPOCRv4LAMA(config,on_message)
 
     # 存初始值
     #print(session)
     #print(f'模型装载成功')
-    results=[]
+    results={"startImg": [], "imgUrl": [],"endImg":[]}
+    start_img=data['startImg']
+    for url in start_img:
+        result=infer_picture(url,model)
+        results["startImg"].append(result)
+    img_url=data['imgUrl']
+    for url in img_url:
+        result=infer_picture(url,model)
+        results["imgUrl"].append(result)
+    end_img=data['endImg']
+    for url in end_img:
+        result=infer_picture(url,model)
+        results["endImg"].append(result)
 
-    for category, image_urls in image_set.items():
-        print(f"Testing category: {category}")
-        for image_url in image_urls:
-            print(f"Processing image: {image_url}")
-            session['hyper']['origin_image'] = image_url
-            #session['hyper']['mask_image'] = image_url
-            model_manager.set_model_hyper(session['hyper'])
-            start_time = datetime.datetime.now()
-            auto_labeling_result = model_manager.predict_shapes()
-            end_time = datetime.datetime.now()
-            predict_drawer.load_results(auto_labeling_result)
-            resultImage = predict_drawer.draw()
-            image = Image.fromarray(resultImage)
-            image.show()
-            result_base64 = base64_encode_image(resultImage)
-            result = {
-                'resultBase64': 123456,
-                'inferResult': image_url,
-                'inferDescription': predict_drawer.description,
-                'inferPeriod': end_time,
-            }
-            #print(data['inferDescription'])
-            results.append(result)
     return response(code=0, message='模型推断已完成', data=results)
 
 # 下载图片并加载
@@ -170,17 +132,83 @@ def preprocess_image(img):
     image_input = np.expand_dims(image_input, axis=0)
     # 确保数据类型为 float32
     image_input = image_input.astype(np.float32)
-    print("Formatted image input shape:", image_input.shape)  # 应该是 (1, 3, H, W)
+    #print("Formatted image input shape:", image_input.shape)  # 应该是 (1, 3, H, W)
     return image_input
 
 
-# base64编码推断后图片(图片最后的转换接口)
-def batch_base64_encode_image(results_images):
-    for im in results_images.imgs:
-        buffered = BytesIO()
-        im_base64 = Image.fromarray(im)
-        im_base64.save(buffered, format="JPEG")
-    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+def get_work_orderByid(order_id,service_id):
+    # 从订单表中获取订单信息
+    #print_red(order_id)
+    # 获取每个订单的详细信息和相关图片
+    service = ServiceLogModel.query.filter_by(order_id=order_id).first()
+    if not service:
+        return None
+
+    startImgs = []
+    if service.start_img is not None:
+        startImgs.extend(service.start_img.split(','))
+
+    imgUrls = []
+    if service.img_url is not None:
+        imgUrls.extend(service.img_url.split(','))
+
+    endImgs = []
+    if service.end_img is not None:
+        endImgs.extend(service.end_img.split(','))
+
+    # 拼接最终返回的JSON数据
+    data = {
+        "orderId": order_id,
+        "serviceId": service_id,
+        "startLocation": service.start_location,
+        "location": service.location,
+        "endLocation": service.end_location,
+        "startTime": service.start_time,
+        "endTime": service.end_time,
+        "startImg": startImgs,  # 返回对应的图片信息（多个图片的JSON数据）
+        "imgUrl": imgUrls,
+        "endImg": endImgs
+    }
+    #print_red(data)
+    return data
+
+
+def infer_picture(url,model):
+    resp = requests.get(url)
+    img = Image.open(BytesIO(resp.content))
+    img=np.array(img)
+    start_time = datetime.datetime.now()
+    result = model.predict_shapes(img)
+    end_time = datetime.datetime.now()
+    predict_drawer.load_results(result)
+    resultImage = predict_drawer.draw()
+    image = Image.fromarray(resultImage)
+    #image.show()
+    result_base64 = base64_encode_image(resultImage)
+
+    # session['hyper']['origin_image'] = img
+    # #print(session)
+    # model_manager.set_model_hyper(session['hyper'])
+    # start_time = datetime.datetime.now()
+    # auto_labeling_result = model_manager.predict_shapes()
+    # end_time = datetime.datetime.now()
+    # predict_drawer.load_results(auto_labeling_result)
+    # resultImage = predict_drawer.draw()
+    # image = Image.fromarray(resultImage)
+    # #image.show()
+    # result_base64 = base64_encode_image(resultImage)
+    result = {
+    'originImage': url,
+    'resultBase64': result_base64,
+    'inferResult': predict_drawer.get_shape_dict(),
+    'inferDescription': predict_drawer.description,
+    'inferPeriod': (end_time - start_time).total_seconds(),
+    }
+    return result
+
+# 日志回调
+def on_message(message):
+    print("[INFO]", message)
 
 def base64_encode_image(image) -> str:
     buffered = BytesIO()
