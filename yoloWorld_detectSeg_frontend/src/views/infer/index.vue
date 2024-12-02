@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, watch, nextTick, computed, reactive, ref } from "vue"
+import { computed, reactive, ref } from "vue"
 import { type ITaskData, IFlowData, IWeightData, IArgData, OWeightData } from "@/api/infer/types/infer"
 import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
@@ -7,84 +7,82 @@ import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightA
   switchTaskApi, switchFlowApi, switchWeightApi, switchParamApi, switchHyperApi, predictModelApi, loadModelApi, getAllCurrentWeightsApi} from "@/api/infer"
 import { ElMessage } from "element-plus"
 import type { CascaderValue } from 'element-plus'
-import * as echarts from "echarts"
+// 将模式与参数的加载分开
 
 defineOptions({
   name: "Infer"
 })
-
+// 原始容器
 const choosen = ref<boolean>(false)
 const loading = ref<boolean>(false)
 const loaded = ref<boolean>(false)
 const predicting = ref<boolean>(false)
+const predicted = ref<boolean>(false)
 const tasksData = ref<ITaskData[]>([])
 const flowsData = ref<IFlowData[]>([])
 const weightsData = ref<IWeightData[]>([])
 const paramsData = ref<IArgData[]>([])
 const hypersData = ref<IArgData[]>([])
-
+// 结构容器
 const selectedTaskOptions = ref([])
 const selectedFlowOptions = ref([])
+const selectedWeightOptions = ref({})
 const taskOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const flowOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
 const weightOptions = ref<{ [key: string]: { value: string; label: string; disabled: boolean }[]}>({})
-
+// 当前选择模型数据
 const currentTaskData = reactive({
   taskType: "",
   task: "",
 })
-
+// 绑定下拉选项数据
 const selectedTaskData = reactive({
   taskType: "",
   task: "",
 })
-
 const currentFlowData = reactive({
   flow: "",
   release: "",
 })
-
 const selectedFlowData = reactive({
   flow: "",
   release: "",
 })
 
+// 动态参数设置与存储
+// 定义当前权重数据和已选择的权重数据，只包含一层字典结构
 const currentWeightData = reactive<{ [key: string]: string }>({});
 const selectedWeightData = reactive<{ [key: string]: string }>({});
 const currentParamData = reactive<{ [key: string]: any }>({});
 const handledParamData = reactive<{ [key: string]: any }>({});
 const currentHyperData = reactive<{ [key: string]: any }>({});
 const handledHyperData = reactive<{ [key: string]: any }>({});
-
+// 清空方法
 const clearSelectedFlow = () => {
   selectedFlowData.flow = "";
   selectedFlowData.release = "";
   flowsData.value.length = 0
 };
-
 const clearSelectedWeight = () => {
   for (const key in selectedWeightData) {
     delete selectedWeightData[key];
   }
   weightsData.value.length = 0
 };
-
 const clearHandledParam = () => {
   for (const key in handledParamData) {
     delete handledParamData[key];
   }
   paramsData.value.length = 0
 };
-
 const clearHandledHyper = () => {
   for (const key in handledHyperData) {
     delete handledHyperData[key];
   }
   hypersData.value.length = 0
 };
-
 const clearHelper = (keys: string[]) => {
-  keys.forEach(key => {
+  keys.forEach(key => { // 使用 forEach 遍历数组的值
     if (key === 'flow') clearSelectedFlow();
     else if (key === 'weight') clearSelectedWeight();
     else if (key === 'param') clearHandledParam();
@@ -92,40 +90,22 @@ const clearHelper = (keys: string[]) => {
   });
 };
 
+// 检测结果图片
+// base64解码
 const inferImageData: any = reactive({
-  resultBase64: [],
+  resultBase64: "",
   resultImageUrl: computed(() => {
-    if (inferImageData.resultBase64.length > 0) {
-      return inferImageData.resultBase64.map((base64: string) => {
-        const blob = dataURItoBlob(base64);  // 将 base64 转换为 Blob
-        return URL.createObjectURL(blob);    // 生成 URL
-      });
+    if (inferImageData.resultBase64) {  // 同样的，根据base64字符串自动计算
+      const blob = dataURItoBlob(inferImageData.resultBase64)
+      return URL.createObjectURL(blob)
     } else {
-      return [];  // 如果没有 base64 数据，返回空组
+      return ""
     }
   }),
   inferResult: [],
-  inferCroppers: computed(() => {
-  if (inferImageData.inferResult.length > 0) {
-    const res = inferImageData.inferResult.map((item: any) => {
-      if (item.cropper){
-        const base64 = item.cropper;
-        const blob = dataURItoBlob(base64);
-        return URL.createObjectURL(blob);
-      } else {
-        return null
-      }
-    });
-    console.log(res)
-    return res
-  } else {
-    return [];
-  }
-}),
   inferDescription: "",
   inferPeriod: ""
 })
-
 const originImageUrl = computed(() => { 
   if(handledHyperData["origin_image"] !== null && 
      handledHyperData["origin_image"] !== undefined
@@ -136,7 +116,7 @@ const originImageUrl = computed(() => {
   }
   return null
 })
-
+// 图片base64解码
 const dataURItoBlob = (dataURI: any) => {
   const byteString = atob(dataURI.split(",")[1])
   const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0]
@@ -147,7 +127,6 @@ const dataURItoBlob = (dataURI: any) => {
   }
   return new Blob([ab], { type: mimeString })
 }
-
 const getAllTasks = () => {
   loading.value = true
   getAllTasksApi()
@@ -162,14 +141,14 @@ const getAllTasks = () => {
       loading.value = false
     })
 }
-
+/** 获取当前调用权重 */
 const getCurrentTask = () => {
   getCurrentTaskApi().then((res) => {
     currentTaskData.taskType = res.data.taskTypeName
     currentTaskData.task = res.data.taskName
   })
 }
-
+// 除了获取当前工作流，还要将配置载入
 const getCurrentFlow = () => {
   getCurrentFlowApi().then((res) => {
     currentFlowData.flow = res.data.flowName
@@ -179,11 +158,13 @@ const getCurrentFlow = () => {
     paramsData.value.forEach((element: any) => {  // 提前装载初始值
       handledParamData[element['argName']] = element['argDefault']
     });
+    // for (const key in weightOptions.value) {
+    //   getCurrentWeight(key)
+    // }
     getAllCurrentWeights()
   })
 
 }
-
 const getAllCurrentWeights = () => {
   getAllCurrentWeightsApi().then((res) => {
     res.data.forEach((element: any) => {  // 提前装载初始值
@@ -194,6 +175,7 @@ const getAllCurrentWeights = () => {
   });
 };
 
+// 从 API 获取当前的 weight 数据并赋值
 const getCurrentWeight = (weigthKey: string|number) => {
   getCurrentWeightApi({
     currentWeightKey: weigthKey
@@ -205,6 +187,16 @@ const getCurrentWeight = (weigthKey: string|number) => {
   });
 };
 
+// const getAllCurrentWeights = () => {
+//   getAllCurrentWeightsApi().then((res) => {
+//     res.data.forEach((item: OWeightData) => {
+//       currentWeightData[item.weightKey] = item.weightName
+//       selectedWeightData[item.weightKey] = item.weightName
+//     })
+//   }).catch((error) => {
+//     console.error("Error fetching all weights data:", error);
+//   });
+// };
 const getCurrentParam = (paramName: string) => {
   getCurrentParamApi({currentParamName: paramName}).then((res) => {
     currentParamData[res.data.argName] = res.data.argValue;
@@ -212,7 +204,6 @@ const getCurrentParam = (paramName: string) => {
     console.error("Error fetching weight data:", error);
   });
 };
-
 const getCurrentHyper = (hyperName: string) => {
   getCurrentHyperApi({currentHyperName: hyperName}).then((res) => {
     currentHyperData[res.data.argName] = res.data.argValue;
@@ -220,7 +211,7 @@ const getCurrentHyper = (hyperName: string) => {
     console.error("Error fetching weight data:", error);
   });
 };
-
+// 生成下拉菜单的选项
 const generateTaskCascaderOptions = (list: ITaskData[]) => {
   const options: { value: string; label: string; children: { value: string; label: string }[] }[] = []
   const map: { [key: string]: { value: string; label: string; children: { value: string; label: string }[] } } = {}
@@ -242,7 +233,6 @@ const generateTaskCascaderOptions = (list: ITaskData[]) => {
   })
   return options
 }
-
 const generateFlowCascaderOptions = (list: IFlowData[]) => {
   const options: { value: string; label: string; children: { value: string; label: string }[] }[] = []
   const map: { [key: string]: { value: string; label: string; children: { value: string; label: string }[] } } = {}
@@ -265,22 +255,24 @@ const generateFlowCascaderOptions = (list: IFlowData[]) => {
   })
   return options
 }
-
+// 定义每个 weightKey 对应的 select 选项
 const generateWeightOptions = (list: IWeightData[]) => {
   const optionsMap: { [key: string]: { value: string; label: string; disabled: boolean }[] } = {};
   list.forEach((item) => {
+    // 如果该 weightKey 还没有在 optionsMap 中，创建一个新的数组
     if (!optionsMap[item.weightKey]) {
       optionsMap[item.weightKey] = [];
     }
+    // 为该 weightKey 添加对应的选项
     optionsMap[item.weightKey].push({
       value: item.weightName,
       label: item.weightName,
       disabled: !item.weightEnable
     });
   });
-  return optionsMap;
+  return optionsMap; // 返回每个 key 对应的 options 数组
 };
-
+// 下拉菜单的选择事件
 const handleTaskChange = (selectedOptions: CascaderValue) => {
   if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
   selectedTaskData.taskType = selectedOptions[0] as string
@@ -291,7 +283,6 @@ const handleTaskChange = (selectedOptions: CascaderValue) => {
     type: "success"
   })
 }
-
 const handleFlowChange = (selectedOptions: CascaderValue) => {
   if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
   selectedFlowData.flow = selectedOptions[0] as string
@@ -302,7 +293,6 @@ const handleFlowChange = (selectedOptions: CascaderValue) => {
     type: "success"
   })
 }
-
 const handleWeightChange = (weightKey: string|number) => {
   const weightName = selectedWeightData[weightKey]
   handleWeightSwitch(weightKey)
@@ -312,7 +302,6 @@ const handleWeightChange = (weightKey: string|number) => {
       type: "success"
     })
 }
-
 const handleParamChange = (paramName: string, paramValue: any) => {
   handledParamData[paramName] = paramValue
   handleParamSwitch(paramName)
@@ -322,7 +311,6 @@ const handleParamChange = (paramName: string, paramValue: any) => {
     type: "success"
   })
 }
-
 const handleHyperChange = (hyperName: string, hyperValue: any) => {
   handledHyperData[hyperName] = hyperValue
   handleHyperSwitch(hyperName)
@@ -332,15 +320,14 @@ const handleHyperChange = (hyperName: string, hyperValue: any) => {
     type: "success"
   })
 }
-
+// 下拉菜单的展开方式
 interface CascaderProps {
   expandTrigger?: "click" | "hover"
 }
-
 const props: CascaderProps = {
   expandTrigger: "hover" as const
 }
-
+// 切换模型
 const handleTaskSwitch = () => {
   if (
     selectedTaskData.taskType === currentTaskData.taskType &&
@@ -376,7 +363,6 @@ const handleTaskSwitch = () => {
     loading.value = false
   })
 }
-
 const loadDefault = (mode: string ) => {
   if (mode === 'param'){
     paramsData.value.forEach((element: any) => {
@@ -413,6 +399,9 @@ const handleFlowSwitch = () => {
     clearHelper(['weight', 'param', 'hyper'])
     weightsData.value = res.data["weight"]
     weightOptions.value = generateWeightOptions(res.data["weight"])
+    // for (const key in selectedWeightData) {
+    //   selectedWeightData[key] = '';
+    // }
     if (res.data["param"] && res.data["param"].length > 0) {
         paramsData.value = res.data["param"]
         loadDefault('param')
@@ -430,7 +419,6 @@ const handleFlowSwitch = () => {
     choosen.value = true
   })
 }
-
 const handleWeightSwitch = (weightKey: string|number) => {
   const selectedWeightName = selectedWeightData[weightKey]
   if (  // 字典值比较
@@ -463,7 +451,6 @@ const handleWeightSwitch = (weightKey: string|number) => {
     choosen.value = true
   })
 }
-
 const handleParamSwitch = (paramName: string) => {
   const handledParamValue = handledParamData[paramName]
   if (  // 字典值比较
@@ -496,7 +483,6 @@ const handleParamSwitch = (paramName: string) => {
     choosen.value = true
   })
 }
-
 const handleHyperSwitch = (hyperName: string) => {
   const handledHyperValue = handledHyperData[hyperName]
   if (  // 字典值比较
@@ -529,14 +515,15 @@ const handleHyperSwitch = (hyperName: string) => {
     choosen.value = true
   })
 }
-
 const handleLoadModel = () => {
   loadModelApi().then((res) => {
     if (res.data && res.data.length > 0) {
+        // 如果 res.data 存在且长度大于 0
         hypersData.value = res.data;
         console.log(res.data)
         loadDefault('hyper')
       } else {
+        // 如果 res.data 为空或长度为 0，执行相应的处理
         console.warn("No hypers found in the response.");
       }
   })
@@ -551,7 +538,6 @@ const handleLoadModel = () => {
     loaded.value = true
   })
 }
-
 const handleModelPredict = () => {
   predictModelApi().then((res) => {
     inferImageData.resultBase64 = res.data.resultBase64
@@ -569,13 +555,13 @@ const handleModelPredict = () => {
     predicting.value = false
   })
 }
-
 const resetResult = () => {
   inferImageData.resultBase64 = ""
   inferImageData.inferResult = []
   inferImageData.inferDescription = ""
   inferImageData.inferPeriod = ""
   
+  // 清除由 computed 创建的 Blob URL
   if (inferImageData.resultImageUrl) {
     URL.revokeObjectURL(inferImageData.resultImageUrl)
   }
@@ -584,63 +570,7 @@ const resetResult = () => {
       type: "success"
     })
 }
-
-const chartRef = ref<HTMLDivElement | null>(null)
-let chartInstance: echarts.ECharts
-
-const updateChart = () => {
-  if (!chartInstance || !chartRef.value) return
-  
-  const categoryCounts = inferImageData.inferResult.reduce((acc: Record<string, number>, item: any) => {
-    acc[item.label] = (acc[item.label] || 0) + 1
-    return acc
-  }, {})
-
-  const categories = Object.keys(categoryCounts)
-  const counts = Object.values(categoryCounts)
-
-  const option = {
-    title: {
-      text: '检测类别统计'
-    },
-    tooltip: {},
-    xAxis: {
-      type: 'category',
-      data: categories
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [{
-      name: '数量',
-      data: counts,
-      type: 'bar'
-    }]
-  }
-
-  chartInstance.setOption(option)
-}
-
-onMounted(() => {
-  if (chartRef.value) {
-    chartInstance = echarts.init(chartRef.value)
-    updateChart()
-  }
-})
-
-watch(() => inferImageData.inferResult, () => {
-  updateChart()
-}, { deep: true })
-
-const tableRowClassName = ({ rowIndex }: { rowIndex: number }) => {
-  if (rowIndex % 2 === 0) {
-    return 'even-row'
-  }
-  return 'odd-row'
-}
-
-const activeCollapse = ref(['1'])
-
+// getCurrentTask()
 getAllTasks()
 </script>
 
@@ -724,6 +654,7 @@ getAllTasks()
         </el-col>
       </el-row>
     </el-card>
+    <!-- 区域1：choosen为true时展示 -->
     <el-card v-if="choosen" v-loading="loading" shadow="never" class="search-wrapper">
       <el-row :gutter="20">
         <el-col :span="12" v-for="(options, weightKey) in weightOptions" :key="weightKey">
@@ -758,6 +689,7 @@ getAllTasks()
     <el-card v-loading="loading" shadow="never" class="search-wrapper">
       <el-button type="primary" @click="handleLoadModel">装载模型</el-button>
     </el-card>
+    <!-- 区域2：loaded为true时展示 -->
     <el-card v-if="loaded" v-loading="loading" shadow="never" class="search-wrapper">
       <el-row :gutter="20">
         <el-col :span="12" v-for="(hyperItem, idx) in hypersData" :key="idx">
@@ -780,59 +712,28 @@ getAllTasks()
         <el-col :span="10">
           <div class="grid-content ep-bg-purple">
             <el-image
-              v-if="inferImageData.resultBase64.length>0"
-              :src="inferImageData.resultImageUrl[0]"
+              v-if="inferImageData.resultBase64"
+              :src="inferImageData.resultImageUrl"
               :fit="'scale-down'"
-              :preview-src-list="inferImageData.resultImageUrl"
+              :preview-src-list="[inferImageData.resultImageUrl]"
             />
-            <div v-else class="image-placeholder">检测结果图���</div>
+            <div v-else class="image-placeholder">检测结果图片</div>
           </div>
         </el-col>
         <el-col :span="10">
-          <div v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0" 
-            class="grid-content ep-bg-purple">
-            <el-collapse v-model="activeCollapse">
-              <el-collapse-item title="检测结果" name="1">
-                <el-table 
-                  :data="inferImageData.inferResult"
-                  :row-class-name="tableRowClassName"
-                  style="width: 100%"
-                  :default-expand-all="false">
-                  <el-table-column type="expand">
-                    <template #default="props">
-                      <el-form label-position="left" inline class="demo-table-expand">
-                        <el-form-item label="裁剪对象" v-if="inferImageData.inferCroppers.length>0 
-                                                            && inferImageData.inferCroppers[props.$index]">
-                          <el-image
-                            v-if="inferImageData.inferCroppers[props.$index]"
-                            :src="inferImageData.inferCroppers[props.$index]"
-                            :fit="'scale-down'"
-                            :preview-src-list="[inferImageData.inferCroppers[props.$index]]"
-                          />
-                        </el-form-item>
-                        <el-form-item label="锚点集">
-                          <span>{{ props.row.points }}</span>
-                        </el-form-item>
-                        <el-form-item label="分组">
-                          <span>{{ props.row.group_id }}</span>
-                        </el-form-item>
-                        <el-form-item label="描述">
-                          <span>{{ props.row.description }}</span>
-                        </el-form-item>
-                      </el-form>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="label" label="检测类别" />
-                  <el-table-column prop="score" label="置信度">
-                    <template #default="scope">
-                      {{ Number(scope.row.score).toFixed(4) }}
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </el-collapse-item>
-            </el-collapse>
+          <div class="grid-content ep-bg-purple">
+            <el-table
+              :data="inferImageData.inferResult"
+              v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0"
+            >
+              <el-table-column prop="label" label="检测类别" />
+              <el-table-column prop="score" label="置信度" />
+              <el-table-column prop="points" label="锚点集" />
+              <el-table-column prop="group_id" label="分组" />
+              <el-table-column prop="description" label="描述" />
+            </el-table>
+            <div v-else class="image-placeholder">暂无结果</div>
           </div>
-          <div v-else class="image-placeholder">暂无结果</div>
         </el-col>
       </el-row>
       <el-row :gutter="20">
@@ -849,7 +750,8 @@ getAllTasks()
             <div v-else class="image-placeholder">暂无描述</div>
           </div>
         </el-col>
-          <el-col :span="24" class="infer-duration-container">
+          <!-- 推理时长组件 -->
+        <el-col :span="24" class="infer-duration-container">
           <el-card v-if="inferImageData.inferPeriod" class="infer-duration-card">
             <div slot="header">
               <span>推理时长</span>
@@ -860,23 +762,10 @@ getAllTasks()
         </el-col>
       </el-row>
     </el-card>
-    <el-card v-loading="loading" shadow="never" class="search-wrapper">
-      <div ref="chartRef" style="width: 100%; height: 400px;"></div>
-    </el-card>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.el-carousel .el-carousel-item {
-  display: flex;
-  justify-content: center;  /* 水平居中 */
-  align-items: center;      /* 垂直居中 */
-  height: auto;             /* 让容器的高度根据图像自动调整 */
-}
-.el-image {
-  width: auto;              /* 保持图像的原始宽度 */
-  height: auto;             /* 保持图像的原始高度 */
-}
 .image-placeholder {
   display: flex;
   justify-content: center;
@@ -925,58 +814,5 @@ getAllTasks()
 .pager-wrapper {
   display: flex;
   justify-content: flex-end;
-}
-.demo-table-expand {
-  font-size: 0;
-  
-  .el-form-item {
-    margin-right: 0;
-    margin-bottom: 0;
-    width: 100%;
-    
-    &__label {
-      width: 90px;
-      color: #99a9bf;
-    }
-    
-    &__content {
-      width: calc(100% - 90px);
-    }
-  }
-}
-
-.even-row {
-  background: #fafafa;
-}
-
-.odd-row {
-  background: #ffffff;
-}
-
-:deep(.el-table__expanded-cell) {
-  padding: 20px !important;
-}
-
-:deep(.el-table__expand-icon) {
-  &:hover {
-    .el-icon {
-      color: var(--el-color-primary);
-    }
-  }
-}
-
-:deep(.el-collapse) {
-  border-top: none;
-  border-bottom: none;
-}
-
-:deep(.el-collapse-item__header) {
-  font-size: 16px;
-  font-weight: bold;
-  color: var(--el-color-primary);
-}
-
-:deep(.el-collapse-item__content) {
-  padding-bottom: 0;
 }
 </style>

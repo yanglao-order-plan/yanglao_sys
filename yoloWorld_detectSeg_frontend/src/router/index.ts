@@ -94,6 +94,16 @@ export const constantRoutes: RouteRecordRaw[] = [
           affix: true
         }
       },
+      {
+        path: "order_detection",
+        component: () => import("@/views/order_detection/index.vue"),
+        name: "orderDetection",
+        meta: {
+          title: "工单检测",
+          svgIcon: "detection",
+          affix: true
+        }
+      },
     ]
   },
   {
@@ -200,6 +210,7 @@ export const constantRoutes: RouteRecordRaw[] = [
       }
     ]
   }
+  
 ]
 
 /**

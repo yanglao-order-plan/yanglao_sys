@@ -34,7 +34,7 @@ export interface OArgData {
   argValue: any
 }
 export interface IResultData {
-  resultBase64: string[]
+  resultBase64: string
   inferResult: IInferData[]
   inferDescription: string,
   inferPeriod: number
@@ -43,14 +43,19 @@ export interface IInferData {
   label: string;
   score: number;
   points: number[];  // 假设 points 是一个数组
-  cropper: string;
   groupId: number;   // group_id 映射到 groupId
-  description: string;  // description 映射到 predictDescription
+  predictDescription: string;  // description 映射到 predictDescription
   difficult: boolean;
   shapeType: string;
   flags: object;  // 假设 flags 是一个对象
   attributes: object;  // 假设 attributes 是一个对象
   kieLinking: any[];  // 假设 kie_linking 是一个数组
+}
+
+export interface IOrderData {
+  orderId: Number;
+  serviceName: string;
+  orderContent: string; 
 }
 // 数据请求对象
 export interface ISwitchTaskRequestData {
@@ -99,6 +104,7 @@ export type SwitchFlowResponseData = IApiResponseData<{weight: IWeightData[]; pa
 export type GetAllTasksResponseData = IApiResponseData<ITaskData>
 export type GetAllFlowsResponseData = IApiResponseData<IFlowData>
 export type GetAllParamsResponseData = IApiResponseData<IArgData>
+export type GetAllOrderResponseData = IApiResponseData<IOrderData>
 // 处理
 export type LoadModelResponseData = IApiResponseData<IArgData[]>
 export type PredictModelResponseData = IApiResponseData<IResultData>
