@@ -44,7 +44,7 @@ export interface IInferData {
   score: number;
   points: number[];  // 假设 points 是一个数组
   groupId: number;   // group_id 映射到 groupId
-  predictDescription: string;  // description 映射到 predictDescription
+  description: string;  // description 映射到 predictDescription
   difficult: boolean;
   shapeType: string;
   flags: object;  // 假设 flags 是一个对象
@@ -55,7 +55,7 @@ export interface IInferData {
 export interface IOrderData {
   orderId: Number;
   serviceName: string;
-  orderContent: string; 
+  orderContent: string;
 }
 // 数据请求对象
 export interface ISwitchTaskRequestData {
