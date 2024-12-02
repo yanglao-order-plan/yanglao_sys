@@ -24,6 +24,7 @@ from blueprints.task_manage_bp import bp as task_manage_bp
 from blueprints.flow_manage_bp import bp as flow_manage_bp
 from blueprints.weight_manage_bp import bp as weight_manage_bp
 from blueprints.release_manage_bp import bp as release_manage_bp
+from blueprints.work_order_bp import bp as work_order_bp
 '''
 前后端code约定：
 code: 0 成功 前端无消息弹窗
@@ -77,6 +78,7 @@ app.register_blueprint(flow_manage_bp, url_prefix='/flow-manage')
 app.register_blueprint(weight_manage_bp, url_prefix='/weight-manage')
 app.register_blueprint(release_manage_bp, url_prefix='/release-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
+app.register_blueprint(work_order_bp, url_prefix='/work_order')
 CORS(app, supports_credentials=True)
 
 @app.before_request
