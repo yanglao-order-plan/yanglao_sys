@@ -315,6 +315,8 @@ class Canvas:
                 # 获取绘制标签的位置
                 if shape.shape_type in ["rectangle", "polygon", "rotation"]:
                     bbox = shape.bounding_rect()
+                    if bbox is None:
+                        continue
                     x, y, w, h = bbox
                     text_x = int(x)
                     text_y = int(y) - 5  # 根据需要调整

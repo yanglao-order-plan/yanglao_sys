@@ -111,6 +111,8 @@ class ModelManager:
                 self.kwargs['prompt_mode'] = value
             elif key == 'scale':
                 self.kwargs['scale'] = value
+            elif key == 'mode':
+                self.kwargs['mode'] = value
             else:
                 self.post_kwargs[key] = value
 

@@ -164,6 +164,7 @@ class Shape:
         direction=0,
         attributes=None,
         kie_linking=None,
+        visible=True,
     ):
         self.label = label
         self.score = score
@@ -180,7 +181,7 @@ class Shape:
         self.other_data = {}
         self.attributes = attributes or {}
         self.cache_label = None  # 存储待标注的最终标签，一般为clip对比学习
-        self.visible = True
+        self.visible = visible
 
         # Rotation setting
         self.direction = direction

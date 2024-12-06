@@ -78,7 +78,7 @@ app.register_blueprint(flow_manage_bp, url_prefix='/flow-manage')
 app.register_blueprint(weight_manage_bp, url_prefix='/weight-manage')
 app.register_blueprint(release_manage_bp, url_prefix='/release-manage')
 app.register_blueprint(infer_bp, url_prefix='/infer')
-app.register_blueprint(work_order_bp, url_prefix='/work_order')
+# app.register_blueprint(work_order_bp, url_prefix='/work_order')
 CORS(app, supports_credentials=True)
 
 @app.before_request

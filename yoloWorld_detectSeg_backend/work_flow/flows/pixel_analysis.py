@@ -1,13 +1,19 @@
+from io import BytesIO
+
 import cv2
 import imagehash
 import numpy as np
+import requests
 from PIL import Image
 
 from work_flow.engines.types import AutoLabelingResult
+from work_flow.utils.shape import Shape
 
 
 class PixelAnalysis:
-    def __init__(self, **kwargs):
+    def __init__(self, model_config, **kwargs):
+        self.hash_threshold = 5
+        self.saturation_threshold = 100
         pass
 
     def calculate_brightness_and_saturation(self, image):
@@ -24,88 +30,53 @@ class PixelAnalysis:
         variance = np.var(laplacian)
         return variance
 
-    def predict_shape(self, image, **kwargs):
+    def predict_shapes(self, image, minor=None, mode='repeat'):
         # 饱和度分析 尖锐度分析
-        brightness, saturation = self.calculate_brightness_and_saturation(image)
-        variance = self.calculate_image_sharpness(image)
-        description = f"Brightness: {brightness}, Saturation: {saturation}, Sharpness: {variance}"
-        return AutoLabelingResult(description=description)
+        if image is None:
+            raise ValueError("Image is None")
+        if mode == 'hash':
+            if minor is None:
+                raise ValueError("Minor image is None")
+            image_hash = imagehash.phash(Image.fromarray(image))
+            minor_hash = imagehash.phash(Image.fromarray(minor))
+            hash_distance = image_hash - minor_hash
+            shape=Shape(score=hash_distance, visible=False)
+            if hash_distance < self.hash_threshold:
+                shape.label = True
+                description = '相似图片'
+            else:
+                shape.label = False
+                description = '非相似图片'
+            return  AutoLabelingResult(shapes=[shape], description=description)
 
-    def calculate_image_hash(self, image_path):
-        """使用感知哈希（phash）计算图片的哈希值"""
-        image = Image.open(image_path)
-        return imagehash.phash(image)
+        elif mode == 'saturation':
+            brightness, saturation = self.calculate_brightness_and_saturation(image)
+            shape=Shape(score=saturation, visible=False)
+            if saturation > self.saturation_threshold:
+                shape.label = True
+                description = '疑似网图'
+            else:
+                shape.label = False
+                description = '非疑似网图'
+            return AutoLabelingResult(shapes=[shape], description=description)
 
-    def calculate_image_hash_from_url(self, url):
-        """从 URL 下载图片并计算其哈希值"""
-        try:
-            response = requests.get(url)
-            response.raise_for_status()  # 检查请求是否成功
-            with open("temp_image.jpg", 'wb') as f:  # 将图片临时保存为文件
-                f.write(response.content)
-
-            # 计算下载的图片哈希值
-            image_hash = calculate_image_hash("temp_image.jpg")
-            os.remove("temp_image.jpg")  # 删除临时文件
-            return image_hash
-        except Exception as e:
-            print(f"Failed to download image from {url}: {e}")
-            return None
-
-
-    def get_database_hashes(self, conn):
-
-
-        # 加入end_time过滤条件，确保只查询指定日期之后的记录
-        query = f"""
-        SELECT {attribute} 
-        FROM {table} 
-        WHERE handler = %s AND end_time > %s
-        """
-
-        cursor.execute(query, (handler, date_filter))
-        hashes = []
-        for (urls_string,) in cursor.fetchall():
-            if urls_string:
-                for url in urls_string.split(','):
-                    # 从数据库中提取每张图片的哈希值
-                    image_hash = calculate_image_hash_from_url(url)
-                    if image_hash is not None:
-                        hashes.append(image_hash)
-        return hashes
+        return AutoLabelingResult(shapes=[])
 
 
-    def compare_hashes(self, image_hash, db_hashes):
-        """计算新图片的哈希值与数据库中哈希值的汉明距离"""
-        return min(image_hash - db_hash for db_hash in db_hashes)
-
-
-# 使用时
-image_path = "D:/Mysql/handler/test2.jpeg"
-image_hash = calculate_image_hash(image_path)
-
-# 假设已经连接到数据库
-conn = mysql.connector.connect(
-    host='47.99.65.68',
-    database='yanglao',
-    user='dhgxjbgs',
-    password='D23@#hGb',
-    ssl_disabled=True  # 禁用 SSL/TLS
-)
-
-# 获取符合条件的数据库图片哈希值
-db_hashes = get_database_hashes(conn)
-
-similarity = compare_hashes(image_hash, db_hashes)
-threshold = 5  # 设置相似度阈值
-
-if similarity < threshold:
-    print("The image is similar to an image in the database.")
-else:
-    print("The image is not similar to any image in the database.")
-
-# 关闭数据库连接
-conn.close()
-
+# if urls is None:
+#     raise ValueError("Minor urls is None")
+# image_hash = imagehash.phash(Image.fromarray(image))
+# hash_distances = []
+# for url in urls:
+#     try:
+#         # 从 URL 下载图片
+#         response = requests.get(url)
+#         response.raise_for_status()  # 如果请求失败会抛出异常
+#         # 将下载的内容转化为图片
+#         img = Image.open(BytesIO(response.content))
+#         minor_hash = imagehash.phash(Image.fromarray(img))
+#         hash_distances.append(image_hash - minor_hash)
+#     except Exception as e:
+#         print(f"Error downloading or processing image from {url}: {e}")
 
 

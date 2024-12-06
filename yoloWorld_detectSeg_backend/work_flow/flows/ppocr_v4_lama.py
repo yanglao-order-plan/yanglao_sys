@@ -16,6 +16,7 @@ class PPOCRv4LAMA(Model):
 
     def __init__(self, model_config, on_message) -> None:
         # Run the parent class's init method
+        print(model_config)
         super().__init__(model_config, on_message)
 
         # ----------- PPOCRV4 ---------- #

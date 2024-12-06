@@ -1,6 +1,5 @@
 from platform import release
 
-from scipy.special import kwargs
 from sqlalchemy import inspect
 
 from extensions import db

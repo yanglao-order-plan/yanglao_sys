@@ -108,6 +108,8 @@ def base64_img_to_rgb_cv_img(base64_img, img_path=None):
         numpy.ndarray: The image as an 8-bit RGB NumPy array.
     """
     # print(base64_img)
+    if base64_img is None:
+        return None
     if img_path is not None and os.path.exists(img_path):
         # Note: Potential issue - unable to handle the flipped image.
         cv_image = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)

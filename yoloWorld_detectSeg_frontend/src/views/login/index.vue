@@ -18,8 +18,8 @@ const loading = ref(false)
 const codeUrl = ref("")
 /** 登录表单数据 */
 const loginForm: ILoginRequestData = reactive({
-  username: "root",
-  password: "root",
+  username: "xyz",
+  password: "1234",
   code: ""
 })
 /** 登录表单校验规则 */
