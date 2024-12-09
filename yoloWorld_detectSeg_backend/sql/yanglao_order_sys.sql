@@ -11,7 +11,7 @@
  Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 14/11/2024 21:31:44
+ Date: 09/12/2024 18:14:03
 */
 
 SET NAMES utf8mb4;
@@ -46,7 +46,7 @@ CREATE TABLE `argument`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_param_ibfk_1`(`release_id` ASC) USING BTREE,
   CONSTRAINT `argument_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 953 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1012 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of argument
@@ -993,9 +993,62 @@ INSERT INTO `argument` VALUES (946, 'classes', 'json', '[]', '{\"disabled\": fal
 INSERT INTO `argument` VALUES (947, 'origin_image', 'base64', 'null', 'null', 1, 147);
 INSERT INTO `argument` VALUES (948, 'automatic', 'ratio', 'false', '{\"disable\": false}', 0, 49);
 INSERT INTO `argument` VALUES (949, 'automatic', 'ratio', 'false', '{\"disable\": false}', 0, 48);
-INSERT INTO `argument` VALUES (950, 'model_type', 'select', '\"vit_b\"', '{\"disable\": true}', 0, 149);
 INSERT INTO `argument` VALUES (951, 'output_mode', 'select', '\"polygon\"', '{\"options\": [\"polygon\", \"rectangle\", \"rotation\"], \"multiple\": false, \"clearable\": false}', 1, 149);
 INSERT INTO `argument` VALUES (952, 'origin_image', 'base64', 'null', 'null', 1, 149);
+INSERT INTO `argument` VALUES (953, 'output_mode', 'select', '\"polygon\"', '{\"options\": [\"point\", \"polygon\", \"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 150);
+INSERT INTO `argument` VALUES (954, 'origin_image', 'base64', 'null', 'null', 1, 150);
+INSERT INTO `argument` VALUES (956, 'confidence_threshold', 'number', '0.5', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 150);
+INSERT INTO `argument` VALUES (957, 'model_type', 'text', '\"groundingdino_swinb_cogcoor\"', '{\"disabled\": true}', 0, 151);
+INSERT INTO `argument` VALUES (958, 'input_width', 'number', '1200', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 151);
+INSERT INTO `argument` VALUES (959, 'input_height', 'number', '800', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 151);
+INSERT INTO `argument` VALUES (960, 'box_threshold', 'number', '0.3', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 151);
+INSERT INTO `argument` VALUES (961, 'text_threshold', 'number', '0.25', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 151);
+INSERT INTO `argument` VALUES (962, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 151);
+INSERT INTO `argument` VALUES (966, 'origin_image', 'base64', 'null', 'null', 1, 151);
+INSERT INTO `argument` VALUES (967, 'prompt_mode', 'select', '\"split\"', '{\"options\": [\"spit\", \"whole\"], \"multiple\": false, \"clearable\": false}', 1, 151);
+INSERT INTO `argument` VALUES (968, 'model_type', 'text', '\"groundingdino_swint_ogc\"', '{\"disabled\": true}', 0, 152);
+INSERT INTO `argument` VALUES (969, 'input_width', 'number', '1200', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 152);
+INSERT INTO `argument` VALUES (970, 'input_height', 'number', '800', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 152);
+INSERT INTO `argument` VALUES (971, 'box_threshold', 'number', '0.3', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 152);
+INSERT INTO `argument` VALUES (972, 'text_threshold', 'number', '0.25', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 152);
+INSERT INTO `argument` VALUES (973, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 152);
+INSERT INTO `argument` VALUES (974, 'origin_image', 'base64', 'null', 'null', 1, 152);
+INSERT INTO `argument` VALUES (975, 'prompt_mode', 'select', '\"split\"', '{\"options\": [\"spit\", \"whole\"], \"multiple\": false, \"clearable\": false}', 1, 152);
+INSERT INTO `argument` VALUES (976, 'tag_mode', 'select', '\"en\"', '{\"options\": [\"en\", \"zh\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 151);
+INSERT INTO `argument` VALUES (977, 'tag_mode', 'select', '\"en\"', '{\"options\": [\"en\", \"zh\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 152);
+INSERT INTO `argument` VALUES (978, 'tag_mode', 'select', '\"en\"', '{\"options\": [\"en\", \"zh\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 29);
+INSERT INTO `argument` VALUES (979, 'tag_mode', 'select', '\"en\"', '{\"options\": [\"en\", \"zh\"], \"disabled\": false, \"multiple\": false, \"clearable\": false}', 0, 30);
+INSERT INTO `argument` VALUES (980, 'is_cropped', 'ratio', 'false', '{\"disabled\": false}', 1, 61);
+INSERT INTO `argument` VALUES (981, 'is_cropped', 'ratio', 'null', '{\"disabled\": false}', 1, 145);
+INSERT INTO `argument` VALUES (982, 'is_cropped', 'ratio', 'null', '{\"disabled\": false}', 1, 22);
+INSERT INTO `argument` VALUES (983, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 153);
+INSERT INTO `argument` VALUES (984, 'origin_image', 'base64', 'null', 'null', 1, 153);
+INSERT INTO `argument` VALUES (985, 'minor_image', 'base64', 'null', 'null', 1, 153);
+INSERT INTO `argument` VALUES (986, 'model_type', 'select', '\"r50\"', '{\"disable\": false, \"options\": [\"r18\", \"r34\", \"r50\", \"r100\", \"r200\", \"r2060\", \"mbf\", \"mbf_large\", \"vit_t\", \"vit_t_dp005_mask0\", \"vit_s\", \"vit_s_dp005_mask_0\", \"vit_b\", \"vit_b_dp005_mask_005\", \"vit_l_dp005_mask_005\", \"vit_h\"], \"multiple\": false, \"clearable\": false}', 0, 153);
+INSERT INTO `argument` VALUES (987, 'sim_threshold', 'number', '0.167', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 1, 153);
+INSERT INTO `argument` VALUES (988, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 154);
+INSERT INTO `argument` VALUES (989, 'origin_image', 'base64', 'null', 'null', 1, 154);
+INSERT INTO `argument` VALUES (990, 'model_type', 'text', '\"groundingdino_swinb_cogcoor\"', '{\"disabled\": true}', 0, 155);
+INSERT INTO `argument` VALUES (991, 'input_width', 'number', '1200', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (992, 'input_height', 'number', '800', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (993, 'box_threshold', 'number', '0.3', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (994, 'text_threshold', 'number', '0.25', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (995, 'text_threshold', 'number', '0.25', '{\"max\": 1, \"min\": 0, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (996, 'input_size', 'number', '1024', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (997, 'max_width', 'number', '1024', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (998, 'max_height', 'number', '682', '{\"min\": 0, \"step\": 1, \"disabled\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (999, 'output_mode', 'select', '\"polygon\"', '{\"options\": [\"polygon\", \"rectangle\", \"rotation\"], \"multiple\": false, \"clearable\": false}', 1, 155);
+INSERT INTO `argument` VALUES (1000, 'shapes_prompt', 'draw', 'null', '{\"modes\": [\"point\", \"rectangle\"], \"disabled\": false}', 1, 155);
+INSERT INTO `argument` VALUES (1001, 'text_prompt', 'text', 'null', '{\"disabled\": false, \"clearable\": false}', 1, 155);
+INSERT INTO `argument` VALUES (1002, 'origin_image', 'base64', 'null', 'null', 1, 155);
+INSERT INTO `argument` VALUES (1003, 'is_cropped', 'ratio', 'null', '{\"disabled\": false}', 1, 155);
+INSERT INTO `argument` VALUES (1004, 'scale', 'select', 'null', '{\"options\": [null, \"112x112\", \"112x96\"], \"multiple\": false}', 0, 101);
+INSERT INTO `argument` VALUES (1005, 'output_mode', 'select', '\"rectangle\"', '{\"options\": [\"rectangle\"], \"multiple\": false, \"clearable\": false}', 1, 156);
+INSERT INTO `argument` VALUES (1006, 'origin_image', 'base64', 'null', 'null', 1, 156);
+INSERT INTO `argument` VALUES (1007, 'object_type', 'select', '\"food\"', '{\"options\": [\"food\", \"ingredient\"], \"multiple\": false, \"clearable\": false}', 0, 155);
+INSERT INTO `argument` VALUES (1009, 'origin_image', 'base64', 'null', 'null', 1, 157);
+INSERT INTO `argument` VALUES (1010, 'minor_image', 'base64', 'null', 'null', 1, 157);
+INSERT INTO `argument` VALUES (1011, 'mode', 'select', '\"hash\"', '{\"options\": [\"hash\", \"saturation\"], \"multiple\": false, \"clearable\": false}', 1, 157);
 
 -- ----------------------------
 -- Table structure for captcha
@@ -1052,7 +1105,7 @@ CREATE TABLE `flow`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `task_id`(`task_id` ASC) USING BTREE,
   CONSTRAINT `flow_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 69 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 76 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of flow
@@ -1125,6 +1178,13 @@ INSERT INTO `flow` VALUES (65, 'unidet', 2);
 INSERT INTO `flow` VALUES (66, 'setr_mla', 4);
 INSERT INTO `flow` VALUES (67, 'clip', 16);
 INSERT INTO `flow` VALUES (68, 'automatic_segment_anything', 18);
+INSERT INTO `flow` VALUES (69, 'sam_panoptic', 24);
+INSERT INTO `flow` VALUES (70, 'ram_grounding_dino', 21);
+INSERT INTO `flow` VALUES (71, 'arcface', 25);
+INSERT INTO `flow` VALUES (72, 'cbiaformer_cls', 1);
+INSERT INTO `flow` VALUES (73, 'grounding_sam_cls', 26);
+INSERT INTO `flow` VALUES (74, 'deit_cls', 1);
+INSERT INTO `flow` VALUES (75, 'pixel_analysis', 27);
 
 -- ----------------------------
 -- Table structure for model
@@ -1140,7 +1200,7 @@ CREATE TABLE `model`  (
   INDEX `release_weight_ibfk_2`(`weight_id` ASC) USING BTREE,
   CONSTRAINT `model_ibfk_1` FOREIGN KEY (`release_id`) REFERENCES `release` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `model_ibfk_2` FOREIGN KEY (`weight_id`) REFERENCES `weight` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 201 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 223 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of model
@@ -1338,13 +1398,32 @@ INSERT INTO `model` VALUES (190, 144, 36, 'cls_model_path');
 INSERT INTO `model` VALUES (191, 144, 158, 'model_path');
 INSERT INTO `model` VALUES (192, 143, 159, 'model_path');
 INSERT INTO `model` VALUES (193, 144, 159, 'model_path');
-INSERT INTO `model` VALUES (194, 145, 160, 'model_path');
-INSERT INTO `model` VALUES (195, 146, 161, 'model_path');
+INSERT INTO `model` VALUES (194, 145, 160, 'det_model_path');
+INSERT INTO `model` VALUES (195, 146, 161, 'seg_model_path');
 INSERT INTO `model` VALUES (196, 147, 14, 'txt_model_path');
 INSERT INTO `model` VALUES (197, 147, 15, 'img_model_path');
 INSERT INTO `model` VALUES (198, 147, 16, 'txt_extra_path');
 INSERT INTO `model` VALUES (199, 147, 17, 'img_extra_path');
 INSERT INTO `model` VALUES (200, 149, 162, 'model_path');
+INSERT INTO `model` VALUES (203, 150, 162, 'sam_model_path');
+INSERT INTO `model` VALUES (204, 150, 160, 'det_model_path');
+INSERT INTO `model` VALUES (205, 150, 161, 'seg_model_path');
+INSERT INTO `model` VALUES (206, 149, 164, 'model_path');
+INSERT INTO `model` VALUES (207, 149, 163, 'model_path');
+INSERT INTO `model` VALUES (208, 151, 40, 'tag_model_path');
+INSERT INTO `model` VALUES (209, 151, 41, 'tag_model_path');
+INSERT INTO `model` VALUES (210, 151, 26, 'model_path');
+INSERT INTO `model` VALUES (212, 152, 27, 'model_path');
+INSERT INTO `model` VALUES (213, 152, 40, 'tag_model_path');
+INSERT INTO `model` VALUES (214, 152, 41, 'tag_model_path');
+INSERT INTO `model` VALUES (215, 153, 165, 'model_path');
+INSERT INTO `model` VALUES (216, 154, 166, 'model_path');
+INSERT INTO `model` VALUES (217, 155, 28, 'model_path');
+INSERT INTO `model` VALUES (218, 155, 29, 'encoder_model_path');
+INSERT INTO `model` VALUES (219, 155, 30, 'decoder_model_path');
+INSERT INTO `model` VALUES (220, 155, 166, 'cls_path');
+INSERT INTO `model` VALUES (221, 156, 167, 'model_path');
+INSERT INTO `model` VALUES (222, 155, 167, 'cls_path');
 
 -- ----------------------------
 -- Table structure for release
@@ -1358,7 +1437,7 @@ CREATE TABLE `release`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `release_ibfk_1`(`flow_id` ASC) USING BTREE,
   CONSTRAINT `release_ibfk_1` FOREIGN KEY (`flow_id`) REFERENCES `flow` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 150 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 158 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of release
@@ -1510,7 +1589,15 @@ INSERT INTO `release` VALUES (144, 'ch_ppocr_v4_lama_fp32', 'ch_PP-OCRv4_Lama_fp
 INSERT INTO `release` VALUES (145, 'Unified_learned_OCIM_RS200_6x+2x', 'Unified_learned', 65);
 INSERT INTO `release` VALUES (146, 'SETR_MLA', 'SETR_VIT_with_MLA_CONV', 66);
 INSERT INTO `release` VALUES (147, 'chinese_clip', 'CLIP_with_Chinese', 67);
-INSERT INTO `release` VALUES (149, 'auto_sam_vit_b', 'AutomaticSAM_VIT_Base', 68);
+INSERT INTO `release` VALUES (149, 'auto_sam', 'AutomaticSAM', 68);
+INSERT INTO `release` VALUES (150, 'sam_unidet_setr_mla_foodseg103', 'SAM_Unidet_Setr_Mla_FoodSeg103', 69);
+INSERT INTO `release` VALUES (151, 'ram_swin_groundingdino_swinb_cogocoor_quant', 'RAM Swin large (OPPO)_GroundingDINO (SwinBase-QInt8) IDEA', 70);
+INSERT INTO `release` VALUES (152, 'ram_swin_groundingdino_swint_ogc_quant', 'RAM Swin large (OPPO)_GroundingDINO (SwinTiny-QInt8) IDEA', 70);
+INSERT INTO `release` VALUES (153, 'ms1mv3_arcface', 'MS1MV3_ArcFace_Net', 71);
+INSERT INTO `release` VALUES (154, 'CBIA_Former_cls_food', 'CBIA_Former食品识别', 72);
+INSERT INTO `release` VALUES (155, 'grounding_sam_hq_food_cls', 'grounding_dino_sam_hq_食品分类', 73);
+INSERT INTO `release` VALUES (156, 'deit_cls_food', 'DEIT_食材分类', 74);
+INSERT INTO `release` VALUES (157, 'pixel_hash_saturation', 'pixel_hash_saturation', 75);
 
 -- ----------------------------
 -- Table structure for result
@@ -1565,7 +1652,7 @@ CREATE TABLE `task`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `type_id`(`type_id` ASC) USING BTREE,
   CONSTRAINT `task_ibfk_1` FOREIGN KEY (`type_id`) REFERENCES `task_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of task
@@ -1593,6 +1680,10 @@ INSERT INTO `task` VALUES (20, 'detection_segmentation', 3);
 INSERT INTO `task` VALUES (21, 'classification_detection', 3);
 INSERT INTO `task` VALUES (22, 'inpainting', 2);
 INSERT INTO `task` VALUES (23, 'mark_remove', 3);
+INSERT INTO `task` VALUES (24, 'panoptic_segment', 3);
+INSERT INTO `task` VALUES (25, 'face_match', 2);
+INSERT INTO `task` VALUES (26, 'detection_segmentation_classification', 3);
+INSERT INTO `task` VALUES (27, 'pixel_handle', 2);
 
 -- ----------------------------
 -- Table structure for task_type
@@ -1648,7 +1739,7 @@ CREATE TABLE `weight`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `dataset_id`(`dataset_id` ASC) USING BTREE,
   CONSTRAINT `weight_ibfk_1` FOREIGN KEY (`dataset_id`) REFERENCES `dataset` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 163 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 168 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of weight
@@ -1678,11 +1769,11 @@ INSERT INTO `weight` VALUES (22, 'Gold_l_pre_dist.onnx', NULL, 'https://github.c
 INSERT INTO `weight` VALUES (23, 'Gold_m_pre_dist.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.3.0/Gold_m_pre_dist.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (24, 'Gold_n_dist.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.3.0/Gold_n_dist.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (25, 'Gold_s_pre_dist.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.3.0/Gold_s_pre_dist.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (26, 'groundingdino_swinb_cogcoor_quant.onnx', 'F:\\Github\\X-AnyLabeling\\weights\\dino\\groundingdino_swint_ogc_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/groundingdino_swinb_cogcoor_quant.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (27, 'groundingdino_swint_ogc_quant.onnx', 'F:\\Github\\X-AnyLabeling\\weights\\dino\\groundingdino_swint_ogc_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/groundingdino_swint_ogc_quant.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (28, 'groundingdino_fuse_attention.onnx', 'E:\\models\\Xlabel\\dino\\groundingdino_fuse_attention.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/groundingdino_fuse_attention.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (29, 'sam_hq_vit_l_encoder_quant.onnx', 'E:\\models\\Xlabel\\sam_hq\\sam_hq_vit_l_encoder_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/sam_hq_vit_l_encoder_quant.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (30, 'sam_hq_vit_l_decoder.onnx', 'E:\\models\\Xlabel\\sam_hq\\sam_hq_vit_l_decoder.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/sam_hq_vit_l_decoder.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (26, 'groundingdino_swinb_cogcoor_quant.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\grounding_dino\\groundingdino_swinb_cogcoor_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/groundingdino_swinb_cogcoor_quant.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (27, 'groundingdino_swint_ogc_quant.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\grounding_dino\\groundingdino_swint_ogc_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/groundingdino_swint_ogc_quant.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (28, 'groundingdino_fuse_attention.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\dino\\groundingdino_fuse_attention.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/groundingdino_fuse_attention.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (29, 'sam_hq_vit_l_encoder_quant.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\sam_hq\\sam_hq_vit_l_encoder_quant.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/sam_hq_vit_l_encoder_quant.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (30, 'sam_hq_vit_l_decoder.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\sam_hq\\sam_hq_vit_l_decoder.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/sam_hq_vit_l_decoder.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (31, 'sam2_hiera_large.encoder.onnx', 'F:\\Github\\X-AnyLabeling\\weights\\sam2\\sam2_hiera_large.encoder.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/sam2_hiera_large.encoder.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (32, 'sam2_hiera_large.decoder.onnx', 'F:\\Github\\X-AnyLabeling\\weights\\sam2\\sam2_hiera_large.decoder.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/sam2_hiera_large.decoder.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (33, 'internimage_l_22kto1k_384.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.1.0/internimage_l_22kto1k_384.onnx', 1, NULL);
@@ -1692,8 +1783,8 @@ INSERT INTO `weight` VALUES (36, 'ch_ppocr_mobile_v2.0_cls_infer.onnx', NULL, 'h
 INSERT INTO `weight` VALUES (37, 'japan_PP-OCRv3_rec_infer.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/japan_PP-OCRv3_rec_infer.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (38, 'pulc_person_attribute.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/pulc_person_attribute.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (39, 'pulc_vehicle_attribute.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.0.0/pulc_vehicle_attribute.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (40, 'ram_plus_swin_large_14m.onnx', 'E:\\models\\Xlabel\\ram\\ram_plus_swin_large_14m.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/ram_plus_swin_large_14m.onnx', 1, NULL);
-INSERT INTO `weight` VALUES (41, 'ram_swin_large_14m.onnx', 'E:\\models\\Xlabel\\ram\\ram_swin_large_14m.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/ram_swin_large_14m.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (40, 'ram_plus_swin_large_14m.onnx', 'E:/Models/yanglao/xanylabeling_data/flows/ram/ram_plus_swin_large_14m.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/ram_plus_swin_large_14m.onnx', 1, NULL);
+INSERT INTO `weight` VALUES (41, 'ram_swin_large_14m.onnx', 'E:/models/Xlabel/ram/ram_swin_large_14m.onnx', 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v1.0.0/ram_swin_large_14m.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (42, 'bria-rmbg-1.4.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.3/bria-rmbg-1.4.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (43, 'rtdetr_r50vd_6x_coco.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v0.1.0/rtdetr_r50vd_6x_coco.onnx', 1, NULL);
 INSERT INTO `weight` VALUES (44, 'rtdetrv2_r50vd_6x_coco.onnx', NULL, 'https://github.com/CVHub520/X-AnyLabeling/releases/download/v2.4.0/rtdetrv2_r50vd_6x_coco.onnx', 1, NULL);
@@ -1815,5 +1906,10 @@ INSERT INTO `weight` VALUES (159, 'big-lama.pt', 'E:\\Models\\yanglao\\xanylabel
 INSERT INTO `weight` VALUES (160, 'Unified_learned_OCIM_RS200_6x+2x.pth', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\unidet\\Unified_learned_OCIM_RS200_6x+2x.pth', '', 1, NULL);
 INSERT INTO `weight` VALUES (161, 'SETR_MLA.pth', 'E:\\models\\yanglao\\xanylabeling_data\\flows\\SETR_MLA\\iter_80000.pth', '', 1, NULL);
 INSERT INTO `weight` VALUES (162, 'sam_vit_b_01ec64.pth', 'E:\\Models\\samexporter\\sam\\origin\\sam_vit_b_01ec64.pth', '', 1, NULL);
+INSERT INTO `weight` VALUES (163, 'sam_vit_h_4b8939.pth', 'E:\\Models\\samexporter\\sam\\origin\\sam_vit_h_4b8939.pth', '', 1, NULL);
+INSERT INTO `weight` VALUES (164, 'sam_vit_l_0b3195.pth', 'E:\\Models\\samexporter\\sam\\origin\\sam_vit_l_0b3195.pth', '', 1, NULL);
+INSERT INTO `weight` VALUES (165, 'ms1mv3_arcface_r50_fp16', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\arcface_torch\\ms1mv3_arcface_r50_fp16\\backbone.pth', '', 1, NULL);
+INSERT INTO `weight` VALUES (166, 'cbiaformer_cls_food.onnx', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\CBIA_Former_cls_food\\cbiaformer_cls_food.onnx', '', 1, NULL);
+INSERT INTO `weight` VALUES (167, 'deit_cls.pth', 'E:\\Models\\yanglao\\xanylabeling_data\\flows\\Deit_cls\\test.onnx', '', 1, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
