@@ -1,12 +1,39 @@
+import base64
 from typing import List
 
+import numpy as np
 import requests
+from geopy import Nominatim
 
 from work_flow.engines import load_model_class
 from database_models import WorkOrderModel, ServiceModel, ServiceLogModel,MemberModel, EmployeeModel, ExecuteModel
 import requests
 from PIL import Image
 from io import BytesIO
+
+# 获取地址的经纬度范围
+def get_address_bounds(address):
+    geolocator = Nominatim(user_agent="geoapiExercises")
+
+    location = geolocator.geocode(address)
+    if location:
+        latitude = location.latitude
+        longitude = location.longitude
+
+        # 返回一个包含经纬度的元组
+        # 这里我们可以假设返回的是一个简单的点，不涉及精确的矩形范围
+        return latitude, longitude
+    else:
+        print(f"无法找到地址: {address}")
+        return None
+
+
+# 判断给定经纬度是否在范围内
+def is_point_in_area(bounds, location):
+    min_lat, max_lat, min_lon, max_lon = bounds
+    latitude, longitude = location
+    # 检查给定的经纬度是否在边界框内
+    return min_lat <= latitude <= max_lat and min_lon <= longitude <= max_lon
 
 def split_images(field: str)->List:
     # 将 field 字符串按分号分割成 URL 列表
@@ -27,6 +54,24 @@ def split_images(field: str)->List:
 
     return images
 
+def base64_encode_image(image) -> str:
+    buffered = BytesIO()
+    image=np.array(image)
+    im_base64 = Image.fromarray(image)
+    im_base64.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return f"data:image/jpeg;base64,{img_str}"
+
+class LogItem:
+    def __init__(self, msg, type, avatars=[]):
+        self.msg = msg
+        self.type = type
+        self.avatars = avatars
+
+    def get_dict(self):
+        avatars = [base64_encode_image(avatar) for avatar in self.avatars]
+        return {'msg': self.msg, 'type':self.type ,'avatars': avatars}
+
 class BaseHandler:
     avatar_keys = ['document_photo', 'front_card', 'reverse_card', 'me_photo']
     img_keys = ['start_img', 'middle_img', 'end_img']
@@ -41,6 +86,9 @@ class BaseHandler:
         'member': ['id', 'name', 'type', 'emp_id'],
         'employee': ['id', 'name'],
     }
+    hasEmpAvatar = False
+    hasMebAvatar = False
+    sim_thresh = 0.8
     def __init__(self, configs, **kwargs):
         self.flows = configs
         self.fields = {}
@@ -61,8 +109,7 @@ class BaseHandler:
             self.register_flow(flow_name)
         return self.flows[flow_name]
 
-    def field_processing(self, order_id):
-        self.log['field'] = []
+    def field_grab(self, order_id):
         # 获取orm对象
         order = WorkOrderModel.query.get(order_id)
         employee_id = order.handler if order.handler == order.to_user else order.to_user
@@ -76,6 +123,7 @@ class BaseHandler:
         self.fields['service_log'] = service_log.to_dict(self.Registered_Fields['service_log'])
         self.fields['member'] = member.to_dict(self.Registered_Fields['member'])
         self.fields['employee'] = employee.to_dict(self.Registered_Fields['employee'])
+
         # 服务对象可能同时为系统中的注册服务者
         if self.fields['member']['emp_id'] is not None: # 若服务对象同时也是系统中的注册服务者
             self.fields['member']['avatars'] = []
@@ -89,6 +137,46 @@ class BaseHandler:
             self.fields['service_log'][key] = split_images(self.fields['service_log'][key])
             self.operators[key].append({})
 
+    def location_field(self, now_coordinate, target_location):
+        bounds = get_address_bounds(target_location)
+        return is_point_in_area(bounds, now_coordinate)
+
+    def his_similar(self, img):
+        '''
+        相似图检索—检索
+        '''
+        request_url = "https://aip.baidubce.com/rest/2.0/image-classify/v1/realtime_search/similar/search"
+        access_token = ''
+        params = {"image": img, "pn": 200, "rn": 100}
+        request_url = request_url + "?access_token=" + access_token
+        headers = {'content-type': 'application/x-www-form-urlencoded'}
+        response = requests.post(request_url, data=params, headers=headers)
+        if response:
+            results = response.json()
+            sim_urls = []
+            for result in results['result']:
+                if result['score'] >= self.sim_thresh:
+                    sim_urls.append(result['brief']['img_url'])
+        else:
+            return False
+
+    def field_processing(self):
+        self.log['field'] = []
+        target_location = self.fields['order']['order_area_name']
+        near_start = self.location_field(self.fields['service_log']['start_coordinate'],
+                                         target_location)
+        near_middle = self.location_field(self.fields['service_log']['middle_coordinate'],
+                                         target_location)
+        near_end = self.location_field(self.fields['service_log']['end_coordinate'],
+                                         target_location)
+        if not near_start:
+            self.log['field'].append(LogItem("服务开始时，定位不在目标地址中", 'error'))
+        if not near_middle:
+            self.log['field'].append(LogItem("服务进行时，定位不在目标地址中", 'error'))
+        if not near_end:
+            self.log['field'].append(LogItem("服务结束时，定位不在目标地址中", 'error'))
+
+
     def opt_processing(self):
         self.log['opterator'] = []
         pass
@@ -98,7 +186,8 @@ class BaseHandler:
         pass
 
     def run(self, order_id, **kwargs):
-        self.field_processing(order_id)
+        self.field_grab(order_id)
+        self.field_processing()
         self.opt_processing()
         self.post_processing()
-        return self.fields
+        return self.log

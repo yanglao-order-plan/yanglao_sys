@@ -1,7 +1,12 @@
+import base64
 import re
 from datetime import datetime
+from io import BytesIO
 
-from work_flow.solutions.base_handler import BaseHandler
+import numpy as np
+from PIL import Image
+
+from work_flow.solutions.base_handler import BaseHandler, LogItem
 from work_flow.utils.image import crop_polygon_object
 
 def time_format(time_str, format="%Y-%m-%d %H:%M:%S"):
@@ -16,6 +21,7 @@ def is_all_true(d):
         elif not value:  # 如果值为 False（0、None、False 等）
             return False
     return True
+
 
 class CookHandler(BaseHandler):
     Flow_Keys = ['grounding_dino', 'sam_hq', 'ppocr_v4_lama',
@@ -61,7 +67,7 @@ class CookHandler(BaseHandler):
             for id, img in enumerate(self.fields['service_log'][stage]):
                 results = self.mapping_flow('ppocr_v4_lama').predict_shapes(img)
                 if results.descriptions is not None:
-                    self.origin_images[stage][id] = results.img
+                    self.fields['service_log'][stage][id] = results.image
                     for key, format in self.Registered_OCR_Format.items():
                         for shape in results.shapes:
                             if shape.description is not None and re.match(format, shape.description):
@@ -70,9 +76,11 @@ class CookHandler(BaseHandler):
             # 水印提取异常检测
             for key, format in self.Registered_OCR_Format.items():
                 if key not in self.operators['ppocr_v4_lama'][stage]:
-                    self.log['opterator'].append(f"工作流: ppocr_v4_lama 阶段: {stage} 未识别水印信息:{key}")
+                    self.log['opterator'].append(LogItem(f"工作流: ppocr_v4_lama 阶段: {stage} 未识别水印信息:{key}",
+                                                         'warning'))
                 elif not re.match(format, self.operators['ppocr_v4_lama'][stage]):
-                    self.log['opterator'].append(f"工作流: ppocr_v4_lama 阶段: {stage} 识别水印信息{key}格式错误:")
+                    self.log['opterator'].append(LogItem(f"工作流: ppocr_v4_lama 阶段: {stage} 识别水印信息{key}格式错误:",
+                                                         'warning'))
         # 对象检测
         for stage in self.img_keys:
             # grounding_dino
@@ -135,7 +143,9 @@ class CookHandler(BaseHandler):
                     for objects in self.operators['grounding_dino'][stage].values():
                         object_num += len(objects)
                     if object_num == 0:
-                        self.log['opterator'].append(f"工作流: grounding_dino 阶段: {stage} 未检测到任何对象{object}")
+                        self.log['opterator'].append(
+                            LogItem(f"工作流: grounding_dino 阶段: {stage} 未检测到任何对象{object}",
+                                    'warning'))
 
     def post_processing(self):
         super().post_processing()
@@ -144,6 +154,9 @@ class CookHandler(BaseHandler):
             name_account = info['姓名账号'].split('/')
             name, account = name_account[0], name_account[1]
             if name != self.fields['employee']['name']:
+                self.log['opterator'].append(
+                    LogItem(f"工作流: grounding_dino 阶段: {stage} 未检测到任何对象{object}",
+                            'warning'))
                 self.log['estimate'] = f"阶段: {stage} 水印姓名: {name} 系统姓名: {self.fields['employee']['name']} 不匹配"
             if account != self.fields['employee']['phone_no']:
                 self.log['estimate'] = f"阶段: {stage} 水印账号: {account} 系统账号: {self.fields['employee']['phone_no']} 不匹配"
@@ -156,11 +169,14 @@ class CookHandler(BaseHandler):
         end_system_time = time_format(self.fields['service_log']['end_time'])
 
         if start_phone_time<start_system_time or start_phone_time > middle_system_time:
-            self.log['estimate'] = f"阶段: start 手机时间: {start_phone_time} 不在系统时域内: {(start_system_time, middle_system_time)}"
+            self.log['opterator'].append(LogItem(f"阶段: start 手机时间: {start_phone_time} 不在系统时域内: {(start_system_time, middle_system_time)}",
+                                                 'warning'))
         if middle_phone_time<middle_system_time or middle_phone_time > end_system_time:
-            self.log['estimate'] = f"阶段: middle 手机时间: {start_phone_time} 不在系统时域内: {(middle_system_time, end_system_time)}"
+            self.log['opterator'].append(LogItem(f"阶段: middle 手机时间: {start_phone_time} 不在系统时域内: {(middle_system_time, end_system_time)}",
+                                                 'warning'))
         if end_phone_time>end_system_time:
-            self.log['estimate'] = f"阶段: middle 手机时间: {start_phone_time} 不在系统时域内: {(end_system_time, '--')}"
+            self.log['opterator'].append(LogItem(f"阶段: middle 手机时间: {start_phone_time} 不在系统时域内: {(end_system_time, '--')}",
+                                                 'warning'))
 
         # 做饭相关语义匹配
         ingredients = []
@@ -204,17 +220,20 @@ class CookHandler(BaseHandler):
                         exist_meb[stage][id] = True
 
         if not is_emp_live:
-            self.log['estimate'] = "志愿者未出现在任何阶段"
+            self.log['estimate'].append(LogItem("志愿者未出现在任何阶段",
+                                                 'error'))
         if not is_all_true(exist_meb):
-            self.log['estimate'] = "服务对象未出现在任何阶段"
+            self.log['estimate'].append(LogItem("服务对象未出现在任何阶段",
+                                                 'error'))
 
         # 回执单字迹检测
-        # isMebReceipt = False
-        # for id, objects in self.operators['grounding_dino']['end_img'].items():
-        #     for shape in objects['receipt']:
-        #         cropped_receipt = crop_polygon_object(self.fields['service_log']['end_img'][id].copy(),
-        #                                               shape.points)
-        #         receipt_est = self.mapping_flow('ppocr_v4_lama').predict_shapes(cropped_receipt)
+        isMebReceipt = False
+        for id, objects in self.operators['grounding_dino']['end_img'].items():
+            for shape in objects['receipt']:
+                cropped_receipt = crop_polygon_object(self.fields['service_log']['end_img'][id].copy(),
+                                                      shape.points)
+                receipt_results = self.mapping_flow('ppocr_v4_lama').predict_shapes(cropped_receipt)
+                if self.fields['member']['name'] not in receipt_results.descriptions:
+                    self.log['estimate'].append(LogItem("回执单未检测到服务对象姓名",
+                                                        'error'))
 
-
-        pass

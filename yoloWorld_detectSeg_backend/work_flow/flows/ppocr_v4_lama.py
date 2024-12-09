@@ -1,4 +1,6 @@
 import logging
+import re
+
 import cv2
 import traceback
 import numpy as np
@@ -149,7 +151,7 @@ class PPOCRv4LAMA(Model):
         results.visible = False
         return results
 
-    def predict_shapes(self, image, image_path=None, mask_enhance=False):
+    def predict_shapes(self, image, image_path=None, mask_enhance=False, formats=[]):
         """
         Predict shapes from image
         """
@@ -159,6 +161,10 @@ class PPOCRv4LAMA(Model):
             image = image.copy()
             dt_boxes, rec_res, scores = self.sub_detector.text_sys(image)
             letters = [res[0] for res in rec_res]
+            for id, letter in enumerate(letters):
+                for format in formats:
+                    if re.match(format, letter): # 排除清除字符串
+                        dt_boxes.pop(id)
             sub_list = self.find_subtitle_frame_no(dt_boxes)
             logging.info('[Processing] Start removing subtitles...')
             if len(sub_list):

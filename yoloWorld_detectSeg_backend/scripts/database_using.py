@@ -11,9 +11,9 @@ username = "dhgxjbgs"
 password = "D23@#hGb"
 
 
-def get_img_urls(specific_service_id, img_stages, start_data, end_data):
+def get_img_urls(specific_service_id, img_stages, start_data, end_data, start_order_id):
     # work_order_query = f"-- SELECT order_id FROM work_order WHERE service_id = {specific_service_id} and DATE(start_time) >= {start_data} and DATE(start_time) <= {end_data}"
-    work_order_query = "SELECT order_id, start_time FROM work_order WHERE  service_id = {0} AND DATE(start_time) >= \"{1}\" and DATE(start_time) <= \"{2}\""
+    work_order_query = "SELECT order_id, start_time FROM work_order WHERE  service_id = {0} AND start_time >= \"{1}\" and start_time <= \"{2}\" AND order_id >= \"{3}\""
     service_log_query_template = "SELECT {0} FROM service_log WHERE order_id = {1}"
 
     conn = None
@@ -30,8 +30,8 @@ def get_img_urls(specific_service_id, img_stages, start_data, end_data):
             cursor = conn.cursor()
 
             # 查询 work_order 表，获取 order_id
-            print(work_order_query.format(specific_service_id, start_data, end_data))
-            cursor.execute(work_order_query.format(specific_service_id, start_data, end_data))
+            print(work_order_query.format(specific_service_id, start_data, end_data, start_order_id))
+            cursor.execute(work_order_query.format(specific_service_id, start_data, end_data, start_order_id))
             order_ids_times = [(row[0], row[1]) for row in cursor.fetchall()]
             # return order_ids_times
 
@@ -87,8 +87,9 @@ def get_file_name_from_url(url):
 
 if __name__ == "__main__":
     specific_service_id = 406
+    start_order_id = 447523
     img_stages = "img_url"
     base_dir = "E:\\test\\download"  # 设置保存图片的基础目录
     start_data = '2024-3-1'
-    end_data = '2024-3-30'
-    print(len(get_img_urls(specific_service_id, [img_stages], start_data, end_data)))
+    end_data = '2024-4-30'
+    print(len(get_img_urls(specific_service_id, [img_stages], start_data, end_data, start_order_id)))
