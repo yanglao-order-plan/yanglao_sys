@@ -13,5 +13,5 @@ def load_handler_class(service_name):
 
 
 service_handle_mapping = {
-    ('上门做饭',): ("work_flow.flows.cook_handler", "CookHandler")
+    ('上门做饭',): ("work_flow.solutions.cook_handler", "CookHandler")
 }
