@@ -489,10 +489,21 @@ class ServiceLogModel(db.Model):
 
     def to_dict(self, keys=None):
         kwargs = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+        kwargs['middle_content'] = kwargs['service_content']
+        del kwargs['service_content']
+        kwargs['middle_img'] = kwargs['img_url']
+        del kwargs['img_url']
+        kwargs['middle_location'] = kwargs['location']
+        del kwargs['location']
+        kwargs['middle_coordinate'] = (self.lat, self.lgt)
+        kwargs['start_coordinate'] = (self.start_lat, self.start_lgt)
+        kwargs['end_coordinate'] = (self.end_lat, self.end_lgt)
+
         if keys is dict:
             for key in kwargs.keys():
                 if key not in keys:
                     kwargs.pop(key)
+
         return kwargs
 
 class ExecuteModel(db.Model):

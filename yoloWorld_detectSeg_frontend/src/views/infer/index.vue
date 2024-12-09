@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, watch, nextTick, computed, reactive, ref } from "vue"
-import { type ITaskData, IFlowData, IWeightData, IArgData, OWeightData } from "@/api/infer/types/infer"
+import { type ITaskData, IFlowData, IWeightData, IArgData } from "@/api/infer/types/infer"
 import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
 import { getAllTasksApi, getCurrentTaskApi, getCurrentFlowApi, getCurrentWeightApi, getCurrentParamApi, getCurrentHyperApi,
@@ -263,6 +263,7 @@ const generateFlowCascaderOptions = (list: IFlowData[]) => {
       label: releaseName
     })
   })
+  console.log(options)
   return options
 }
 
@@ -340,7 +341,7 @@ interface CascaderProps {
 const props: CascaderProps = {
   expandTrigger: "hover" as const
 }
-
+ //对应 handleOrderSwitch
 const handleTaskSwitch = () => {
   if (
     selectedTaskData.taskType === currentTaskData.taskType &&
@@ -391,7 +392,7 @@ const loadDefault = (mode: string ) => {
 
 const handleFlowSwitch = () => {
   if (
-    selectedFlowData.flow === currentFlowData.flow &&
+    selectedFlowData.flow === currentFlowData.flow &&  
     selectedFlowData.release === currentFlowData.release
   ) {
     ElMessage({
