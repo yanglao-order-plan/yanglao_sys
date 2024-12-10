@@ -8,6 +8,13 @@ from . import Model, AutoLabelingResult
 from .lama import Lama
 from .ppocr_v4 import PPOCRv4
 
+base_format = {
+    '姓名账号': '[\u4e00-\u9fa5]{2,5}/\d{11}',
+    '身份证号': '\d{18}',
+    '版本号': '\d+\.\d+\.\d+',
+    '手机时间': '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+}
+
 
 class PPOCRv4LAMA(Model):
     """Open-Set instance segmentation model using GroundingSAM"""
@@ -158,13 +165,16 @@ class PPOCRv4LAMA(Model):
         if image is None:
             return []
         try:
+            formats = base_format
             image = image.copy()
             dt_boxes, rec_res, scores = self.sub_detector.text_sys(image)
             letters = [res[0] for res in rec_res]
+            retain_ids = []
             for id, letter in enumerate(letters):
                 for format in formats:
-                    if re.match(format, letter): # 排除清除字符串
-                        dt_boxes.pop(id)
+                    if format in letter: # 排除清除字符串
+                        retain_ids.append(id)
+            dt_boxes = [box for id, box in enumerate(dt_boxes) if id in retain_ids]
             sub_list = self.find_subtitle_frame_no(dt_boxes)
             logging.info('[Processing] Start removing subtitles...')
             if len(sub_list):

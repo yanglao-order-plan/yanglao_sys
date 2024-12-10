@@ -26,7 +26,7 @@ def get_info(classes_path):
 
     return names, indexs
 
-class CBIAFORMER_CLS(Model):
+class DEIT_CLS(Model):
     """Image tagging model using Recognize Anything Model (RAM)"""
     T = 0.45
     length=16
@@ -85,7 +85,7 @@ class CBIAFORMER_CLS(Model):
         """
         Post-processes the network's output.
         """
-        final_sigmoid = nn.Sigmoid()(torch.stack(all_logits).mean(dim=0))
+        final_sigmoid = torch.stack(all_logits)
         tmp = final_sigmoid.gt(self.T)
         indices = torch.where(tmp)[-1]
 

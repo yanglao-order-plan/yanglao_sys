@@ -250,7 +250,7 @@ def update_argument():
     default = request.json.get('default', None)
     config = request.json.get('config', None)
     dynamic = int(request.json.get('dynamic', -1))
-    print(name, default)
+
     if not name or not type or dynamic == -1:
         return response(code=1, message='修改失败，缺少必要参数')
 

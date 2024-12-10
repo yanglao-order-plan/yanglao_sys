@@ -113,7 +113,7 @@ class ModelManager:
                 self.kwargs['scale'] = value
             elif key == 'mode':
                 self.kwargs['mode'] = value
-            else:
+            else:  # 裁剪参数
                 self.post_kwargs[key] = value
 
     def set_output_mode(self, mode):

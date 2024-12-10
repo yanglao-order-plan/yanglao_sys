@@ -11,7 +11,7 @@ from work_flow.utils.shape import Shape
 
 
 class PixelAnalysis:
-    def __init__(self, model_config, **kwargs):
+    def __init__(self, model_config=None, **kwargs):
         self.hash_threshold = 5
         self.saturation_threshold = 100
         pass
@@ -30,7 +30,7 @@ class PixelAnalysis:
         variance = np.var(laplacian)
         return variance
 
-    def predict_shapes(self, image, minor=None, mode='repeat'):
+    def predict_shapes(self, image, minor=None, mode='saturation'):
         # 饱和度分析 尖锐度分析
         if image is None:
             raise ValueError("Image is None")

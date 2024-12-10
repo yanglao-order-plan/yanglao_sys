@@ -2,40 +2,50 @@
 import { computed, reactive, ref, watch } from "vue"
 
 import { type IOrderData } from "@/api/order_detection/types/order_detection"
-
+import Argument from '@/components/argument/module.vue'
 import { Refresh } from "@element-plus/icons-vue"
-import { type IGetOrderData } from "@/api/order_detection/types/order_detection"
+import { type IGetOrderData,IWeightData,IArgData,IFlowData,IDetectData,IDOrigin} from "@/api/order_detection/types/order_detection"
 
-import { getAllOrdersApi, detectOrderApi,getOrderDataApi } from "@/api/order_detection"
+import { getAllOrdersApi,getOrderDataApi,switchModelApi,switchFlowApi,switchWeightApi,getCurrentWeightApi,switchParamApi,getCurrentParamApi,getDetectDataApi } from "@/api/order_detection"
 import { usePagination } from "@/hooks/usePagination"
 
 import { ElMessage } from "element-plus"
 import { Search } from "@element-plus/icons-vue"
-
+import type { CascaderValue } from 'element-plus'
+import { el } from "element-plus/es/locale"
+import { AgGridVue } from 'ag-grid-vue3'
+import type { ColDef } from 'ag-grid-community'
+import "ag-grid-community/styles/ag-grid.css"; 
+import "ag-grid-community/styles/ag-theme-quartz.css";
 
 
 // 将模式与参数的加载分开
 
 
 
-
+//????
 defineOptions({
-  name: "Infer"
+  name: "Infer",
+  components:{
+    AgGridVue
+  }
 })
-// 原始容器
+const loaded = ref<boolean>(false)
+const choosen = ref<boolean>(false)
 const loading = ref<boolean>(false)
-
+const loading2= ref<boolean>(false)
 const predicting = ref<boolean>(false)
-
-
-
-
 const orderVisible = ref<boolean>(false)
+const itemIndex = ref<number>(0)
+ 
 
 // 结构容器
 const { paginationData, handleCurrentChange, handleSizeChange } = usePagination()
-
-
+const flowsData = ref<IFlowData[]>([])
+const selectedFlowOptions = ref([])
+const flowOptions = ref<{ value: string; label: string; children: { value: string; label: string }[] }[]>([])
+const weightOptions = ref<{ [key: string]: { value: string; label: string; disabled: boolean }[]}>({})
+const currentParamData = reactive<{ [key: string]: any }>({});
 const currentSearchData = reactive({
   orderId:"",
   serviceId: "",
@@ -45,9 +55,37 @@ const selectedOrderData = reactive({
   orderId: "",
 })
 
+const handledParamData = reactive<{ [key: string]: any }>({});
+const currentHyperData = reactive<{ [key: string]: any }>({});
+const handledHyperData = reactive<{ [key: string]: any }>({});
+const selectedWeightData = reactive<{ [key: string]: string }>({});
+const currentWeightData = reactive<{ [key: string]: string }>({});
 
 const  orderData = ref<IGetOrderData[]>([])
+const weightsData = ref<IWeightData[]>([])
+const paramsData = ref<IArgData[]>([])
+const hypersData = ref<IArgData[]>([])
 
+const currentFlowData = reactive({
+  flow: "", 
+  release: "",
+})
+const selectedFlowData = reactive({
+  flowName : "",
+  flow: "",
+  release: "",
+})
+const searchData = reactive({
+  orderId:"",
+  serviceId:"",
+})
+
+interface CascaderProps {
+  expandTrigger?: "click" | "hover"
+}
+const props: CascaderProps = {
+  expandTrigger: "hover" as const
+}
 
 
 
@@ -116,6 +154,7 @@ const getOrderData = () => {
     .then((res) => {
       paginationData.total = res.data.total
       orderData.value = res.data.list
+      itemIndex.value = 0
       // console.log(orderData.value)
     })
     .catch(() => {
@@ -126,41 +165,258 @@ const getOrderData = () => {
     })
 }
 
+const originData:any =reactive([{
+  stage:"",
+  id:"",
+  base64:""
+}])
 
-// 切换模型（改检测工单)
-const detectOrder = () => {
-  detectImagesData.length = 0
-  detectOrderApi(Number(selectedOrderData.orderId)).then((res) => {
-    // startImg = res.data.startImg
-    res.data.startImg.forEach((item, index) => {
-      detectImagesData.push(item)
-    })
 
-    res.data.imgUrl.forEach((item, index) => {
-      // console.log
-      detectImagesData.push(item)
-    })
-    res.data.endImg.forEach((item, index) => {
-      detectImagesData.push(item)
-    })
-    console.log(detectImagesData)
-    detectImagesData.forEach((item:any)=>{
-      console.log("11")
-      item.resultImageUrl = deCodeBase64(item.resultBase64)
-    })
-    console.log(detectImagesData)
+//模型推理返回信息
+const detectData: any = ref([{
+  field:"",
+  msg: "",
+  type: "",
+  avatars: []
+}])
+// 控制弹窗显示和要展示的图片
+const dialogVisible = ref(false);
+const avatarsToShow = ref([]);
 
-  })
+// 点击按钮时显示 avatars 图片
+const showAvatars = (avatars: any) => {
+  avatarsToShow.value = avatars;  // 将 avatars 设置为当前行的图片列表
+  dialogVisible.value = true;     // 打开对话框显示图片
+};
+
+const columnDefOrigin =ref<ColDef[]>([
+  
+  {
+      headerName: "stage",
+      field: "stage"
+    },
+    {
+      headerName: "id",
+      field: "id"
+    },
+    {
+      headerName: "base64",
+      field: "base64",
+      cellRenderer: 'avatarRenderer' // 使用我们自定义的渲染器
+    }
+])
+
+
+
+const columnDefs = ref<ColDef[]>([
+  //{ headerName:'模型名称',field:'flow',flex:1},
+    { 
+      headerName:"field",
+      field:"field"
+    },
+    {
+      headerName: "Message Content",
+      field: "msg"
+    },
+    {
+      headerName: "Type Name",
+      field: "type"
+    },
+    // {
+    //   headerName: "Avatars",
+    //   field: "avatars",
+    //   cellRenderer: 'avatarRenderer' // 使用我们自定义的渲染器
+    // }
+])
+// const rowData = [{msg:'1',type:'erro',avatars:"http://www.mcwajyfw.com/upload/healthCloud//12/3/de0b8ee6ceed440a8825b5d4c05450281685574116089.jpeg"}
+// ];
+// 自定义单元格渲染器组件（内联定义）
+const AvatarCellRenderer = {
+  template: ` <div class="avatar-container">
+              <img v-for="(url, index) in params.value" :key="index" :src="url" class="avatar" alt="Avatar"  />
+              </div>`,
+  setup(props: any) {
+    // ag-grid会传入params作为props
+    return { params: props.params}
+  }
+}
+// 定义框架组件映射
+const frameworkComponents = {
+  avatarRenderer: AvatarCellRenderer
+}
+
+// 检测工单
+const handleDetect = () => {
+  getDetectDataApi(Number(selectedOrderData.orderId))
+    .then((res) => {
+      // originData.value=res.data.origin
+      // originData.forEach((item :IDOrigin) => {
+      //   item.base64.forEach((img,index)=>{
+      //     item.base64[index] = deCodeBase64(item.base64[index])
+      //   })
+      // });
+      detectData.value = res.data.result
+      console.log(detectData.value)
+      // 遍历 res.data.list 并添加到 detectData
+      // detectData.forEach((item :IDetectData) => {
+      //   item.avatars.forEach((img,index)=>{
+      //     item.avatars[index] = deCodeBase64(item.avatars[index])
+      //   })
+      // });
+    })
     .catch(() => {
       ElMessage({
-        message: "推理响应有误",
-        type: "warning"
-      })
+        message: '推理响应有误',
+        type: 'warning',
+      });
     })
     .finally(() => {
-      predicting.value = false
-    })
+      predicting.value = false;
+    });
+};
+
+// 切换模型（改检测工单)
+// const detectOrder = () => {
+//   detectImagesData.length = 0
+//   detectOrderApi(Number(selectedOrderData.orderId)).then((res) => {
+//     // startImg = res.data.startImg
+//     res.data.startImg.forEach((item, index) => {
+//       detectImagesData.push(item)
+//     })
+
+//     res.data.imgUrl.forEach((item, index) => {
+//       // console.log
+//       detectImagesData.push(item)
+//     })
+//     res.data.endImg.forEach((item, index) => {
+//       detectImagesData.push(item)
+//     })
+//     console.log(detectImagesData)
+//     detectImagesData.forEach((item:any)=>{
+//       item.resultImageUrl = deCodeBase64(item.resultBase64)
+//     })
+//     console.log(detectImagesData)
+
+//   })
+//     .catch(() => {
+//       ElMessage({
+//         message: "推理响应有误",
+//         type: "warning"
+//       })
+//     })
+//     .finally(() => {
+//       predicting.value = false
+//     })
+// }
+
+// 根据请求的工单号 ，返回对应的工作流和对应版本，后端接口为/order/switch/<int:order_id>（工作流和版本的关系是一对多）
+const handleOrderSwitch = () =>{
+  switchModelApi(Number(selectedOrderData.orderId)).then((res)=>{
+    // flowsData.value = res.data
+    // console.log(res.data)
+    flowOptions.value = generateFlowCascaderOptions(res.data)
+  })
 }
+// 新
+const generateFlowCascaderOptions = (list: {}) => {
+  const options: { value: string; label: string; children: { value: string; label: string }[] }[] = []
+  for(let item in list){
+    const map: { [key: string]: { value: string; label: string; children: { value: string; label: string }[] } } = {}
+    map[item]={
+        value: item,
+        label: item,
+        children: []
+      }
+    options.push(map[item])
+    list[item].forEach(element => { 
+      map[item].children.push({value: element,label: element })
+    });
+  }
+  console.log(options)
+  return options
+}
+//旧
+// const generateFlowCascaderOptions = (list: IFlowData[]) => {
+//   const options: { value: string; label: string; children: { value: string; label: string }[] }[] = []
+//   const map: { [key: string]: { value: string; label: string; children: { value: string; label: string }[] } } = {}
+//   list.forEach((item) => {
+//     const flow = item.flowName
+//     const release = item.releaseName
+//     const releaseName = item.releaseShowName
+//     if (!map[flow]) {
+//       map[flow] = {
+//         value: flow,
+//         label: flow,
+//         children: []
+//       }
+//       options.push(map[flow])
+//     }
+//     map[flow].children.push({
+//       value: release,
+//       label: releaseName
+//     })
+//   })
+//   return options
+// }
+
+
+// 根据模型的版本名，返回para和weight
+const handleFlowSwitch = () =>{
+  // 对应后端接口/order/switch/<string:release_name>
+  switchFlowApi(selectedFlowData.release).then((res)=>{
+    // clearHelper(['weight', 'param', 'hyper'])   暂时注释
+    weightsData.value = res.data["weight"]
+    weightOptions.value = generateWeightOptions(res.data["weight"])
+    if (res.data["param"] && res.data["param"].length > 0) {
+        paramsData.value = res.data["param"]
+        loadDefault('param')
+      } else {
+        console.warn("No params found in the response.");
+      }
+      choosen.value=true
+    // getCurrentFlow() 
+  })
+}
+// const getCurrentFlow = () => {
+//   getCurrentFlowApi().then((res) => {
+//     currentFlowData.flow = res.data.flowName
+//     currentFlowData.release = res.data.releaseName
+//   })
+//   .finally(() => {
+//     paramsData.value.forEach((element: any) => {  // 提前装载初始值
+//       handledParamData[element['argName']] = element['argDefault']
+//     });
+//     getAllCurrentWeights()
+//   })
+
+// }
+
+const generateWeightOptions = (list: IWeightData[]) => {
+  const optionsMap: { [key: string]: { value: string; label: string; disabled: boolean }[] } = {};
+  list.forEach((item) => {
+    if (!optionsMap[item.weightKey]) {
+      optionsMap[item.weightKey] = [];
+    }
+    optionsMap[item.weightKey].push({
+      value: item.weightName,
+      label: item.weightName,
+      disabled: !item.weightEnable
+    });
+  });
+  return optionsMap;
+};
+const loadDefault = (mode: string ) => {
+  if (mode === 'param'){
+    paramsData.value.forEach((element: any) => {
+      handledParamData[element.argName] = element?.argDefault
+    });
+  } else if (mode === 'hyper'){
+    hypersData.value.forEach((element: any) => {
+      handledHyperData[element.argName] = element?.argDefault
+    });
+  }
+}
+
 
 const handleSelect = (row: IGetOrderData) => {
   selectedOrderData.orderId = row.orderId.toString()
@@ -168,10 +424,6 @@ const handleSelect = (row: IGetOrderData) => {
   orderVisible.value = false
 
 }
-const searchData = reactive({
-  orderId:"",
-  serviceId:"",
-})
 
 const handleSearch = () =>{
   if (paginationData.currentPage === 1) {
@@ -181,9 +433,176 @@ const handleSearch = () =>{
   paginationData.currentPage = 1 
 }
 function showOrder() {
+  console.log("1111")
+  console.log(orderVisible.value)
   orderVisible.value = !orderVisible.value;
+  console.log(orderVisible.value)
 }
 
+const handleFlowChange = (selectedOptions: CascaderValue) => {
+  console.log(selectedOptions)
+  if (!Array.isArray(selectedOptions) || selectedOptions.length !== 2) return
+  selectedFlowData.flow = selectedOptions[0] as string
+  selectedFlowData.release = selectedOptions[1] as string
+  const message = `已选择工作流：${selectedOptions[0]} 版本：${selectedOptions[1]}`
+  ElMessage({
+    message: message,
+    type: "success"
+  })
+}
+const handleWeightChange = (weightKey: string|number) => {
+  const weightName = selectedWeightData[weightKey]
+  handleWeightSwitch(weightKey)
+  const message = `已经选择权重${weightKey}: ${weightName}`
+    ElMessage({
+      message: message,
+      type: "success"
+    })
+}
+
+
+
+const handleWeightSwitch = (weightKey: string|number) => {
+  const selectedWeightName = selectedWeightData[weightKey]
+  if (  // 字典值比较
+  selectedWeightName === currentWeightData[weightKey]
+  ) {
+    ElMessage({
+      message: "当前选中的已经是该权重",
+      type: "warning"
+    })
+    return
+  } else if (selectedWeightName === "") {
+    ElMessage({
+      message: "请先选择权重",
+      type: "warning"
+    })
+    return
+  }
+  // 对应 /order/weight/switch
+  switchWeightApi({
+    switchParamRelease:selectedFlowData.release,//需要添值
+    switchWeightKey: weightKey,
+    switchWeightName: selectedWeightName,
+  }).then(() => {
+    getCurrentWeight(weightKey)
+  })
+  .catch(() => {
+      weightsData.value = []
+  })
+  .finally(() => {
+    loaded.value = false
+    loading.value = false
+    choosen.value = true
+  })
+}
+
+
+// 对应后端 /order/weight/current
+const getCurrentWeight = (weigthKey: string|number) => {
+  getCurrentWeightApi({
+    switchParamRelease: selectedFlowData.release, //需要填充
+    currentWeightKey: weigthKey
+  }).then((res) => {
+    currentWeightData[weigthKey] = res.data.weightName;
+    selectedWeightData[weigthKey] = res.data.weightName;
+  }).catch((error) => {
+    console.error("Error fetching weight data:", error);
+  });
+};
+
+
+
+
+
+const handleParamChange = (paramName: string, paramValue: any) => {
+  handledParamData[paramName] = paramValue
+  handleParamSwitch(paramName)
+  const message = `已经完成配置${paramName}: ${paramValue}`
+  ElMessage({
+    message: message,
+    type: "success"
+  })
+}
+const handleParamSwitch = (paramName: string) => {
+  const handledParamValue = handledParamData[paramName]
+  if (  // 字典值比较
+    handledParamValue === currentParamData[paramName]
+  ) {
+    ElMessage({
+      message: "当前设置参数已是该值",
+      type: "warning"
+    })
+    return
+  } else if (handledParamValue === "") {
+    ElMessage({
+      message: "请先设置参数",
+      type: "warning"
+    })
+    return
+  }
+  // /order/param/switch
+  switchParamApi({
+    switchParamRelease: selectedFlowData.release,//待补充
+    switchParamName: paramName,
+    switchParamValue: handledParamValue,
+  }).then(() => {
+    getCurrentParam(paramName)
+  })
+  .catch(() => {
+      paramsData.value = []
+  })
+  .finally(() => {
+    loaded.value = false
+    loading.value = false
+    choosen.value = true
+  })
+}
+//  order/param/current
+const getCurrentParam = (paramName: string) => {
+  getCurrentParamApi({
+    switchParamRelease:selectedFlowData.release,//需要填充
+    currentParamName: paramName
+  }).then((res) => {
+    currentParamData[res.data.argName] = res.data.argValue;
+  }).catch((error) => {
+    console.error("Error fetching weight data:", error);
+  });
+};
+
+
+// const clearHelper = (keys: string[]) => {
+//   keys.forEach(key => {
+//     if (key === 'flow') clearSelectedFlow();
+//     else if (key === 'weight') clearSelectedWeight();
+//     else if (key === 'param') clearHandledParam();
+//     else if (key === 'hyper') clearHandledHyper();
+//   });
+// };
+
+
+// const generateFlowCascaderOptions = (list: IFlowData[]) => {
+//   const options: { value: string; label: string; children: { value: string; label: string }[] }[] = []
+//   const map: { [key: string]: { value: string; label: string; children: { value: string; label: string }[] } } = {}
+//   list.forEach((item) => {
+//     const flow = item.flowName
+//     const release = item.releaseName
+//     const releaseName = item.releaseShowName
+//     if (!map[flow]) {
+//       map[flow] = {
+//         value: flow,
+//         label: flow,
+//         children: []
+//       }
+//       options.push(map[flow])
+//     }
+//     map[flow].children.push({
+//       value: release,
+//       label: releaseName
+//     })
+//   })
+//   return options
+// }
 //等待写
 const exportExcel = () => {
 
@@ -235,15 +654,16 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getOrde
             </el-form-item> -->
             <div class="table-wrapper">
 
-              <el-table  :data="orderData">
+              <el-table  :data="orderData" >
                 <el-table-column prop="no" label="编号" align="center" />
                 <el-table-column prop="orderId" label="工单号" align="center" />
                 <el-table-column prop="serviceId" label="服务类型" align="center" />
                 <el-table-column prop="projectType" label="服务内容" align="center" />
                 <!-- <el-table-column prop="orderContent" label="工单内容" align="center" /> -->
-                <el-table-column fixed="right" label="选择" width="100" align="center">
-                  <template #default="scope">
-                    <el-button type="primary" text bg size="small" @click="handleSelect(scope.row)">选择</el-button>
+                <el-table-column  fixed="right" label="选择" width="100" align="center">
+                  <template #default="scope" slot-scope="scope">
+                    <el-button v-if="scope.row.flag==1" type="primary"  text bg size="small" @click="handleSelect(scope.row)">选择</el-button>
+                    <el-button v-else type="info"   text bg size="small" plain disabled>没图片</el-button>
                   </template>
                 </el-table-column>
               </el-table>
@@ -258,63 +678,150 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getOrde
         </el-col>
         <el-col :span="4" class="SwitchModelCSS">
           <div class="grid-content ep-bg-purple">
-            <el-button type="success" :icon="Refresh" @click="detectOrder">检测工单</el-button>
+            <el-button type="success" :icon="Refresh" @click="handleOrderSwitch">确认工单</el-button>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
 
-
-    <el-card v-loading="predicting" shadow="never" class="search-wrapper">
-      <el-button type="primary" @click="exportExcel">excel导出</el-button>
-      <div class="grid-content text-description" >
-        <el-row>
-          <el-col :span="10">原始图片 </el-col>
-          <el-col :span="10"> 推测图片</el-col>
-        </el-row>
-      </div>
-      <el-row :gutter="20" v-for=" item in detectImagesData ">
-        <el-col :span="10">
-          <div class="grid-content ep-bg-purple">
-            <el-image v-if="item.originImage" :src="item.originImage" :fit="'scale-down'"
-              :preview-src-list="[item.originImage]" />
-            <div v-else class="image-placeholder">原始图片</div>
+    <el-card v-loading="loading" shadow="never" class="search-wrapper">
+      <el-row>
+        <el-col :span="7">
+          <div class="grid-content">
+            <div>
+              <div class="SwitchModelCSS">
+                当前工作流：
+                <el-text v-model="selectedFlowData.flow" type="success" size="large">
+                  {{ selectedFlowData.flow }}
+                </el-text>
+              </div>
+              <div class="SwitchModelCSS">
+                当前版本：
+                <el-text v-model="selectedFlowData.flow" type="success" size="large">
+                  {{ selectedFlowData.release }}
+                </el-text>
+              </div>
+            </div>
           </div>
         </el-col>
-        <el-col :span="10">
-          <div class="grid-content ep-bg-purple">
-            <el-image
-              v-if="item.resultBase64"
-              :src="item.resultImageUrl"
-              :fit="'scaleDown'"
-              :preview-src-list="[item.resultImageUrl]"
+        <el-col :span="3" class="SwitchModelCSS"> 选择其他工作流&版本： </el-col>
+        <el-col :span="4">
+          <div class="m-4">
+            <el-cascader
+              v-model="selectedFlowOptions"
+              :options="flowOptions"
+              :props="props"
+              @change="handleFlowChange"
+              placeholder="请选择版本"
             />
-            <div v-else class="image-placeholder">检测结果图片</div>
           </div>
         </el-col>
-      <el-col :span="20" v-if="item.inferDescription">
-        <el-collapse>
-          <el-collapse-item title="检测结果">
-            <div>检测描述:   {{item.inferDescription}}</div>
-          </el-collapse-item>
-        </el-collapse>
-      </el-col>
-        <!-- <el-col :span="18">
+        <el-col :span="4" class="SwitchModelCSS">
           <div class="grid-content ep-bg-purple">
-            <el-table :data="inferImageData.inferResult"
-              v-if="inferImageData.inferResult && inferImageData.inferResult.length > 0">
-              <el-table-column prop="label" label="检测类别" />
-              <el-table-column prop="score" label="置信度" />
-              <el-table-column prop="points" label="锚点集" />
-              <el-table-column prop="group_id" label="分组" />
-              <el-table-column prop="description" label="描述" />
-            </el-table>
-            <div v-else class="image-placeholder">暂无结果</div>
+            <el-button type="success" :icon="Refresh" @click="handleFlowSwitch">切换模型</el-button>
           </div>
-        </el-col> -->
+        </el-col>
       </el-row>
     </el-card>
+
+    <el-card v-if="choosen" v-loading="loading" shadow="never" class="search-wrapper">
+      <el-row :gutter="20">
+        <el-col :span="12" v-for="(options, weightKey) in weightOptions" :key="weightKey">
+          <label>{{ weightKey }}:</label>
+          <el-select
+            v-model="selectedWeightData[weightKey]"
+            @change="handleWeightChange(weightKey)"
+            placeholder="请选择权重">
+            <el-option
+              v-for="option in options"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+              :disabled="option.disabled">
+            </el-option>
+          </el-select>
+        </el-col>
+      </el-row>
+      <el-row v-if="Object.keys(paramsData).length > 0" :gutter="20">
+        <el-col :span="12" v-for="(paramItem, idx) in paramsData" :key="idx">
+          <Argument
+            :imageUrl=null
+            :argName="paramItem.argName"
+            :argType="paramItem.argType"
+            :argValue="handledParamData[paramItem.argName]"
+            :argConfig="paramItem.argConfig"
+            @argChange="handleParamChange"
+          />
+        </el-col>
+      </el-row>
+    </el-card>
+
+
+    <el-card v-loading="loading2" shadow="never" class="search-wrapper">
+    <el-col :span="4" class="SwitchModelCSS">
+      <div class="grid-content ep-bg-purple">
+        <el-button type="success" :icon="Refresh" @click="handleDetect">执行工作流</el-button>
+      </div>
+    </el-col>
+    <!-- <el-row>
+      <el-col :span="10">
+        原始数据
+      </el-col>
+    </el-row>
+    <el-row :gutter="40">
+      <el-col :span="40">
+        <div class="ag-theme-alpine" style="width: 600px; height: 200px; margin-top: 10px;">
+        <AgGridVue
+          :rowData="originData"
+          :columnDefs="columnDefOrigin"
+          :frameworkComponents="frameworkComponents"
+          class="ag-theme-alpine"
+        />
+    </div>
+      </el-col>
+    </el-row> -->
+    <el-row>
+      <el-col :span="10">
+        推测结果
+      </el-col>
+    </el-row>
+    <!-- 遍历 detectData -->
+    <el-row :gutter="40">
+      <el-col :span="40">
+        <!-- 使用ag-grid展示msg、type、avatars -->
+        <div class="ag-theme-alpine" style="width: 600px; height: 200px; margin-top: 10px;">
+          <el-table :data="detectData" style="width: 100%">
+            <!-- 字段 field -->
+            <el-table-column label="Field" prop="field"></el-table-column>
+            <!-- 字段 msg -->
+            <el-table-column label="Message" prop="msg"></el-table-column>
+            <!-- 字段 type -->
+            <el-table-column label="Type" prop="type"></el-table-column>
+            <!-- 如果你有额外的字段（例如 avatars），可以添加另一个 el-table-column -->
+            <el-table-column label="Avatars">
+              <template v-slot="scope">
+                <!-- Button to trigger image display -->
+                <el-button @click="showAvatars(scope.row.avatars)">
+                  Show Avatars
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+    </div>
+      </el-col>
+    </el-row>
+    </el-card>
+    <el-dialog :visible.sync="dialogVisible" width="60%">
+    <el-image
+      v-for="(avatar, index) in avatarsToShow"
+      :key="index"
+      :src="avatar"
+      style="margin-bottom: 10px; width: 100%; height: auto;"
+      fit="contain"
+    />
+  </el-dialog>
+    
   </div>
 </template>
 
@@ -383,5 +890,6 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getOrde
 .text-description{
   text-align: center;
 }
+
 </style>
 

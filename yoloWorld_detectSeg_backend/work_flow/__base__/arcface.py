@@ -71,7 +71,7 @@ class ArcFace(Model):
     def get_embedding(self, image):
         self.net.to(self.device)
         cv_img = self.preprocess(image)
-        return self.net(cv_img).numpy()[0]
+        return self.net(cv_img).to('cpu').numpy()[0]
 
     @torch.no_grad()
     def predict_embeddings(self, feat1, feat2, sim_threshold=0.5):

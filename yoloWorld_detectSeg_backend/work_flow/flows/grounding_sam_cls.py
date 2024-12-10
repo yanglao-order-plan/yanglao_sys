@@ -14,6 +14,7 @@ from tokenizers import Tokenizer
 
 from . import __preferred_device__, Model, AutoLabelingResult, Shape, OnnxBaseModel, Args
 from .cbiaformer_cls import CBIAFORMER_CLS
+from .deit_cls import DEIT_CLS
 from .grounding_sam import GroundingSAM
 from .lru_cache import LRUCache
 from ..__base__.sam_hq import SegmentAnythingHQONNX
@@ -72,7 +73,7 @@ class GroundingSAM_CLS(Model):
         if object_type == "food":
             self.model = CBIAFORMER_CLS(self.config, logging)
         elif object_type == 'ingredient':
-            self.model = CBIAFORMER_CLS(self.config, logging)
+            self.model = DEIT_CLS(self.config, logging)
 
 
     def predict_shapes(self, image, image_path=None, text_prompt=None):

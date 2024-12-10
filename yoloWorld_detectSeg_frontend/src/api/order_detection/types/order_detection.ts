@@ -12,8 +12,13 @@ import { StringLiteral } from "typescript";
     no:string
     serviceId:number
     projectType:string
+    flag:number
   }
-
+  export interface IFlowData {
+    flowName: string
+    releaseName: string
+    releaseShowName: string
+  }
   export interface IInferResults{
     originImage:string,
     resultBase64: string
@@ -45,19 +50,87 @@ import { StringLiteral } from "typescript";
     orderId?: number
     serviceId?: number
   }
+  export interface IGetOrderRequestData {
+    currentPage: number
+    size: number
+    orderId?: number
+    serviceId?: number
+  }
+  export interface ISwitchModelRequestData {
+    order_id: number,
+    service_id: number
+  }
 
-
-
-  // 数据回显对象（current）
-
-  // 数据回显对象（switch）
-
+  export interface IModelsponseData{
+    flow_name : string,
+  }
+  
+  export interface IFlowsponseData{
+    flow_name : string,
+  }
+  export interface IWeightData {
+    weightKey: string
+    weightName: string
+    weightEnable: string
+  }
+  export interface IArgData {
+    argName: string
+    argType: string
+    argDefault: any
+    argConfig: Record<string, any>  //自动解析
+  }
+  export interface OWeightData {
+    weightKey: string
+    weightName: string
+  }
+  export interface OArgData {
+    argName: string
+    argValue: any
+  }
+  export interface ISwitchWeightRequestData {
+    switchParamRelease: string
+    switchWeightKey: string | number
+    switchWeightName: string
+  }
+  export interface ICurrentWeightRequestData {
+    switchParamRelease: string
+    currentWeightKey: string | number
+  }
+  export interface ISwitchParamRequestData {
+    switchParamRelease: string
+    switchParamName: string | number
+    switchParamValue: any
+  }
+  export interface ICurrentParamRequestData {
+    switchParamRelease: string
+    currentParamName: string | number
+  }
+  export interface IDetectData {
+    field: string;
+    msg: string;
+    type: string;
+    avatars: string[];
+  }
+  export interface IDOrigin{
+    field:string
+    stage:string;
+    id:string;
+    base64:string[]
+  }
   // 数据回显对象（all）
   export type GetOrderResponseData = IApiResponseData<{
     list: IGetOrderData[]
     total: number
   }>
+  export type GetDetectResponseData =IApiResponseData<{
+    // origin:IDOrigin[]
+    result:IDetectData[]
+    }>
   export type GetAllOrderResponseData = IApiResponseData<IOrderData>
   export type DetectOrderResponseData = IApiResponseData<IResultsResponseData>
-  // 处理
+  export type SwitchModelResponseData = IApiResponseData<IFlowData[]>
+  export type SwitchFlowResponseData = IApiResponseData<{weight: IWeightData[]; param: IArgData[];}>
+  export type GetCurrentParamResponseData = IApiResponseData<OArgData>
+  export type GetCurrentWeightResponseData = IApiResponseData<OWeightData>
+
   

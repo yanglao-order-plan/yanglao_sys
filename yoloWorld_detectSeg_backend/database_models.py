@@ -362,9 +362,20 @@ class ServiceModel(db.Model):
     end_img_min = db.Column(db.Integer, nullable=False)
     end_img_max = db.Column(db.Integer, nullable=False)
     end_img_num = (end_img_min, end_img_max)
+    least_service_duration = db.Column(db.Integer, nullable=False)
+    service_frequency_day = db.Column(db.Integer, nullable=False)
 
     def to_dict(self, keys=None):
         kwargs = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+        kwargs['start_img_num'] = (self.start_img_min, self.start_img_max)
+        kwargs['middle_img_num'] = (self.service_img_min, self.service_img_max)
+        kwargs['end_img_num'] = (self.end_img_min, self.end_img_max)
+        del kwargs['start_img_min']
+        del kwargs['start_img_max']
+        del kwargs['service_img_min']
+        del kwargs['service_img_max']
+        del kwargs['end_img_min']
+        del kwargs['end_img_max']
         if keys is dict:
             for key in kwargs.keys():
                 if key not in keys:
@@ -381,6 +392,7 @@ class WorkOrderModel(db.Model):
     project_type = db.Column(db.String(100))
     # 工单时间
     start_time = db.Column(db.String(100))
+    end_time = db.Column(db.String(100))
     create_time = db.Column(db.String(100))
     handle_time = db.Column(db.String(100))
     pay_time = db.Column(db.String(100))
@@ -485,14 +497,25 @@ class ServiceLogModel(db.Model):
     end_lgt = db.Column(db.String(100))
     end_coordinate = (end_lat, end_lgt)
     # 服务主客体信息
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+    order_id = db.Column(db.Integer, name='order_id')
 
     def to_dict(self, keys=None):
         kwargs = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+        kwargs['middle_content'] = kwargs['service_content']
+        del kwargs['service_content']
+        kwargs['middle_img'] = kwargs['img_url']
+        del kwargs['img_url']
+        kwargs['middle_location'] = kwargs['location']
+        del kwargs['location']
+        kwargs['middle_coordinate'] = (self.lat, self.lgt)
+        kwargs['start_coordinate'] = (self.start_lat, self.start_lgt)
+        kwargs['end_coordinate'] = (self.end_lat, self.end_lgt)
+
         if keys is dict:
             for key in kwargs.keys():
                 if key not in keys:
                     kwargs.pop(key)
+
         return kwargs
 
 class ExecuteModel(db.Model):

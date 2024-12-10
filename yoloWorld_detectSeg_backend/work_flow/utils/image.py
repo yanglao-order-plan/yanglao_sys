@@ -22,7 +22,9 @@ def batch_base64_encode_image(results_images):
         im_base64.save(buffered, format="JPEG")
     return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-def base64_encode_image(image) -> str:
+def base64_encode_image(image) -> str|None:
+    if image is None:
+        return None
     buffered = io.BytesIO()
     dim = image.ndim
     if image.dtype not in [np.uint8, np.float32]:

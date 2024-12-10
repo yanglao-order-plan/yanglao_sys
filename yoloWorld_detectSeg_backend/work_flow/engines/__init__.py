@@ -91,5 +91,5 @@ model_module_map = {
     "arcface": ("work_flow.flows.arcface", "Arc_Face"),
     "cbiaformer_cls": ("work_flow.flows.cbiaformer_cls", "CBIAFORMER_CLS"),
     "grounding_sam_cls": ("work_flow.flows.grounding_sam_cls", "GroundingSAM_CLS"),
-    "pixel_analysis": ("work_flow.flows.pixel_analysis", "PixelAnalysis"),
+    "deit_cls": ("work_flow.flows.deit_cls", "DEIT_CLS"),
 }
