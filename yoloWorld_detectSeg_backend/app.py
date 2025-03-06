@@ -38,6 +38,7 @@ code: 205 前端通知弹窗Error
 code: 206 前端通知弹窗Warning
 code: 207 前端通知弹窗Info
 '''
+# 加载默认权重
 repo_dir = os.getcwd()
 weights_path = 'weights/yolov5-3.1/TACO_yolov5s_300_epochs.pt'
 model_load_path = os.path.join(repo_dir, weights_path)
@@ -119,4 +120,7 @@ if __name__ == "__main__":
     # webapp启动后加载默认调用权重
     test_database_connection()
     logging.info('项目已启动')
+
+    print(args.port)
+
     app.run(host="127.0.0.1", port=args.port, debug=False)

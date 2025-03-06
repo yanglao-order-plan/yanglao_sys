@@ -123,7 +123,7 @@ class DEIT_CLS(Model):
         return tag_list, tag_list_chinese
 
     def get_description(self, indices):
-        cls_names = [self.classes_names[idx] for idx in indices]
+        cls_names = [self.classes_names[idx] for idx in indices if self.classes_names[idx] != '其他类']
         descriptions = ' | '.join(cls_names)
         return descriptions
 

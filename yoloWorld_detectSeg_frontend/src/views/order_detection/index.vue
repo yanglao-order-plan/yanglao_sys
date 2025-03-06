@@ -165,10 +165,9 @@ const getOrderData = () => {
     })
 }
 
-const originData:any =reactive([{
-  stage:"",
-  id:"",
-  base64:""
+const originData:any =ref([{
+  stage: "",
+  url: []
 }])
 
 
@@ -181,13 +180,8 @@ const detectData: any = ref([{
 }])
 // 控制弹窗显示和要展示的图片
 const dialogVisible = ref(false);
-const avatarsToShow = ref([]);
-
+const avatarsToShow = ref<string[]>([]);
 // 点击按钮时显示 avatars 图片
-const showAvatars = (avatars: any) => {
-  avatarsToShow.value = avatars;  // 将 avatars 设置为当前行的图片列表
-  dialogVisible.value = true;     // 打开对话框显示图片
-};
 
 const columnDefOrigin =ref<ColDef[]>([
   
@@ -249,14 +243,13 @@ const frameworkComponents = {
 const handleDetect = () => {
   getDetectDataApi(Number(selectedOrderData.orderId))
     .then((res) => {
-      // originData.value=res.data.origin
+      originData.value=res.data.origin
       // originData.forEach((item :IDOrigin) => {
       //   item.base64.forEach((img,index)=>{
       //     item.base64[index] = deCodeBase64(item.base64[index])
       //   })
       // });
       detectData.value = res.data.result
-      console.log(detectData.value)
       // 遍历 res.data.list 并添加到 detectData
       // detectData.forEach((item :IDetectData) => {
       //   item.avatars.forEach((img,index)=>{
@@ -609,6 +602,22 @@ const exportExcel = () => {
 }
 getOrderData()
 watch([() => paginationData.currentPage, () => paginationData.pageSize], getOrderData, { immediate: true })
+
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement;
+  img.src = 'path/to/fallback/image.png'; // Add a fallback image path
+  console.error('Image failed to load:', img.src);
+};
+
+const showAvatars = (avatars: string[]) => {
+  if (!avatars || !Array.isArray(avatars)) {
+    ElMessage.warning('No images available');
+    return;
+  }
+  avatarsToShow.value = avatars;
+  dialogVisible.value = true;
+  console.log('Showing avatars:', avatarsToShow.value);
+};
 </script>
 
 <template>
@@ -759,68 +768,59 @@ watch([() => paginationData.currentPage, () => paginationData.pageSize], getOrde
 
 
     <el-card v-loading="loading2" shadow="never" class="search-wrapper">
-    <el-col :span="4" class="SwitchModelCSS">
       <div class="grid-content ep-bg-purple">
         <el-button type="success" :icon="Refresh" @click="handleDetect">执行工作流</el-button>
       </div>
-    </el-col>
-    <!-- <el-row>
-      <el-col :span="10">
-        原始数据
-      </el-col>
-    </el-row>
-    <el-row :gutter="40">
-      <el-col :span="40">
-        <div class="ag-theme-alpine" style="width: 600px; height: 200px; margin-top: 10px;">
-        <AgGridVue
-          :rowData="originData"
-          :columnDefs="columnDefOrigin"
-          :frameworkComponents="frameworkComponents"
-          class="ag-theme-alpine"
-        />
-    </div>
-      </el-col>
-    </el-row> -->
-    <el-row>
-      <el-col :span="10">
-        推测结果
-      </el-col>
-    </el-row>
-    <!-- 遍历 detectData -->
-    <el-row :gutter="40">
-      <el-col :span="40">
-        <!-- 使用ag-grid展示msg、type、avatars -->
-        <div class="ag-theme-alpine" style="width: 600px; height: 200px; margin-top: 10px;">
-          <el-table :data="detectData" style="width: 100%">
-            <!-- 字段 field -->
-            <el-table-column label="Field" prop="field"></el-table-column>
-            <!-- 字段 msg -->
-            <el-table-column label="Message" prop="msg"></el-table-column>
-            <!-- 字段 type -->
-            <el-table-column label="Type" prop="type"></el-table-column>
-            <!-- 如果你有额外的字段（例如 avatars），可以添加另一个 el-table-column -->
-            <el-table-column label="Avatars">
+      <el-text>原始信息</el-text>
+      <el-table :data="originData" style="width: 100%">
+            <el-table-column label="Stage" prop="stage"></el-table-column>
+            <!-- <el-table-column label="Id" prop="id"></el-table-column> -->
+            <el-table-column label="Url">
               <template v-slot="scope">
-                <!-- Button to trigger image display -->
-                <el-button @click="showAvatars(scope.row.avatars)">
-                  Show Avatars
+                <el-button @click="showAvatars(scope.row.url)">
+                  Show url
                 </el-button>
               </template>
             </el-table-column>
           </el-table>
-    </div>
-      </el-col>
-    </el-row>
+      <el-text>推理结果</el-text>
+      <el-table :data="detectData" style="width: 100%">
+        <el-table-column label="Field" prop="field"></el-table-column>
+        <el-table-column label="Message" prop="msg"></el-table-column>
+        <el-table-column label="Type" prop="type"></el-table-column>
+        <el-table-column label="Avatars">
+          <template v-slot="scope">
+            <el-button @click="showAvatars(scope.row.avatars)">
+              Show Avatars
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-card>
-    <el-dialog :visible.sync="dialogVisible" width="60%">
-    <el-image
-      v-for="(avatar, index) in avatarsToShow"
-      :key="index"
-      :src="avatar"
-      style="margin-bottom: 10px; width: 100%; height: auto;"
-      fit="contain"
-    />
-  </el-dialog>
+    <el-dialog 
+      v-model="dialogVisible" 
+      title="Avatars" 
+      width="60%"
+      :destroy-on-close="true"
+    >
+      <div v-if="avatarsToShow && avatarsToShow.length">
+        <el-row :gutter="20">
+          <el-col v-for="(avatar, index) in avatarsToShow" :key="index" :span="8">
+            <el-image 
+              :src="avatar"
+              alt="Avatar" 
+              style="width: 100%; max-height: 500px; object-fit: cover;"
+              @error="handleImageError"
+            />
+            <el-text>{{index}}</el-text>
+          </el-col>
+        </el-row>
+      </div>
+      <div v-else>
+        No images to display
+      </div>
+    </el-dialog>
+  
     
   </div>
 </template>

@@ -123,7 +123,11 @@ class CBIAFORMER_CLS(Model):
         return tag_list, tag_list_chinese
 
     def get_description(self, indices):
-        cls_names = [self.classes_names[idx] for idx in indices]
+        cls_names = [self.classes_names[idx] for idx in indices if self.classes_names[idx]]
+        new_cls_names = []
+        for cls in cls_names:
+            if cls in ['鱼', '海鲜类']:
+                new_cls_names.append('肉类')
         descriptions = ' | '.join(cls_names)
         return descriptions
 

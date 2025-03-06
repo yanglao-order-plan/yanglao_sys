@@ -112,10 +112,8 @@ import { StringLiteral } from "typescript";
     avatars: string[];
   }
   export interface IDOrigin{
-    field:string
-    stage:string;
-    id:string;
-    base64:string[]
+    stage: string;
+    url: string[]
   }
   // 数据回显对象（all）
   export type GetOrderResponseData = IApiResponseData<{
@@ -123,7 +121,7 @@ import { StringLiteral } from "typescript";
     total: number
   }>
   export type GetDetectResponseData =IApiResponseData<{
-    // origin:IDOrigin[]
+    origin:IDOrigin[]
     result:IDetectData[]
     }>
   export type GetAllOrderResponseData = IApiResponseData<IOrderData>
